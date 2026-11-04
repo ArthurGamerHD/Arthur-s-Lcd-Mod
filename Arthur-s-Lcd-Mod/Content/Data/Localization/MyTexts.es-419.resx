@@ -12,9 +12,6 @@
     <data name="LcdMod_Radar_DetectedEntities" xml:space="preserve">
     <value>Entidades detectadas:</value>
   </data>
-    <data name="LcdMod_TopEnergy" xml:space="preserve">
-    <value>Mayor consumo de energía</value>
-  </data>
     <data name="LcdMod_EnergyDashboard" xml:space="preserve">
     <value>Panel de Energía</value>
   </data>
@@ -45,44 +42,14 @@
     <data name="LcdMod_GW_5m" xml:space="preserve">
     <value>5 minutos</value>
   </data>
-    <data name="LcdMod_OreScannerRadar" xml:space="preserve">
-    <value>Radar Detector de Mineral</value>
-  </data>
-    <data name="LcdMod_OreScanner_Moving" xml:space="preserve">
-    <value>EN MOVIMIENTO — escáner desconectado</value>
-  </data>
-    <data name="LcdMod_OreScanner_Charging" xml:space="preserve">
-    <value>CARGANDO {0}s</value>
-  </data>
-    <data name="LcdMod_OreScanner_Scanning" xml:space="preserve">
-    <value>ESCANEANDO {0}% — barrido del cono</value>
-  </data>
     <data name="LcdMod_OreScanner_Clear" xml:space="preserve">
     <value>DESPEJADO — sin mineral</value>
-  </data>
-    <data name="LcdMod_OreScanner_Signal" xml:space="preserve">
-    <value>SEÑAL {0}%</value>
   </data>
     <data name="LcdMod_OreScanner_Range" xml:space="preserve">
     <value>Alcance: {0}</value>
   </data>
-    <data name="LcdMod_OreScanner_NoDetector" xml:space="preserve">
-    <value>SIN DETECTOR DE MINERAL EN LA GRID</value>
-  </data>
-    <data name="LcdMod_OreScanner_MultipleDetectors" xml:space="preserve">
-    <value>VARIOS DETECTORES — deja sólo uno</value>
-  </data>
-    <data name="LcdMod_OreScanner_ConeAngle" xml:space="preserve">
-    <value>Inclinación de la señal</value>
-  </data>
-    <data name="LcdMod_OreScanner_TiltLabel" xml:space="preserve">
-    <value>Inclinación de la señal:   {0}</value>
-  </data>
     <data name="LcdMod_OreScanner_Reference" xml:space="preserve">
     <value>Cabina / asiento de referencia</value>
-  </data>
-    <data name="LcdMod_OreScanner_Reference_None" xml:space="preserve">
-    <value>(usar gravedad)</value>
   </data>
     <data name="LcdMod_Damaged" xml:space="preserve">
     <value>Dañado</value>
@@ -159,29 +126,8 @@
     <data name="LcdMod_NotAvailable" xml:space="preserve">
     <value>N/D</value>
   </data>
-    <data name="LcdMod_StarMap_Info_Gravity" xml:space="preserve">
-    <value>Gravedad: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_Radius" xml:space="preserve">
-    <value>Radio: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_RadiusShort" xml:space="preserve">
-    <value>Radio: {0}</value>
-  </data>
     <data name="LcdMod_Atmosphere_Short" xml:space="preserve">
     <value>Atm.: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_O2" xml:space="preserve">
-    <value>Oxígeno: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_Temperature" xml:space="preserve">
-    <value>Temperatura: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_Wind" xml:space="preserve">
-    <value>Viento: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Label_Temperature" xml:space="preserve">
-    <value>Temperatura</value>
   </data>
     <data name="LcdMod_Chess" xml:space="preserve">
     <value>Ajedrez</value>
@@ -403,47 +349,14 @@
     <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>abierta</value>
   </data>
-    <data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
-    <value>Consumo actual: {0}</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
-    <value>Capacidad máxima: {0}</value>
-  </data>
     <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
     <value>Producción: {0}</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
-    <value>Solar</value>
   </data>
     <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
     <value>Eólica</value>
   </data>
-    <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
-    <value>Reactor</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
-    <value>Motor de hidrógeno</value>
-  </data>
     <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
     <value>Batería</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
-    <value>Producción de energía</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
-    <value>Consumo de energía</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
-    <value>Cargando</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
-    <value>Descargando</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
-    <value>{0} batería</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
-    <value>{0} baterías</value>
   </data>
     <data name="LcdMod_Magnification" xml:space="preserve">
     <value>Ampliación</value>
@@ -505,18 +418,6 @@
     <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
     <value>No se encontró ningún ensamblador</value>
   </data>
-    <data name="LcdMod_Common_Button_Select" xml:space="preserve">
-    <value>Seleccionar</value>
-  </data>
-    <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
-    <value>Ensambladores: ninguno</value>
-  </data>
-    <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
-    <value>Ensamblador: {0}</value>
-  </data>
-    <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
-    <value>Ensambladores: {0} seleccionados</value>
-  </data>
     <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
     <value>Ensamblador</value>
   </data>
@@ -576,38 +477,14 @@
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Lingotes</value>
   </data>
-    <data name="LcdMod_InputOutput" xml:space="preserve">
-    <value>Entrada / Salida</value>
-  </data>
-    <data name="LcdMod_InputOutput_Input" xml:space="preserve">
-    <value>Entrada</value>
-  </data>
-    <data name="LcdMod_InputOutput_Output" xml:space="preserve">
-    <value>Salida</value>
-  </data>
     <data name="LcdMod_InputOutput_All" xml:space="preserve">
     <value>Todos</value>
   </data>
     <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
     <value>Vacío</value>
   </data>
-  <data name="LcdMod_Cargo_Sort_Quantity" xml:space="preserve">
-    <value>Cantidad</value>
-  </data>
-  <data name="LcdMod_Cargo_Sort_Weight" xml:space="preserve">
-    <value>Peso</value>
-  </data>
-  <data name="LcdMod_Cargo_Sort_Alphabetical" xml:space="preserve">
-    <value>Alfabetico</value>
-  </data>
-  <data name="LcdMod_Cargo_SortDone" xml:space="preserve">
-    <value>Organizado: {0} objetos movidos</value>
-  </data>
   <data name="LcdMod_Cargo_SortRequested" xml:space="preserve">
     <value>Organizacion solicitada</value>
-  </data>
-  <data name="LcdMod_Cargo_Sorter" xml:space="preserve">
-    <value>Organizar</value>
   </data>
   <data name="LcdMod_SubGrid" xml:space="preserve">
     <value>Subcuadricula</value>
@@ -635,15 +512,6 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Siguiente</value>
-  </data>
-  <data name="LcdMod_Cargo_FillWeapons" xml:space="preserve">
-    <value>Armas</value>
-  </data>
-  <data name="LcdMod_Cargo_FillReactors" xml:space="preserve">
-    <value>Reactores</value>
-  </data>
-  <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
-    <value>{0} objetos movidos</value>
   </data>
 <data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
     <value>Marco de fotos</value>
@@ -679,41 +547,11 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
   <data name="LcdMod_CargoActions_Title" xml:space="preserve">
     <value>Acciones de carga</value>
   </data>
-  <data name="LcdMod_CargoActions_Config" xml:space="preserve">
-    <value>Ajustes</value>
-  </data>
-  <data name="LcdMod_CargoActions_ShowConfigButton" xml:space="preserve">
-    <value>Mostrar botón de ajustes</value>
-  </data>
-  <data name="LcdMod_CargoActions_ShowConfigButton_Tooltip" xml:space="preserve">
-    <value>Muestra u oculta el botón de ajustes en esta pantalla.</value>
-  </data>
-  <data name="LcdMod_CargoActions_Sort" xml:space="preserve">
-    <value>Ordenación</value>
-  </data>
-  <data name="LcdMod_CargoActions_Uranium" xml:space="preserve">
-    <value>Uranio (kg)</value>
-  </data>
   <data name="LcdMod_CargoActions_Ammo" xml:space="preserve">
     <value>Munición</value>
   </data>
   <data name="LcdMod_CargoActions_Default" xml:space="preserve">
     <value>Predeterminado</value>
-  </data>
-  <data name="LcdMod_CargoActions_GridLarge" xml:space="preserve">
-    <value>Rejilla grande</value>
-  </data>
-  <data name="LcdMod_CargoActions_GridSmall" xml:space="preserve">
-    <value>Rejilla pequeña</value>
-  </data>
-  <data name="LcdMod_CargoActions_ReactorSmall" xml:space="preserve">
-    <value>Reactor pequeño</value>
-  </data>
-  <data name="LcdMod_CargoActions_ReactorLarge" xml:space="preserve">
-    <value>Reactor grande</value>
-  </data>
-  <data name="LcdMod_Cargo_FillRequested" xml:space="preserve">
-    <value>Llenado solicitado</value>
   </data>
   <data name="LcdMod_CargoActions_ActionDone" xml:space="preserve">
     <value>{0}: {1}</value>
@@ -723,9 +561,6 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
   </data>
   <data name="LcdMod_MarketApp_Refresh" xml:space="preserve">
     <value>Refresh</value>
-  </data>
-  <data name="LcdMod_MarketApp_Loading" xml:space="preserve">
-    <value>Requesting market data...</value>
   </data>
   <data name="LcdMod_MarketApp_Empty" xml:space="preserve">
     <value>No valid offers found.</value>
@@ -849,8 +684,7 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
     <value>Solo se pueden detectar señales de radio a más de {0}.</value>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
-    <value>Drag to orbit the radar camera, middle-drag to pan.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Arrastra para orbitar la cámara del radar; arrastra con el botón central para moverla.</value>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
     <value>Desplázate para hacer zoom en el mapa del radar.</value>
@@ -859,44 +693,34 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
     <value>Reproductor multimedia - (experimental)</value>
   </data>
   <data name="LcdMod_Common_Button_Close" xml:space="preserve">
-    <value>Close</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Cerrar</value>
   </data>
   <data name="LcdMod_MediaPlayer_ConfigureVisualizer" xml:space="preserve">
-    <value>Configure visualizer</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Configurar visualizador</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerSettings" xml:space="preserve">
-    <value>Visualizer settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Configuración del visualizador</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerInstanceEnabled" xml:space="preserve">
-    <value>Enabled</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activado</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerReset" xml:space="preserve">
-    <value>Reset to defaults</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Restablecer valores predeterminados</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXml" xml:space="preserve">
-    <value>Export / import XML</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Exportar / importar XML</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXmlTitle" xml:space="preserve">
-    <value>Visualizer settings XML</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>XML de configuración del visualizador</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXmlInvalid" xml:space="preserve">
-    <value>The visualizer settings XML could not be read: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No se pudo leer el XML de configuración del visualizador: {0}</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerSaveUser" xml:space="preserve">
-    <value>Save as my settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Guardar como mi configuración</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerLoadUser" xml:space="preserve">
-    <value>Load my settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Cargar mi configuración</value>
   </data>
   <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
     <value>(Pausado) - {0}</value>
@@ -912,15 +736,6 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
   </data>
   <data name="LcdMod_MediaPlayer_SaveQueue" xml:space="preserve">
     <value>Guardar</value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueuePlayedPrefix" xml:space="preserve">
-    <value>reproducido: </value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueueCurrentPrefix" xml:space="preserve">
-    <value>&gt; </value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueueNextPrefix" xml:space="preserve">
-    <value>siguiente: </value>
   </data>
   <data name="LcdMod_MediaPlayer_Pick" xml:space="preserve">
     <value>Elegir</value>
@@ -992,48 +807,34 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
     <value>Reproducir todo</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_Delete" xml:space="preserve">
-    <value>Delete</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Eliminar</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteLocalAudioTitle" xml:space="preserve">
-    <value>Delete local audio</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Eliminar audio local</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteLocalAudioPromptFormat" xml:space="preserve">
-    <value>Delete &quot;{0}&quot; from local audio? This cannot be undone.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>¿Eliminar &quot;{0}&quot; del audio local? Esta acción no se puede deshacer.</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeletePlaylistTitle" xml:space="preserve">
-    <value>Delete playlist</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Eliminar playlist</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeletePlaylistPromptFormat" xml:space="preserve">
-    <value>Delete playlist &quot;{0}&quot;? This cannot be undone.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>¿Eliminar la playlist &quot;{0}&quot;? Esta acción no se puede deshacer.</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteFailedFormat" xml:space="preserve">
-    <value>Delete failed: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Error al eliminar: {0}</value>
   </data>
   <data name="LcdMod_MediaPlayer_LocalAudioDeletedFormat" xml:space="preserve">
-    <value>Deleted local audio {0}.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Audio local {0} eliminado.</value>
   </data>
   <data name="LcdMod_MediaPlayer_PlaylistDeletedFormat" xml:space="preserve">
-    <value>Deleted playlist {0}.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Playlist {0} eliminada.</value>
   </data>
   <data name="LcdMod_FilePicker_PickFile" xml:space="preserve">
     <value>Elegir archivo</value>
   </data>
   <data name="LcdMod_FilePicker_PickFolder" xml:space="preserve">
     <value>Elegir carpeta</value>
-  </data>
-  <data name="LcdMod_FilePicker_SearchTitle" xml:space="preserve">
-    <value>Buscar archivo</value>
-  </data>
-  <data name="LcdMod_FilePicker_SearchSubtitle" xml:space="preserve">
-    <value>Filtrar archivos y carpetas en la carpeta actual</value>
   </data>
   <data name="LcdMod_FilePicker_SearchPlaceholder" xml:space="preserve">
     <value>Buscar archivos</value>
@@ -1074,9 +875,6 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
   <data name="LcdMod_RenderScale" xml:space="preserve">
     <value>Escala de renderizado</value>
   </data>
-  <data name="LcdMod_RaysPerTick" xml:space="preserve">
-    <value>Rayos por tick</value>
-  </data>
   <data name="LcdMod_PlanetTextureQuality" xml:space="preserve">
     <value>Calidad de textura del planeta</value>
   </data>
@@ -1100,15 +898,6 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_NoPlanet" xml:space="preserve">
     <value>No se encontró ningún planeta.</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_CartographyNotReady" xml:space="preserve">
-    <value>Los datos del mapa planetario aún no están listos.</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_NoColorCubemap" xml:space="preserve">
-    <value>Las texturas del mapa planetario no están disponibles.</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_NoResult" xml:space="preserve">
-    <value>No se recibieron datos del mapa planetario.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_CartographyFailed" xml:space="preserve">
     <value>No se pudo cartografiar este tipo de planeta.</value>
@@ -1167,6 +956,18 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
   <data name="LcdMod_PlanetaryMap_FreeCamera_Tooltip" xml:space="preserve">
     <value>Mantiene fija la cámara del mapa hasta que vuelvas a activar el seguimiento.</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_View2D_Title" xml:space="preserve">
+    <value>Mapa 2D</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View2D_Tooltip" xml:space="preserve">
+    <value>Proyección plana del globo. Haz clic para cambiar a la vista 3D del terreno.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View3D_Title" xml:space="preserve">
+    <value>Terreno 3D</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View3D_Tooltip" xml:space="preserve">
+    <value>Terreno con relieve real. Arrastra para desplazarte y arrastra con el botón central para girar e inclinar. Haz clic para volver al mapa 2D.</value>
+  </data>
   <data name="LcdMod_Gps_DisplayMyGps_Title" xml:space="preserve">
     <value>Mostrar mis GPS</value>
   </data>
@@ -1202,12 +1003,6 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
   </data>
   <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
     <value>Desconocido</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_MapLayerFormat" xml:space="preserve">
-    <value>Capa del mapa: {0}</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Elige los colores de satélite, terreno, materiales o biomas.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Terreno</value>
@@ -1282,129 +1077,86 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
     <value>Punto de salto: {0}</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportLocalAudio_Summary" xml:space="preserve">
-    <value>Imports a local WAV file into the audio library.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Importa un archivo WAV local a la biblioteca de audio.</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportAudios_Summary" xml:space="preserve">
-    <value>Imports the WAV files listed in audio_import.txt.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Importa los archivos WAV listados en audio_import.txt.</value>
   </data>
   <data name="LcdMod_ChatCommand_PlayAudio_Summary" xml:space="preserve">
-    <value>Plays a local WAV file for the current player.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Reproduce un archivo WAV local para el jugador actual.</value>
   </data>
   <data name="LcdMod_ChatCommand_PlayGameAudio_Summary" xml:space="preserve">
-    <value>Plays a game audio definition by subtype.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Reproduce una definición de audio del juego según su subtipo.</value>
   </data>
   <data name="LcdMod_ChatCommand_StreamAudio_Summary" xml:space="preserve">
-    <value>Broadcasts an imported audio asset to LCD media players.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Emite un audio importado a los reproductores multimedia de las LCD.</value>
   </data>
   <data name="LcdMod_ChatCommand_TestAudio_Summary" xml:space="preserve">
-    <value>Tests referenced game audio files and writes a compatibility report.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Prueba los archivos de audio referenciados del juego y genera un informe de compatibilidad.</value>
   </data>
   <data name="LcdMod_ChatCommand_TestCartography_Summary" xml:space="preserve">
-    <value>Tests loaded planet cartography definitions and writes diagnostic archives.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Prueba las definiciones cartográficas de los planetas cargados y genera archivos de diagnóstico.</value>
   </data>
   <data name="LcdMod_ChatCommand_Advanced_Summary" xml:space="preserve">
-    <value>Enables or disables advanced terminal tweakables.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activa o desactiva los ajustes avanzados del terminal.</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles rendering of textures owned by other users.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activa, desactiva o alterna la renderización de texturas de otros jugadores.</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles interactive control-boundary debugging.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles debug surface mode.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activa, desactiva o alterna la depuración de los límites de los controles interactivos.</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles the sprite-count debug overlay.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activa, desactiva o alterna la superposición de depuración del número de sprites.</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles visible clipping debug overlays.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activa, desactiva o alterna las superposiciones de depuración del recorte visible.</value>
   </data>
   <data name="LcdMod_ChatCommand_TextInput_Summary" xml:space="preserve">
-    <value>Opens a diagnostic text input dialog.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_Profile_Summary" xml:space="preserve">
-    <value>Profiles LCD app rendering for a specified duration or cancels the active profile.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Abre un cuadro de diálogo de entrada de texto de diagnóstico.</value>
   </data>
   <data name="LcdMod_ChatCommand_FactionColor_Summary" xml:space="preserve">
-    <value>Sets the local player's faction icon color.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Establece el color del icono de facción del jugador local.</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_Summary" xml:space="preserve">
-    <value>Resets completed first-time user experience tips.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Restablece los consejos de primera experiencia ya completados.</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Summary" xml:space="preserve">
-    <value>Shows the list of available chat commands.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Muestra la lista de comandos de chat disponibles.</value>
   </data>
   <data name="LcdMod_ChatCommand_PreloadTextures_Summary" xml:space="preserve">
-    <value>Preloads block textures as LCD sprites.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Precarga las texturas de los bloques como sprites de LCD.</value>
   </data>
   <data name="LcdMod_ChatCommand_RemoveLocalTexture_Summary" xml:space="preserve">
-    <value>Removes an image from your local image library.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Quita una imagen de tu biblioteca local de imágenes.</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportTextures_Summary" xml:space="preserve">
-    <value>Imports new .png and .dds images from the mod storage folder.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Importa las nuevas imágenes .png y .dds de la carpeta de almacenamiento del mod.</value>
   </data>
 
   <data name="LcdMod_ChatCommand_Advanced_Enabled_Message" xml:space="preserve">
-    <value>Advanced tweakables mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modo de ajustes avanzados activado.</value>
   </data>
   <data name="LcdMod_ChatCommand_Advanced_Disabled_Message" xml:space="preserve">
-    <value>Advanced tweakables mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modo de ajustes avanzados desactivado.</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Enabled_Message" xml:space="preserve">
-    <value>Rendering textures owned by other users enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Renderización de texturas de otros jugadores activada.</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Disabled_Message" xml:space="preserve">
-    <value>Rendering textures owned by other users disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Renderización de texturas de otros jugadores desactivada.</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Enabled_Message" xml:space="preserve">
-    <value>DebugInteractive mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modo DebugInteractive activado.</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Disabled_Message" xml:space="preserve">
-    <value>DebugInteractive mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Enabled_Message" xml:space="preserve">
-    <value>DebugSurface mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Disabled_Message" xml:space="preserve">
-    <value>DebugSurface mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modo DebugInteractive desactivado.</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Enabled_Message" xml:space="preserve">
-    <value>SpriteCountDebug mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modo SpriteCountDebug activado.</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Disabled_Message" xml:space="preserve">
-    <value>SpriteCountDebug mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modo SpriteCountDebug desactivado.</value>
   </data>
   <data name="LcdMod_ChatCommand_VerifyFrameCache_Enabled_Message" xml:space="preserve">
     <value>Frame cache verification enabled.</value>
@@ -1418,366 +1170,275 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
   <data name="LcdMod_ChatCommand_StyleCache_Disabled_Message" xml:space="preserve">
     <value>Style cache disabled; views reload styles from disk.</value>
   </data>
-  <data name="LcdMod_ChatCommand_HotReload_Enabled_Message" xml:space="preserve">
-    <value>View hot reload enabled; rebuilt {0} of {1} views.</value>
-  </data>
   <data name="LcdMod_ChatCommand_HotReload_Disabled_Message" xml:space="preserve">
     <value>View hot reload disabled.</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Enabled_Message" xml:space="preserve">
-    <value>VisibleClip mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modo VisibleClip activado.</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Disabled_Message" xml:space="preserve">
-    <value>VisibleClip mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modo VisibleClip desactivado.</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_Cleared_Message_Format" xml:space="preserve">
-    <value>FTUE tip {0} cleared.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Consejo FTUE {0} restablecido.</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_NotFound_Message_Format" xml:space="preserve">
-    <value>FTUE tip {0} was not found. Try:&#10;{1}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No se encontró el consejo FTUE {0}. Intenta con:&#10;{1}</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_NoneFound_Message" xml:space="preserve">
-    <value>No completed FTUE tips were found.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No se encontraron consejos FTUE completados.</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Title" xml:space="preserve">
-    <value>Available commands</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Comandos disponibles</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Subtitle" xml:space="preserve">
-    <value>List of all available chat commands</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Lista de todos los comandos de chat disponibles</value>
   </data>
   <data name="LcdMod_DefenseDashboard" xml:space="preserve">
     <value>Panel de defensa</value>
   </data>
   <data name="LcdMod_ButtonPad" xml:space="preserve">
-    <value>Button Pad</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Panel de botones</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionUnavailable" xml:space="preserve">
-    <value>Action unavailable</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Acción no disponible</value>
   </data>
   <data name="LcdMod_ButtonPad_NoCompatibleTarget" xml:space="preserve">
-    <value>No compatible target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No hay un objetivo compatible</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionFailed" xml:space="preserve">
-    <value>Action failed</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>La acción falló</value>
   </data>
   <data name="LcdMod_ButtonPad_Button" xml:space="preserve">
-    <value>Button</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Botón</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonFormat" xml:space="preserve">
-    <value>Button {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Botón {0}</value>
   </data>
   <data name="LcdMod_ButtonPad_Title" xml:space="preserve">
-    <value>Title</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Título</value>
   </data>
   <data name="LcdMod_ButtonPad_TitleHelp" xml:space="preserve">
-    <value>Button title displayed above the icon</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Título del botón que se muestra sobre el icono</value>
   </data>
   <data name="LcdMod_ButtonPad_Apply" xml:space="preserve">
-    <value>Apply</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Aplicar</value>
   </data>
   <data name="LcdMod_ButtonPad_Delete" xml:space="preserve">
-    <value>Delete</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Eliminar</value>
   </data>
   <data name="LcdMod_ButtonPad_SelectTarget" xml:space="preserve">
-    <value>Select Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Seleccionar objetivo</value>
   </data>
   <data name="LcdMod_ButtonPad_SelectAction" xml:space="preserve">
-    <value>Select Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Seleccionar acción</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonColor" xml:space="preserve">
-    <value>Button Color</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Color del botón</value>
   </data>
   <data name="LcdMod_ButtonPad_Color" xml:space="preserve">
     <value>Color</value>
-    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_ButtonPad_ColorHexHelp" xml:space="preserve">
-    <value>Hex color, for example #ff00ff</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Color hexadecimal, por ejemplo #ff00ff</value>
   </data>
   <data name="LcdMod_ButtonPad_InvalidColor" xml:space="preserve">
-    <value>Invalid color. Use #RRGGBB.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Color no válido. Usa #RRGGBB.</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_Title" xml:space="preserve">
-    <value>Pick Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Elegir objetivo</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchTitle" xml:space="preserve">
-    <value>Search Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Buscar objetivo</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchPlaceholder" xml:space="preserve">
-    <value>Search targets</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Buscar objetivos</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchHelp" xml:space="preserve">
-    <value>Filter targets containing this text</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Filtrar los objetivos que contengan este texto</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_NoTargets" xml:space="preserve">
-    <value>No targets</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No hay objetivos</value>
   </data>
   <data name="LcdMod_ButtonPad_NoMatches" xml:space="preserve">
-    <value>No matches</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Sin coincidencias</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_Block" xml:space="preserve">
-    <value>Block</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Bloque</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_Group" xml:space="preserve">
-    <value>Group</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Grupo</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_BlockType" xml:space="preserve">
-    <value>Block Type</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Tipo de bloque</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_BlockSubtype" xml:space="preserve">
-    <value>Block Subtype</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Subtipo de bloque</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchTitle" xml:space="preserve">
-    <value>Search Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Buscar acción</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchPlaceholder" xml:space="preserve">
-    <value>Search actions</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Buscar acciones</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchHelp" xml:space="preserve">
-    <value>Filter actions containing this text</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Filtrar las acciones que contengan este texto</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_NoCompatibleActions" xml:space="preserve">
-    <value>No compatible actions</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No hay acciones compatibles</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Title" xml:space="preserve">
-    <value>Configure Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Configurar acción</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Scroll" xml:space="preserve">
-    <value>Scroll</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Desplazamiento</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_NoParameters" xml:space="preserve">
-    <value>No configurable parameters</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No hay parámetros configurables</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_EnterValue" xml:space="preserve">
-    <value>Enter value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ingresa un valor</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Parameter" xml:space="preserve">
-    <value>Parameter</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Parámetro</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_NumberValue" xml:space="preserve">
-    <value>Number value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Valor numérico</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_TextValue" xml:space="preserve">
-    <value>Text value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Valor de texto</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ColorValue" xml:space="preserve">
-    <value>Color value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Valor de color</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_BooleanMode" xml:space="preserve">
-    <value>Boolean mode</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modo booleano</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ClickAction" xml:space="preserve">
-    <value>Click Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Acción al hacer clic</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_On" xml:space="preserve">
-    <value>On</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Encendido</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Off" xml:space="preserve">
-    <value>Off</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Apagado</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Toggle" xml:space="preserve">
-    <value>Toggle</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Alternar</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Decrease" xml:space="preserve">
-    <value>Decrease</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Reducir</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Increase" xml:space="preserve">
-    <value>Increase</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Aumentar</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Normal" xml:space="preserve">
     <value>Normal</value>
-    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Reversed" xml:space="preserve">
-    <value>Reversed</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Invertido</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_None" xml:space="preserve">
-    <value>None</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ninguno</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ScrollFormat" xml:space="preserve">
-    <value>{0}, Scroll: {1}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0}, desplazamiento: {1}</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCount" xml:space="preserve">
-    <value>Button count</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Número de botones</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCountTooltip" xml:space="preserve">
-    <value>Number of buttons. Values are snapped to complete rows and columns.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Número de botones. Los valores se ajustan para completar filas y columnas.</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCountFormat" xml:space="preserve">
-    <value>{0} buttons ({1} × {2})</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0} botones ({1} × {2})</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonStyle" xml:space="preserve">
-    <value>Button Style</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Estilo de botón</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonStyleTooltip" xml:space="preserve">
-    <value>Visual style used by Button Panel buttons.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Estilo visual de los botones del panel.</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Default" xml:space="preserve">
-    <value>Default</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Predeterminado</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Classic" xml:space="preserve">
-    <value>Classic</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Clásico</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Transparent" xml:space="preserve">
-    <value>Transparent</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Transparente</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Border" xml:space="preserve">
-    <value>Border</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Borde</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Copy" xml:space="preserve">
-    <value>Copy settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Copiar configuración</value>
   </data>
   <data name="LcdMod_SettingsClipboard_CopyTooltip" xml:space="preserve">
-    <value>Copy the selected LCD Mod settings and text-surface display properties into a temporary client-side clipboard.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Copia la configuración de LCD Mod seleccionada y las propiedades de visualización de la superficie de texto a un portapapeles temporal del cliente.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_NoSettings" xml:space="preserve">
-    <value>No LCD Mod settings found for this surface.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No se encontró configuración de LCD Mod para esta superficie.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Copied" xml:space="preserve">
-    <value>Settings copied.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Configuración copiada.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_CopyFailedFormat" xml:space="preserve">
-    <value>Failed to copy settings: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No se pudo copiar la configuración: {0}</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Paste" xml:space="preserve">
-    <value>Paste settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Pegar configuración</value>
   </data>
   <data name="LcdMod_SettingsClipboard_PasteTooltip" xml:space="preserve">
-    <value>Paste compatible LCD Mod settings and text-surface display properties without changing the destination app type.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Pega la configuración compatible de LCD Mod y las propiedades de visualización de la superficie de texto sin cambiar el tipo de app de destino.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_NoCopiedSettings" xml:space="preserve">
-    <value>No copied settings are available for this surface.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No hay configuración copiada disponible para esta superficie.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Pasted" xml:space="preserve">
-    <value>Compatible settings pasted.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Configuración compatible pegada.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_PasteFailedFormat" xml:space="preserve">
-    <value>Failed to paste settings: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No se pudo pegar la configuración: {0}</value>
   </data>
   <data name="LcdMod_DefenseDashboard_ShieldFallback" xml:space="preserve">
-    <value>Shield</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Escudo</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Offline" xml:space="preserve">
-    <value>Offline</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Desconectado</value>
   </data>
   <data name="LcdMod_DefenseDashboard_FullyCharged" xml:space="preserve">
-    <value>Fully charged</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Carga completa</value>
   </data>
   <data name="LcdMod_DefenseDashboard_RechargeInSecondsFormat" xml:space="preserve">
-    <value>Recharge in {0}s</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Recarga en {0} s</value>
   </data>
   <data name="LcdMod_DefenseDashboard_RechargeUnavailable" xml:space="preserve">
-    <value>Recharge unavailable</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Recarga no disponible</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Ready" xml:space="preserve">
-    <value>Ready</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Listo</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Firing" xml:space="preserve">
-    <value>Firing</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Disparando</value>
   </data>
   <data name="LcdMod_DefenseDashboard_NotReady" xml:space="preserve">
-    <value>Not Ready</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>No listo</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Disabled" xml:space="preserve">
-    <value>Disabled</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Desactivado</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ColorHexHelp" xml:space="preserve">
-    <value>Hex color, for example #ff8800</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Color hexadecimal, por ejemplo #ff8800</value>
   </data>
   <data name="LcdMod_SpritePicker_Title" xml:space="preserve">
-    <value>Sprite Picker</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Selector de sprites</value>
   </data>
   <data name="LcdMod_SpritePicker_SelectedFormat" xml:space="preserve">
-    <value>{0} selected</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0} seleccionados</value>
   </data>
   <data name="LcdMod_SpritePicker_MultiSelectHint" xml:space="preserve">
-    <value>Ctrl+click adds a sprite, Shift+click selects a range</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ctrl+clic agrega un sprite, Shift+clic selecciona un rango</value>
   </data>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Mis imágenes</value>
@@ -1795,34 +1456,130 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
     <value>Quitar de la biblioteca</value>
   </data>
   <data name="LcdMod_Common_Button_Apply" xml:space="preserve">
-    <value>Apply</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Aplicar</value>
   </data>
   <data name="LcdMod_CraftDialog_CraftAll" xml:space="preserve">
-    <value>Craft all</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Fabricar todo</value>
   </data>
   <data name="LcdMod_CraftDialog_Amount" xml:space="preserve">
-    <value>Amount</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Cantidad</value>
   </data>
   <data name="LcdMod_PlanetaryMap_RenderSkybox" xml:space="preserve">
     <value>Mostrar el cielo de fondo</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_RenderAtmosphere" xml:space="preserve">
+    <value>Mostrar la atmósfera</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinX" xml:space="preserve">
+    <value>Corte X: inicio (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxX" xml:space="preserve">
+    <value>Corte X: fin (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinY" xml:space="preserve">
+    <value>Corte Y: inicio (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxY" xml:space="preserve">
+    <value>Corte Y: fin (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinZ" xml:space="preserve">
+    <value>Corte Z: inicio (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxZ" xml:space="preserve">
+    <value>Corte Z: fin (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_HighlightMissing" xml:space="preserve">
+    <value>Resaltar bloques faltantes</value>
+  </data>
+  <data name="LcdMod_Integrity_HighlightDamaged" xml:space="preserve">
+    <value>Resaltar bloques dañados</value>
+  </data>
+  <data name="LcdMod_Integrity_View2D_Title" xml:space="preserve">
+    <value>Mapa 2D</value>
+  </data>
+  <data name="LcdMod_Integrity_View2D_Tooltip" xml:space="preserve">
+    <value>Mapa de profundidad visto desde el eje seleccionado. Haz clic para cambiar a la vista 3D.</value>
+  </data>
+  <data name="LcdMod_Integrity_View3D_Title" xml:space="preserve">
+    <value>Vista 3D</value>
+  </data>
+  <data name="LcdMod_Integrity_View3D_Tooltip" xml:space="preserve">
+    <value>La nave en 3D. Arrastra para orbitar y usa la rueda para acercar. Haz clic para volver al mapa 2D.</value>
+  </data>
+  <data name="LcdMod_Integrity_XRayOff_Title" xml:space="preserve">
+    <value>Vista completa</value>
+  </data>
+  <data name="LcdMod_Integrity_XRayOff_Tooltip" xml:space="preserve">
+    <value>La nave tal como está, con los bloques dañados y faltantes resaltados.</value>
+  </data>
+  <data name="LcdMod_Integrity_XRay_Tooltip" xml:space="preserve">
+    <value>Rayos X: estos bloques se ven a través del casco.</value>
+  </data>
+  <data name="LcdMod_Integrity_Legend" xml:space="preserve">
+    <value>Leyenda</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraLocked_Title" xml:space="preserve">
+    <value>Cámara bloqueada</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraLocked_Tooltip" xml:space="preserve">
+    <value>La cámara sigue el eje, la rotación y la escala configurados.</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraFree_Title" xml:space="preserve">
+    <value>Cámara libre</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraFree_Tooltip" xml:space="preserve">
+    <value>La cámara se queda donde la dejaste. Haz clic para volver a la vista configurada.</value>
+  </data>
+  <data name="LcdMod_Integrity_XRay_Combine_Tooltip" xml:space="preserve">
+    <value>Ctrl+clic para combinar capas.</value>
+  </data>
   <data name="LcdMod_StarMap_PlanetInfo" xml:space="preserve">
     <value>Información del planeta</value>
   </data>
+  <data name="LcdMod_StarMap_Loading3DScene" xml:space="preserve">
+    <value>Cargando escena 3D</value>
+  </data>
   <data name="LcdMod_Games_NewGamePrompt" xml:space="preserve">
-    <value>Start a new game? The current game will be lost.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>¿Iniciar una partida nueva? Se perderá la partida actual.</value>
   </data>
   <data name="LcdMod_Games_GameOver" xml:space="preserve">
-    <value>Game Over</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Fin de la partida</value>
   </data>
   <data name="LcdMod_Games_PlayAgain" xml:space="preserve">
-    <value>Play again?</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>¿Jugar otra vez?</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Move" xml:space="preserve">
+    <value>Moverse</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Aim" xml:space="preserve">
+    <value>Apuntar</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Shoot" xml:space="preserve">
+    <value>Disparar</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Use" xml:space="preserve">
+    <value>Usar</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Strafe" xml:space="preserve">
+    <value>Desplazamiento lateral</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Pause" xml:space="preserve">
+    <value>Pausa</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Run" xml:space="preserve">
+    <value>Correr</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Weapon" xml:space="preserve">
+    <value>Arma</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Menu" xml:space="preserve">
+    <value>Menú</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Cursor" xml:space="preserve">
+    <value>Cursor</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Exit" xml:space="preserve">
+    <value>Salir</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerManageInstances" xml:space="preserve">
     <value>Administrar instancias</value>
@@ -1832,5 +1589,194 @@ Esperaremos un momento y luego la reiniciaremos por ti.</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerRemoveInstance" xml:space="preserve">
     <value>Quitar</value>
+  </data>
+  <data name="LcdMod_TargetInfo" xml:space="preserve">
+    <value>Vista del objetivo</value>
+  </data>
+  <data name="LcdMod_TargetInfo_NoTarget" xml:space="preserve">
+    <value>Ningún objetivo fijado</value>
+  </data>
+  <data name="LcdMod_TargetInfo_Lost" xml:space="preserve">
+    <value>Objetivo perdido: último estado conocido</value>
+  </data>
+  <data name="LcdMod_TargetInfo_LossAlert" xml:space="preserve">
+    <value>¡Objetivo perdido!</value>
+  </data>
+  <data name="LcdMod_TargetInfo_Scanning" xml:space="preserve">
+    <value>Escaneando... {0}%</value>
+  </data>
+  <data name="LcdMod_TargetInfo_LockCandidate" xml:space="preserve">
+    <value>Fijar: {0}</value>
+  </data>
+  <data name="LcdMod_ShipClass_Format" xml:space="preserve">
+    <value>Clase {0}</value>
+  </data>
+  <data name="LcdMod_ShipClass_Major" xml:space="preserve">
+    <value>Clase Major {0}</value>
+  </data>
+  <data name="LcdMod_ShipClass_Minor" xml:space="preserve">
+    <value>Clase Minor {0}</value>
+  </data>
+  <data name="LcdMod_Integrity_NoProjector" xml:space="preserve">
+    <value>Ningún proyector seleccionado</value>
+  </data>
+  <data name="LcdMod_Integrity_SnapshotMismatch" xml:space="preserve">
+    <value>La instantánea no coincide con esta cuadrícula</value>
+  </data>
+  <data name="LcdMod_Integrity_Snapshot_Title" xml:space="preserve">
+    <value>Capturar cuadrícula actual</value>
+  </data>
+  <data name="LcdMod_Integrity_Snapshot_Tooltip" xml:space="preserve">
+    <value>Recuerda la cuadrícula tal como está ahora para que la pantalla pueda compararla sin proyector. Los bloques se guardan respecto al bloque de esta pantalla.</value>
+  </data>
+  <data name="LcdMod_Integrity_ClearSnapshot_Title" xml:space="preserve">
+    <value>Borrar instantánea</value>
+  </data>
+  <data name="LcdMod_Integrity_ClearSnapshot_Tooltip" xml:space="preserve">
+    <value>Olvida la cuadrícula que recuerda esta pantalla.</value>
+  </data>
+  <data name="LcdMod_ExternalSensors" xml:space="preserve">
+    <value>Sensores externos</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_ThirdPerson" xml:space="preserve">
+    <value>Tercera persona</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_FirstPerson" xml:space="preserve">
+    <value>Primera persona</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_Camera" xml:space="preserve">
+    <value>Cámara en primera persona</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_NoCameras" xml:space="preserve">
+    <value>No hay cámaras ni torretas operativas: solo se muestra la nave</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_CameraLost" xml:space="preserve">
+    <value>La cámara seleccionada no funciona</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_SwitchView" xml:space="preserve">
+    <value>Cambiar entre tercera y primera persona</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_LockCamera" xml:space="preserve">
+    <value>Volver a fijar la cámara en su vista predeterminada</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic" xml:space="preserve">
+    <value>Estado propio</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_Hits" xml:space="preserve">
+    <value>Impactos</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_Missiles" xml:space="preserve">
+    <value>Misiles entrantes</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_NoSnapshot" xml:space="preserve">
+    <value>Sin instantánea</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_ProjectorBackup" xml:space="preserve">
+    <value>Sin instantánea: comparando con el proyector</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsOrbit_Line1" xml:space="preserve">
+    <value>Arrastra para mirar alrededor de la nave.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsOrbit_Line2" xml:space="preserve">
+    <value>Usa la rueda para acercar o alejar la cámara.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsCameras_Line1" xml:space="preserve">
+    <value>Las otras naves, los asteroides y los misiles enemigos solo se ven mientras una cámara o una torreta los ve.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsCameras_Line2" xml:space="preserve">
+    <value>Las naves aliadas cuya antena te alcanza también comparten sus cámaras.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsFirstPerson_Line1" xml:space="preserve">
+    <value>Pulsa el botón de **vista** arriba a la derecha para mirar a través de una cámara.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsFirstPerson_Line2" xml:space="preserve">
+    <value>Después elige la cámara en la lista **Cámara en primera persona**.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMap3D_Line1" xml:space="preserve">
+    <value>Pulsa **3D** para ver el terreno en 3D.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMap3D_Line2" xml:space="preserve">
+    <value>Las montañas muestran su altura real y puedes acercarte mucho más.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapStreetView_Line1" xml:space="preserve">
+    <value>Arrastra el control de **Street View** sobre el planeta.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapStreetView_Line2" xml:space="preserve">
+    <value>La cámara baja al suelo en ese punto, como espectador.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapRoads_Line1" xml:space="preserve">
+    <value>Pulsa el botón de **carreteras** para mostrarlas u ocultarlas.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapRoads_Line2" xml:space="preserve">
+    <value>Sin ellas el terreno se lee mejor.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView3D_Line1" xml:space="preserve">
+    <value>Pulsa **3D** para ver la nave en 3D.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView3D_Line2" xml:space="preserve">
+    <value>Arrastra para orbitar, usa la rueda para acercar y arrastra con el botón central para desplazar.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView2D_Line1" xml:space="preserve">
+    <value>Pulsa **2D** para ver un mapa plano de la nave.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView2D_Line2" xml:space="preserve">
+    <value>Vuelve a pulsarlo para volver al 3D.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridXRay_Line1" xml:space="preserve">
+    <value>Abre los **rayos X** abajo a la izquierda para ver un tipo de bloque a través del casco.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridXRay_Line2" xml:space="preserve">
+    <value>Mantén **Ctrl** y haz clic para combinar varias capas.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridCameraLock_Line1" xml:space="preserve">
+    <value>Pulsa el **candado** para volver al lado configurado.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridCameraLock_Line2" xml:space="preserve">
+    <value>Púlsalo de nuevo con la cámara bloqueada para elegir otro lado: X, Y o Z.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridLegend_Line1" xml:space="preserve">
+    <value>Pulsa **Info** para ver qué significa cada color.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridLegend_Line2" xml:space="preserve">
+    <value>En 3D también cuenta los bloques que faltan y los dañados.</value>
+  </data>
+  <data name="LcdMod_Ftue_PreviewGridSnapshot_Line1" xml:space="preserve">
+    <value>¿Sin proyector? Pulsa **Capturar cuadrícula actual** mientras la nave está entera.</value>
+  </data>
+  <data name="LcdMod_Ftue_PreviewGridSnapshot_Line2" xml:space="preserve">
+    <value>La pantalla mostrará entonces lo que falta o está dañado respecto a ella.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticSnapshot_Line1" xml:space="preserve">
+    <value>Pulsa **Capturar cuadrícula actual** mientras la nave está entera.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticSnapshot_Line2" xml:space="preserve">
+    <value>Los impactos y bloques perdidos se miden respecto a ella, subcuadrículas incluidas.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticCombat_Line1" xml:space="preserve">
+    <value>Los bloques alcanzados y dañados se ven en rojo, y parpadean mientras te disparan.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticCombat_Line2" xml:space="preserve">
+    <value>Los misiles entrantes se marcan en rojo, con una línea hacia donde se dirigen.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoLock_Line1" xml:space="preserve">
+    <value>Fija un objetivo para inspeccionarlo aquí.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoLock_Line2" xml:space="preserve">
+    <value>La pantalla lo recuerda, así lo que derribes aparece como faltante.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoMemory_Line1" xml:space="preserve">
+    <value>Fijación perdida: este es el objetivo tal como se vio por última vez.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoMemory_Line2" xml:space="preserve">
+    <value>Vuelve a fijarlo para verlo en directo.</value>
+  </data>
+  <data name="LcdMod_Ftue_MediaPlayerVideos_Line1" xml:space="preserve">
+    <value>Añade tus propios vídeos (.mkv o .webm) a {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_MediaPlayerVideos_Line2" xml:space="preserve">
+    <value>Allí un archivo readme explica cómo convertir cualquier vídeo con ffmpeg.</value>
+  </data>
+  <data name="LcdMod_PreparingAutomaticRepair" xml:space="preserve">
+    <value>Preparando reparación automática</value>
   </data>
 </root>

@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/ArthurGamerHD/Adk">
+<Styles xmlns="https://github.com/ArthurGamerHD/AcruxUI">
   <StyleInclude Source="./MultiProgressPanel.xaml" />
   <Style Selector="Border.projector-footer">
     <Setter Property="Background" Value="{DynamicResource surfaceContainerColor}" />

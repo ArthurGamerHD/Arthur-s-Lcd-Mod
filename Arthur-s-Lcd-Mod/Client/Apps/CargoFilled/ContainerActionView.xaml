@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+<Window xmlns="https://github.com/ArthurGamerHD/AcruxUI"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:cargo="using:LcdMod.Client.Apps.CargoFilled"
         xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
         x:Class="LcdMod.Client.Apps.CargoFilled.ContainerActionView"
         x:DataType="cargo:ContainerActionViewModel"
+        Design.DataContext="{x:Static cargo:ContainerActionViewModelPreview.Default}"
         Title="{Binding Title}" Width="480" Height="440" MinWidth="320" MinHeight="260"
         Padding="14 4 14 14">
   <Window.Styles>
-    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Toolkit/Dialogs.xaml" />
   </Window.Styles>
   <Grid RowDefinitions="*,Auto">
     <StackPanel Spacing="10" Width="300" VerticalAlignment="Center" IsVisible="{Binding IsChoosingTransfer}">

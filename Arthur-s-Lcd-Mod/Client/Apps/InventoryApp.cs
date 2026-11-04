@@ -4,11 +4,11 @@ using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using LcdMod.Client.Apps.Inventory;
 using LcdMod.Client.Apps.ViewModel;
 using VRage;
-using Adk.Gui.Extensions;
+using Acrux.Extensions;
 using LcdMod.Client.Apps.Inventory.Crafting;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
@@ -79,8 +79,7 @@ namespace LcdMod.Client.Apps
         {
             if (_nativeViewModel == null) return;
             var mode = PresentationMode;
-            _nativeViewModel.Configure(mode == ItemDisplayMode.Card || mode == ItemDisplayMode.Grid,
-                mode == ItemDisplayMode.Card, mode == ItemDisplayMode.Table, SurfaceFontSize, TextFont,
+            _nativeViewModel.Configure(InventoryLayouts.From(mode),
                 MyTexts.GetString("StoreBlock_Column_Name"), MyTexts.GetString("StoreBlock_Column_Amount"),
                 NativeSortByAmount, NativeSortDescending);
             _nextItems.Clear(); _seen.Clear();

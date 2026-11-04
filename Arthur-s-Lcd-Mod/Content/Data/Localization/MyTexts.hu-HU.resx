@@ -12,9 +12,6 @@
     <data name="LcdMod_Radar_DetectedEntities" xml:space="preserve">
     <value>Észlelt egységek:</value>
   </data>
-    <data name="LcdMod_TopEnergy" xml:space="preserve">
-    <value>Legmagasabb energiafogyasztás</value>
-  </data>
     <data name="LcdMod_EnergyDashboard" xml:space="preserve">
     <value>Energia panel</value>
   </data>
@@ -45,44 +42,14 @@
     <data name="LcdMod_GW_5m" xml:space="preserve">
     <value>5 perc</value>
   </data>
-    <data name="LcdMod_OreScannerRadar" xml:space="preserve">
-    <value>Érckereső radar</value>
-  </data>
-    <data name="LcdMod_OreScanner_Moving" xml:space="preserve">
-    <value>MOZGÁSBAN — szkenner kikapcsolva</value>
-  </data>
-    <data name="LcdMod_OreScanner_Charging" xml:space="preserve">
-    <value>TÖLTÉS {0}s</value>
-  </data>
-    <data name="LcdMod_OreScanner_Scanning" xml:space="preserve">
-    <value>SZKENNELÉS {0}% — kúp pásztázás</value>
-  </data>
     <data name="LcdMod_OreScanner_Clear" xml:space="preserve">
     <value>TISZTA — nincs érc</value>
-  </data>
-    <data name="LcdMod_OreScanner_Signal" xml:space="preserve">
-    <value>JEL {0}%</value>
   </data>
     <data name="LcdMod_OreScanner_Range" xml:space="preserve">
     <value>Hatótáv: {0}</value>
   </data>
-    <data name="LcdMod_OreScanner_NoDetector" xml:space="preserve">
-    <value>NINCS ÉRC DETEKTOR A GRIDEN</value>
-  </data>
-    <data name="LcdMod_OreScanner_MultipleDetectors" xml:space="preserve">
-    <value>TÖBB ÉRCDETEKTOR — csak egyet hagyj meg</value>
-  </data>
-    <data name="LcdMod_OreScanner_ConeAngle" xml:space="preserve">
-    <value>Jeldőlés</value>
-  </data>
-    <data name="LcdMod_OreScanner_TiltLabel" xml:space="preserve">
-    <value>Jeldőlés:   {0}</value>
-  </data>
     <data name="LcdMod_OreScanner_Reference" xml:space="preserve">
     <value>Referenciapilótafülke / irányítóülés</value>
-  </data>
-    <data name="LcdMod_OreScanner_Reference_None" xml:space="preserve">
-    <value>(gravitáció használata)</value>
   </data>
     <data name="LcdMod_Damaged" xml:space="preserve">
     <value>Sérült</value>
@@ -159,29 +126,8 @@
     <data name="LcdMod_NotAvailable" xml:space="preserve">
     <value>Nem elérhető</value>
   </data>
-    <data name="LcdMod_StarMap_Info_Gravity" xml:space="preserve">
-    <value>Gravitáció: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_Radius" xml:space="preserve">
-    <value>Sugár: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_RadiusShort" xml:space="preserve">
-    <value>Sugár: {0}</value>
-  </data>
     <data name="LcdMod_Atmosphere_Short" xml:space="preserve">
     <value>Légkör: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_O2" xml:space="preserve">
-    <value>Oxigén: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_Temperature" xml:space="preserve">
-    <value>Hőmérséklet: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_Wind" xml:space="preserve">
-    <value>Szél: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Label_Temperature" xml:space="preserve">
-    <value>Hőmérséklet</value>
   </data>
     <data name="LcdMod_Chess" xml:space="preserve">
     <value>Sakk</value>
@@ -403,47 +349,14 @@
     <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>nyitott</value>
   </data>
-    <data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
-    <value>Jelenlegi fogyasztás: {0}</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
-    <value>Max. kapacitás: {0}</value>
-  </data>
     <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
     <value>Termelés: {0}</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
-    <value>Napenergia</value>
   </data>
     <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
     <value>Szél</value>
   </data>
-    <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
-    <value>Reaktor</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
-    <value>Hidrogénmotor</value>
-  </data>
     <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
     <value>Akkumulátor</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
-    <value>Energiatermelés</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
-    <value>Energiafogyasztás</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
-    <value>Töltés</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
-    <value>Kisütés</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
-    <value>{0} akkumulátor</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
-    <value>{0} akkumulátor</value>
   </data>
     <data name="LcdMod_Magnification" xml:space="preserve">
     <value>Nagyítás</value>
@@ -505,18 +418,6 @@
     <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
     <value>Nem található összeszerelő</value>
   </data>
-    <data name="LcdMod_Common_Button_Select" xml:space="preserve">
-    <value>Kiválasztás</value>
-  </data>
-    <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
-    <value>Összeszerelők: nincs</value>
-  </data>
-    <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
-    <value>Összeszerelő: {0}</value>
-  </data>
-    <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
-    <value>Összeszerelők: {0} kiválasztva</value>
-  </data>
     <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
     <value>Összeszerelő</value>
   </data>
@@ -576,38 +477,14 @@
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Öntvények</value>
   </data>
-    <data name="LcdMod_InputOutput" xml:space="preserve">
-    <value>Bemenet / Kimenet</value>
-  </data>
-    <data name="LcdMod_InputOutput_Input" xml:space="preserve">
-    <value>Bemenet</value>
-  </data>
-    <data name="LcdMod_InputOutput_Output" xml:space="preserve">
-    <value>Kimenet</value>
-  </data>
     <data name="LcdMod_InputOutput_All" xml:space="preserve">
     <value>Összes</value>
   </data>
     <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
     <value>Üres</value>
   </data>
-  <data name="LcdMod_Cargo_Sort_Quantity" xml:space="preserve">
-    <value>Mennyiseg</value>
-  </data>
-  <data name="LcdMod_Cargo_Sort_Weight" xml:space="preserve">
-    <value>Tomeg</value>
-  </data>
-  <data name="LcdMod_Cargo_Sort_Alphabetical" xml:space="preserve">
-    <value>Abecerend</value>
-  </data>
-  <data name="LcdMod_Cargo_SortDone" xml:space="preserve">
-    <value>Rendezve: {0} targy athelyezve</value>
-  </data>
   <data name="LcdMod_Cargo_SortRequested" xml:space="preserve">
     <value>Rendezes kerve</value>
-  </data>
-  <data name="LcdMod_Cargo_Sorter" xml:space="preserve">
-    <value>Rendezes</value>
   </data>
   <data name="LcdMod_SubGrid" xml:space="preserve">
     <value>Subgrid</value>
@@ -635,15 +512,6 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Next</value>
-  </data>
-  <data name="LcdMod_Cargo_FillWeapons" xml:space="preserve">
-    <value>Fegyverek</value>
-  </data>
-  <data name="LcdMod_Cargo_FillReactors" xml:space="preserve">
-    <value>Reaktorok</value>
-  </data>
-  <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
-    <value>{0} tárgy áthelyezve</value>
   </data>
 <data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
     <value>Képkeret</value>
@@ -679,41 +547,11 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   <data name="LcdMod_CargoActions_Title" xml:space="preserve">
     <value>Rakományműveletek</value>
   </data>
-  <data name="LcdMod_CargoActions_Config" xml:space="preserve">
-    <value>Settings</value>
-  </data>
-  <data name="LcdMod_CargoActions_ShowConfigButton" xml:space="preserve">
-    <value>Beállítások gomb megjelenítése</value>
-  </data>
-  <data name="LcdMod_CargoActions_ShowConfigButton_Tooltip" xml:space="preserve">
-    <value>Megjeleníti vagy elrejti a beállítások gombot ezen a képernyőn.</value>
-  </data>
-  <data name="LcdMod_CargoActions_Sort" xml:space="preserve">
-    <value>Sorting</value>
-  </data>
-  <data name="LcdMod_CargoActions_Uranium" xml:space="preserve">
-    <value>Uranium (kg)</value>
-  </data>
   <data name="LcdMod_CargoActions_Ammo" xml:space="preserve">
     <value>Ammo</value>
   </data>
   <data name="LcdMod_CargoActions_Default" xml:space="preserve">
     <value>Default</value>
-  </data>
-  <data name="LcdMod_CargoActions_GridLarge" xml:space="preserve">
-    <value>Large grid</value>
-  </data>
-  <data name="LcdMod_CargoActions_GridSmall" xml:space="preserve">
-    <value>Small grid</value>
-  </data>
-  <data name="LcdMod_CargoActions_ReactorSmall" xml:space="preserve">
-    <value>Small reactor</value>
-  </data>
-  <data name="LcdMod_CargoActions_ReactorLarge" xml:space="preserve">
-    <value>Large reactor</value>
-  </data>
-  <data name="LcdMod_Cargo_FillRequested" xml:space="preserve">
-    <value>Feltöltés kérve</value>
   </data>
   <data name="LcdMod_CargoActions_ActionDone" xml:space="preserve">
     <value>{0}: {1}</value>
@@ -723,9 +561,6 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   </data>
   <data name="LcdMod_MarketApp_Refresh" xml:space="preserve">
     <value>Refresh</value>
-  </data>
-  <data name="LcdMod_MarketApp_Loading" xml:space="preserve">
-    <value>Requesting market data...</value>
   </data>
   <data name="LcdMod_MarketApp_Empty" xml:space="preserve">
     <value>No valid offers found.</value>
@@ -849,8 +684,7 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
     <value>{0}-en túl csak rádiójelek érzékelhetők.</value>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
-    <value>Drag to orbit the radar camera, middle-drag to pan.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Húzással forgathatod a radarkamerát, középső gombbal húzva eltolhatod.</value>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
     <value>Görgess a radartérkép nagyításához.</value>
@@ -859,44 +693,34 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
     <value>Médialejátszó - (kísérleti)</value>
   </data>
   <data name="LcdMod_Common_Button_Close" xml:space="preserve">
-    <value>Close</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Bezárás</value>
   </data>
   <data name="LcdMod_MediaPlayer_ConfigureVisualizer" xml:space="preserve">
-    <value>Configure visualizer</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Vizualizáló beállítása</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerSettings" xml:space="preserve">
-    <value>Visualizer settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Vizualizáló beállításai</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerInstanceEnabled" xml:space="preserve">
-    <value>Enabled</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Engedélyezve</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerReset" xml:space="preserve">
-    <value>Reset to defaults</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Alapértelmezések visszaállítása</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXml" xml:space="preserve">
-    <value>Export / import XML</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>XML exportálása / importálása</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXmlTitle" xml:space="preserve">
-    <value>Visualizer settings XML</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Vizualizáló beállításainak XML-je</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXmlInvalid" xml:space="preserve">
-    <value>The visualizer settings XML could not be read: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nem sikerült beolvasni a vizualizáló beállításainak XML-jét: {0}</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerSaveUser" xml:space="preserve">
-    <value>Save as my settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Mentés saját beállításként</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerLoadUser" xml:space="preserve">
-    <value>Load my settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Saját beállítások betöltése</value>
   </data>
   <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
     <value>(Szüneteltetve) - {0}</value>
@@ -912,15 +736,6 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   </data>
   <data name="LcdMod_MediaPlayer_SaveQueue" xml:space="preserve">
     <value>Mentés</value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueuePlayedPrefix" xml:space="preserve">
-    <value>lejátszva: </value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueueCurrentPrefix" xml:space="preserve">
-    <value>&gt; </value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueueNextPrefix" xml:space="preserve">
-    <value>következő: </value>
   </data>
   <data name="LcdMod_MediaPlayer_Pick" xml:space="preserve">
     <value>Választás</value>
@@ -992,48 +807,34 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
     <value>Összes lejátszása</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_Delete" xml:space="preserve">
-    <value>Delete</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Törlés</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteLocalAudioTitle" xml:space="preserve">
-    <value>Delete local audio</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Helyi hang törlése</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteLocalAudioPromptFormat" xml:space="preserve">
-    <value>Delete &quot;{0}&quot; from local audio? This cannot be undone.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Törlöd a(z) „{0}&quot; elemet a helyi hangok közül? Ez nem vonható vissza.</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeletePlaylistTitle" xml:space="preserve">
-    <value>Delete playlist</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Lejátszási lista törlése</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeletePlaylistPromptFormat" xml:space="preserve">
-    <value>Delete playlist &quot;{0}&quot;? This cannot be undone.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Törlöd a(z) „{0}&quot; lejátszási listát? Ez nem vonható vissza.</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteFailedFormat" xml:space="preserve">
-    <value>Delete failed: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A törlés nem sikerült: {0}</value>
   </data>
   <data name="LcdMod_MediaPlayer_LocalAudioDeletedFormat" xml:space="preserve">
-    <value>Deleted local audio {0}.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A(z) {0} helyi hang törölve.</value>
   </data>
   <data name="LcdMod_MediaPlayer_PlaylistDeletedFormat" xml:space="preserve">
-    <value>Deleted playlist {0}.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A(z) {0} lejátszási lista törölve.</value>
   </data>
   <data name="LcdMod_FilePicker_PickFile" xml:space="preserve">
     <value>Fájl kiválasztása</value>
   </data>
   <data name="LcdMod_FilePicker_PickFolder" xml:space="preserve">
     <value>Mappa kiválasztása</value>
-  </data>
-  <data name="LcdMod_FilePicker_SearchTitle" xml:space="preserve">
-    <value>Fájl keresése</value>
-  </data>
-  <data name="LcdMod_FilePicker_SearchSubtitle" xml:space="preserve">
-    <value>Fájlok és mappák szűrése az aktuális mappában</value>
   </data>
   <data name="LcdMod_FilePicker_SearchPlaceholder" xml:space="preserve">
     <value>Fájlok keresése</value>
@@ -1074,9 +875,6 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   <data name="LcdMod_RenderScale" xml:space="preserve">
     <value>Renderelési méretarány</value>
   </data>
-  <data name="LcdMod_RaysPerTick" xml:space="preserve">
-    <value>Sugarak tickenként</value>
-  </data>
   <data name="LcdMod_PlanetTextureQuality" xml:space="preserve">
     <value>Bolygótextúra minősége</value>
   </data>
@@ -1100,15 +898,6 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_NoPlanet" xml:space="preserve">
     <value>Nem található bolygó.</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_CartographyNotReady" xml:space="preserve">
-    <value>A bolygótérkép adatai még nem állnak készen.</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_NoColorCubemap" xml:space="preserve">
-    <value>A bolygótérkép textúrái nem érhetők el.</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_NoResult" xml:space="preserve">
-    <value>Nem érkezett bolygótérkép-adat.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_CartographyFailed" xml:space="preserve">
     <value>Ennek a bolygótípusnak a feltérképezése sikertelen.</value>
@@ -1167,6 +956,18 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   <data name="LcdMod_PlanetaryMap_FreeCamera_Tooltip" xml:space="preserve">
     <value>A térképkamerát rögzítve tartja, amíg újra be nem kapcsolod a követést.</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_View2D_Title" xml:space="preserve">
+    <value>2D térkép</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View2D_Tooltip" xml:space="preserve">
+    <value>A földgömb sík vetülete. Kattints a 3D terepnézetre váltáshoz.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View3D_Title" xml:space="preserve">
+    <value>3D terep</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View3D_Tooltip" xml:space="preserve">
+    <value>Terep valódi domborzattal. Húzással mozgathatod, középső gombos húzással forgathatod és döntheted. Kattints a 2D térképhez való visszatéréshez.</value>
+  </data>
   <data name="LcdMod_Gps_DisplayMyGps_Title" xml:space="preserve">
     <value>Saját GPS-ek megjelenítése</value>
   </data>
@@ -1202,12 +1003,6 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   </data>
   <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
     <value>Ismeretlen</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_MapLayerFormat" xml:space="preserve">
-    <value>Térképréteg: {0}</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Válassz műholdas, domborzati, anyag- vagy biom-színeket.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Domborzat</value>
@@ -1282,129 +1077,86 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
     <value>Ugráspont: {0}</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportLocalAudio_Summary" xml:space="preserve">
-    <value>Imports a local WAV file into the audio library.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Helyi WAV-fájl importálása a hangtárba.</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportAudios_Summary" xml:space="preserve">
-    <value>Imports the WAV files listed in audio_import.txt.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Az audio_import.txt fájlban felsorolt WAV-fájlok importálása.</value>
   </data>
   <data name="LcdMod_ChatCommand_PlayAudio_Summary" xml:space="preserve">
-    <value>Plays a local WAV file for the current player.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Helyi WAV-fájl lejátszása az aktuális játékos számára.</value>
   </data>
   <data name="LcdMod_ChatCommand_PlayGameAudio_Summary" xml:space="preserve">
-    <value>Plays a game audio definition by subtype.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A játék egy hangdefiníciójának lejátszása altípus alapján.</value>
   </data>
   <data name="LcdMod_ChatCommand_StreamAudio_Summary" xml:space="preserve">
-    <value>Broadcasts an imported audio asset to LCD media players.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Importált hang sugárzása az LCD médialejátszókra.</value>
   </data>
   <data name="LcdMod_ChatCommand_TestAudio_Summary" xml:space="preserve">
-    <value>Tests referenced game audio files and writes a compatibility report.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A játék által hivatkozott hangfájlok tesztelése és kompatibilitási jelentés írása.</value>
   </data>
   <data name="LcdMod_ChatCommand_TestCartography_Summary" xml:space="preserve">
-    <value>Tests loaded planet cartography definitions and writes diagnostic archives.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A betöltött bolygók térképészeti definícióinak tesztelése és diagnosztikai archívumok írása.</value>
   </data>
   <data name="LcdMod_ChatCommand_Advanced_Summary" xml:space="preserve">
-    <value>Enables or disables advanced terminal tweakables.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A terminál speciális beállításainak be- vagy kikapcsolása.</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles rendering of textures owned by other users.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Más játékosok textúráinak megjelenítését be-, kikapcsolja vagy átváltja.</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles interactive control-boundary debugging.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles debug surface mode.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Az interaktív vezérlők határainak hibakeresését be-, kikapcsolja vagy átváltja.</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles the sprite-count debug overlay.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A spriteszám hibakereső rétegét be-, kikapcsolja vagy átváltja.</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles visible clipping debug overlays.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A látható vágás hibakereső rétegeit be-, kikapcsolja vagy átváltja.</value>
   </data>
   <data name="LcdMod_ChatCommand_TextInput_Summary" xml:space="preserve">
-    <value>Opens a diagnostic text input dialog.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_Profile_Summary" xml:space="preserve">
-    <value>Profiles LCD app rendering for a specified duration or cancels the active profile.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Diagnosztikai szövegbeviteli ablakot nyit meg.</value>
   </data>
   <data name="LcdMod_ChatCommand_FactionColor_Summary" xml:space="preserve">
-    <value>Sets the local player's faction icon color.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Beállítja a helyi játékos frakcióikonjának színét.</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_Summary" xml:space="preserve">
-    <value>Resets completed first-time user experience tips.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Visszaállítja a már megjelent kezdő tippeket.</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Summary" xml:space="preserve">
-    <value>Shows the list of available chat commands.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Megjeleníti az elérhető csevegőparancsok listáját.</value>
   </data>
   <data name="LcdMod_ChatCommand_PreloadTextures_Summary" xml:space="preserve">
-    <value>Preloads block textures as LCD sprites.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Előre betölti a blokkok textúráit LCD-spriteként.</value>
   </data>
   <data name="LcdMod_ChatCommand_RemoveLocalTexture_Summary" xml:space="preserve">
-    <value>Removes an image from your local image library.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Eltávolít egy képet a helyi képtáradból.</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportTextures_Summary" xml:space="preserve">
-    <value>Imports new .png and .dds images from the mod storage folder.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Új .png és .dds képeket importál a mod tárolómappájából.</value>
   </data>
 
   <data name="LcdMod_ChatCommand_Advanced_Enabled_Message" xml:space="preserve">
-    <value>Advanced tweakables mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Speciális beállítások mód bekapcsolva.</value>
   </data>
   <data name="LcdMod_ChatCommand_Advanced_Disabled_Message" xml:space="preserve">
-    <value>Advanced tweakables mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Speciális beállítások mód kikapcsolva.</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Enabled_Message" xml:space="preserve">
-    <value>Rendering textures owned by other users enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Más játékosok textúráinak megjelenítése bekapcsolva.</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Disabled_Message" xml:space="preserve">
-    <value>Rendering textures owned by other users disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Más játékosok textúráinak megjelenítése kikapcsolva.</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Enabled_Message" xml:space="preserve">
-    <value>DebugInteractive mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>DebugInteractive mód bekapcsolva.</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Disabled_Message" xml:space="preserve">
-    <value>DebugInteractive mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Enabled_Message" xml:space="preserve">
-    <value>DebugSurface mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Disabled_Message" xml:space="preserve">
-    <value>DebugSurface mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>DebugInteractive mód kikapcsolva.</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Enabled_Message" xml:space="preserve">
-    <value>SpriteCountDebug mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>SpriteCountDebug mód bekapcsolva.</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Disabled_Message" xml:space="preserve">
-    <value>SpriteCountDebug mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>SpriteCountDebug mód kikapcsolva.</value>
   </data>
   <data name="LcdMod_ChatCommand_VerifyFrameCache_Enabled_Message" xml:space="preserve">
     <value>Frame cache verification enabled.</value>
@@ -1418,366 +1170,275 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   <data name="LcdMod_ChatCommand_StyleCache_Disabled_Message" xml:space="preserve">
     <value>Style cache disabled; views reload styles from disk.</value>
   </data>
-  <data name="LcdMod_ChatCommand_HotReload_Enabled_Message" xml:space="preserve">
-    <value>View hot reload enabled; rebuilt {0} of {1} views.</value>
-  </data>
   <data name="LcdMod_ChatCommand_HotReload_Disabled_Message" xml:space="preserve">
     <value>View hot reload disabled.</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Enabled_Message" xml:space="preserve">
-    <value>VisibleClip mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>VisibleClip mód bekapcsolva.</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Disabled_Message" xml:space="preserve">
-    <value>VisibleClip mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>VisibleClip mód kikapcsolva.</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_Cleared_Message_Format" xml:space="preserve">
-    <value>FTUE tip {0} cleared.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A(z) {0} FTUE tipp visszaállítva.</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_NotFound_Message_Format" xml:space="preserve">
-    <value>FTUE tip {0} was not found. Try:&#10;{1}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A(z) {0} FTUE tipp nem található. Próbáld:&#10;{1}</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_NoneFound_Message" xml:space="preserve">
-    <value>No completed FTUE tips were found.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nem található megjelent FTUE tipp.</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Title" xml:space="preserve">
-    <value>Available commands</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Elérhető parancsok</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Subtitle" xml:space="preserve">
-    <value>List of all available chat commands</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Az összes elérhető csevegőparancs listája</value>
   </data>
   <data name="LcdMod_DefenseDashboard" xml:space="preserve">
     <value>Védelmi irányítópult</value>
   </data>
   <data name="LcdMod_ButtonPad" xml:space="preserve">
-    <value>Button Pad</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Gombpanel</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionUnavailable" xml:space="preserve">
-    <value>Action unavailable</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A művelet nem érhető el</value>
   </data>
   <data name="LcdMod_ButtonPad_NoCompatibleTarget" xml:space="preserve">
-    <value>No compatible target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nincs kompatibilis cél</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionFailed" xml:space="preserve">
-    <value>Action failed</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A művelet sikertelen</value>
   </data>
   <data name="LcdMod_ButtonPad_Button" xml:space="preserve">
-    <value>Button</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Gomb</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonFormat" xml:space="preserve">
-    <value>Button {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0}. gomb</value>
   </data>
   <data name="LcdMod_ButtonPad_Title" xml:space="preserve">
-    <value>Title</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Cím</value>
   </data>
   <data name="LcdMod_ButtonPad_TitleHelp" xml:space="preserve">
-    <value>Button title displayed above the icon</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Az ikon felett megjelenő gombcím</value>
   </data>
   <data name="LcdMod_ButtonPad_Apply" xml:space="preserve">
-    <value>Apply</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Alkalmaz</value>
   </data>
   <data name="LcdMod_ButtonPad_Delete" xml:space="preserve">
-    <value>Delete</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Törlés</value>
   </data>
   <data name="LcdMod_ButtonPad_SelectTarget" xml:space="preserve">
-    <value>Select Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Cél kiválasztása</value>
   </data>
   <data name="LcdMod_ButtonPad_SelectAction" xml:space="preserve">
-    <value>Select Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Művelet kiválasztása</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonColor" xml:space="preserve">
-    <value>Button Color</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Gomb színe</value>
   </data>
   <data name="LcdMod_ButtonPad_Color" xml:space="preserve">
-    <value>Color</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Szín</value>
   </data>
   <data name="LcdMod_ButtonPad_ColorHexHelp" xml:space="preserve">
-    <value>Hex color, for example #ff00ff</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Hex szín, például #ff00ff</value>
   </data>
   <data name="LcdMod_ButtonPad_InvalidColor" xml:space="preserve">
-    <value>Invalid color. Use #RRGGBB.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Érvénytelen szín. Használd a #RRGGBB formát.</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_Title" xml:space="preserve">
-    <value>Pick Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Cél választása</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchTitle" xml:space="preserve">
-    <value>Search Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Cél keresése</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchPlaceholder" xml:space="preserve">
-    <value>Search targets</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Célok keresése</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchHelp" xml:space="preserve">
-    <value>Filter targets containing this text</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A szöveget tartalmazó célok szűrése</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_NoTargets" xml:space="preserve">
-    <value>No targets</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nincsenek célok</value>
   </data>
   <data name="LcdMod_ButtonPad_NoMatches" xml:space="preserve">
-    <value>No matches</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nincs találat</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_Block" xml:space="preserve">
-    <value>Block</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Blokk</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_Group" xml:space="preserve">
-    <value>Group</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Csoport</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_BlockType" xml:space="preserve">
-    <value>Block Type</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Blokktípus</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_BlockSubtype" xml:space="preserve">
-    <value>Block Subtype</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Blokk altípusa</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchTitle" xml:space="preserve">
-    <value>Search Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Művelet keresése</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchPlaceholder" xml:space="preserve">
-    <value>Search actions</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Műveletek keresése</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchHelp" xml:space="preserve">
-    <value>Filter actions containing this text</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A szöveget tartalmazó műveletek szűrése</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_NoCompatibleActions" xml:space="preserve">
-    <value>No compatible actions</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nincs kompatibilis művelet</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Title" xml:space="preserve">
-    <value>Configure Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Művelet beállítása</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Scroll" xml:space="preserve">
-    <value>Scroll</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Görgetés</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_NoParameters" xml:space="preserve">
-    <value>No configurable parameters</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nincsenek beállítható paraméterek</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_EnterValue" xml:space="preserve">
-    <value>Enter value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Add meg az értéket</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Parameter" xml:space="preserve">
-    <value>Parameter</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Paraméter</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_NumberValue" xml:space="preserve">
-    <value>Number value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Számérték</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_TextValue" xml:space="preserve">
-    <value>Text value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Szövegérték</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ColorValue" xml:space="preserve">
-    <value>Color value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Színérték</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_BooleanMode" xml:space="preserve">
-    <value>Boolean mode</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Logikai mód</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ClickAction" xml:space="preserve">
-    <value>Click Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Kattintási művelet</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_On" xml:space="preserve">
-    <value>On</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Be</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Off" xml:space="preserve">
-    <value>Off</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ki</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Toggle" xml:space="preserve">
-    <value>Toggle</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Átváltás</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Decrease" xml:space="preserve">
-    <value>Decrease</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Csökkentés</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Increase" xml:space="preserve">
-    <value>Increase</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Növelés</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Normal" xml:space="preserve">
-    <value>Normal</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Normál</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Reversed" xml:space="preserve">
-    <value>Reversed</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Fordított</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_None" xml:space="preserve">
-    <value>None</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nincs</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ScrollFormat" xml:space="preserve">
-    <value>{0}, Scroll: {1}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0}, görgetés: {1}</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCount" xml:space="preserve">
-    <value>Button count</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Gombok száma</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCountTooltip" xml:space="preserve">
-    <value>Number of buttons. Values are snapped to complete rows and columns.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A gombok száma. Az értékek teljes sorokra és oszlopokra kerekítődnek.</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCountFormat" xml:space="preserve">
-    <value>{0} buttons ({1} × {2})</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0} gomb ({1} × {2})</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonStyle" xml:space="preserve">
-    <value>Button Style</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Gombstílus</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonStyleTooltip" xml:space="preserve">
-    <value>Visual style used by Button Panel buttons.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A gombpanel gombjainak megjelenése.</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Default" xml:space="preserve">
-    <value>Default</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Alapértelmezett</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Classic" xml:space="preserve">
-    <value>Classic</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Klasszikus</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Transparent" xml:space="preserve">
-    <value>Transparent</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Átlátszó</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Border" xml:space="preserve">
-    <value>Border</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Keret</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Copy" xml:space="preserve">
-    <value>Copy settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Beállítások másolása</value>
   </data>
   <data name="LcdMod_SettingsClipboard_CopyTooltip" xml:space="preserve">
-    <value>Copy the selected LCD Mod settings and text-surface display properties into a temporary client-side clipboard.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>A kiválasztott LCD Mod beállításokat és a szövegfelület megjelenítési tulajdonságait egy ideiglenes, kliensoldali vágólapra másolja.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_NoSettings" xml:space="preserve">
-    <value>No LCD Mod settings found for this surface.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ehhez a felülethez nem található LCD Mod beállítás.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Copied" xml:space="preserve">
-    <value>Settings copied.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Beállítások másolva.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_CopyFailedFormat" xml:space="preserve">
-    <value>Failed to copy settings: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nem sikerült másolni a beállításokat: {0}</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Paste" xml:space="preserve">
-    <value>Paste settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Beállítások beillesztése</value>
   </data>
   <data name="LcdMod_SettingsClipboard_PasteTooltip" xml:space="preserve">
-    <value>Paste compatible LCD Mod settings and text-surface display properties without changing the destination app type.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Beilleszti a kompatibilis LCD Mod beállításokat és a szövegfelület megjelenítési tulajdonságait a cél alkalmazástípusának módosítása nélkül.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_NoCopiedSettings" xml:space="preserve">
-    <value>No copied settings are available for this surface.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ehhez a felülethez nincs elérhető másolt beállítás.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Pasted" xml:space="preserve">
-    <value>Compatible settings pasted.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Kompatibilis beállítások beillesztve.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_PasteFailedFormat" xml:space="preserve">
-    <value>Failed to paste settings: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nem sikerült beilleszteni a beállításokat: {0}</value>
   </data>
   <data name="LcdMod_DefenseDashboard_ShieldFallback" xml:space="preserve">
-    <value>Shield</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Pajzs</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Offline" xml:space="preserve">
     <value>Offline</value>
-    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_DefenseDashboard_FullyCharged" xml:space="preserve">
-    <value>Fully charged</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Teljesen feltöltve</value>
   </data>
   <data name="LcdMod_DefenseDashboard_RechargeInSecondsFormat" xml:space="preserve">
-    <value>Recharge in {0}s</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Feltöltés {0} mp múlva</value>
   </data>
   <data name="LcdMod_DefenseDashboard_RechargeUnavailable" xml:space="preserve">
-    <value>Recharge unavailable</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Feltöltés nem érhető el</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Ready" xml:space="preserve">
-    <value>Ready</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Kész</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Firing" xml:space="preserve">
-    <value>Firing</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Tüzel</value>
   </data>
   <data name="LcdMod_DefenseDashboard_NotReady" xml:space="preserve">
-    <value>Not Ready</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nem kész</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Disabled" xml:space="preserve">
-    <value>Disabled</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Letiltva</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ColorHexHelp" xml:space="preserve">
-    <value>Hex color, for example #ff8800</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Hex szín, például #ff8800</value>
   </data>
   <data name="LcdMod_SpritePicker_Title" xml:space="preserve">
-    <value>Sprite Picker</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Sprite-választó</value>
   </data>
   <data name="LcdMod_SpritePicker_SelectedFormat" xml:space="preserve">
-    <value>{0} selected</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0} kijelölve</value>
   </data>
   <data name="LcdMod_SpritePicker_MultiSelectHint" xml:space="preserve">
-    <value>Ctrl+click adds a sprite, Shift+click selects a range</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ctrl+kattintás hozzáad egy spriteot, Shift+kattintás tartományt jelöl ki</value>
   </data>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Saját képek</value>
@@ -1795,34 +1456,130 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
     <value>Eltávolítás a könyvtárból</value>
   </data>
   <data name="LcdMod_Common_Button_Apply" xml:space="preserve">
-    <value>Apply</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Alkalmaz</value>
   </data>
   <data name="LcdMod_CraftDialog_CraftAll" xml:space="preserve">
-    <value>Craft all</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Összes gyártása</value>
   </data>
   <data name="LcdMod_CraftDialog_Amount" xml:space="preserve">
-    <value>Amount</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Mennyiség</value>
   </data>
   <data name="LcdMod_PlanetaryMap_RenderSkybox" xml:space="preserve">
     <value>Égboltháttér megjelenítése</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_RenderAtmosphere" xml:space="preserve">
+    <value>Légkör megjelenítése</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinX" xml:space="preserve">
+    <value>Metszet X: eleje (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxX" xml:space="preserve">
+    <value>Metszet X: vége (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinY" xml:space="preserve">
+    <value>Metszet Y: eleje (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxY" xml:space="preserve">
+    <value>Metszet Y: vége (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinZ" xml:space="preserve">
+    <value>Metszet Z: eleje (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxZ" xml:space="preserve">
+    <value>Metszet Z: vége (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_HighlightMissing" xml:space="preserve">
+    <value>Hiányzó blokkok kiemelése</value>
+  </data>
+  <data name="LcdMod_Integrity_HighlightDamaged" xml:space="preserve">
+    <value>Sérült blokkok kiemelése</value>
+  </data>
+  <data name="LcdMod_Integrity_View2D_Title" xml:space="preserve">
+    <value>2D térkép</value>
+  </data>
+  <data name="LcdMod_Integrity_View2D_Tooltip" xml:space="preserve">
+    <value>Mélységtérkép a kiválasztott tengely felől. Kattints a 3D nézetre váltáshoz.</value>
+  </data>
+  <data name="LcdMod_Integrity_View3D_Title" xml:space="preserve">
+    <value>3D nézet</value>
+  </data>
+  <data name="LcdMod_Integrity_View3D_Tooltip" xml:space="preserve">
+    <value>A hajó 3D-ben. Húzással körbeforgathatod, görgővel nagyíthatsz. Kattints a 2D térképhez való visszatéréshez.</value>
+  </data>
+  <data name="LcdMod_Integrity_XRayOff_Title" xml:space="preserve">
+    <value>Teljes nézet</value>
+  </data>
+  <data name="LcdMod_Integrity_XRayOff_Tooltip" xml:space="preserve">
+    <value>A hajó úgy, ahogy van, kiemelt sérült és hiányzó blokkokkal.</value>
+  </data>
+  <data name="LcdMod_Integrity_XRay_Tooltip" xml:space="preserve">
+    <value>Röntgen: ezek a blokkok a hajótesten át látszanak.</value>
+  </data>
+  <data name="LcdMod_Integrity_Legend" xml:space="preserve">
+    <value>Jelmagyarázat</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraLocked_Title" xml:space="preserve">
+    <value>Zárolt kamera</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraLocked_Tooltip" xml:space="preserve">
+    <value>A kamera a beállított tengelyt, forgatást és méretarányt követi.</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraFree_Title" xml:space="preserve">
+    <value>Szabad kamera</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraFree_Tooltip" xml:space="preserve">
+    <value>A kamera ott marad, ahol hagytad. Kattints a beállított nézethez való visszatéréshez.</value>
+  </data>
+  <data name="LcdMod_Integrity_XRay_Combine_Tooltip" xml:space="preserve">
+    <value>Ctrl+kattintás a rétegek kombinálásához.</value>
+  </data>
   <data name="LcdMod_StarMap_PlanetInfo" xml:space="preserve">
     <value>Bolygóinformációk</value>
   </data>
+  <data name="LcdMod_StarMap_Loading3DScene" xml:space="preserve">
+    <value>3D-jelenet betöltése</value>
+  </data>
   <data name="LcdMod_Games_NewGamePrompt" xml:space="preserve">
-    <value>Start a new game? The current game will be lost.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Új játékot kezdesz? Az aktuális játék elvész.</value>
   </data>
   <data name="LcdMod_Games_GameOver" xml:space="preserve">
-    <value>Game Over</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Vége a játéknak</value>
   </data>
   <data name="LcdMod_Games_PlayAgain" xml:space="preserve">
-    <value>Play again?</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Újra játszol?</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Move" xml:space="preserve">
+    <value>Mozgás</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Aim" xml:space="preserve">
+    <value>Célzás</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Shoot" xml:space="preserve">
+    <value>Lövés</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Use" xml:space="preserve">
+    <value>Használat</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Strafe" xml:space="preserve">
+    <value>Oldalazás</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Pause" xml:space="preserve">
+    <value>Szünet</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Run" xml:space="preserve">
+    <value>Futás</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Weapon" xml:space="preserve">
+    <value>Fegyver</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Menu" xml:space="preserve">
+    <value>Menü</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Cursor" xml:space="preserve">
+    <value>Kurzor</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Exit" xml:space="preserve">
+    <value>Kilépés</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerManageInstances" xml:space="preserve">
     <value>Példányok kezelése</value>
@@ -1832,5 +1589,194 @@ Várunk egy kicsit, majd újraindítjuk helyetted.</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerRemoveInstance" xml:space="preserve">
     <value>Eltávolítás</value>
+  </data>
+  <data name="LcdMod_TargetInfo" xml:space="preserve">
+    <value>Célpontnézet</value>
+  </data>
+  <data name="LcdMod_TargetInfo_NoTarget" xml:space="preserve">
+    <value>Nincs befogott célpont</value>
+  </data>
+  <data name="LcdMod_TargetInfo_Lost" xml:space="preserve">
+    <value>Célpont elveszett: utolsó ismert állapot</value>
+  </data>
+  <data name="LcdMod_TargetInfo_LossAlert" xml:space="preserve">
+    <value>Célpont elveszett!</value>
+  </data>
+  <data name="LcdMod_TargetInfo_Scanning" xml:space="preserve">
+    <value>Pásztázás... {0}%</value>
+  </data>
+  <data name="LcdMod_TargetInfo_LockCandidate" xml:space="preserve">
+    <value>Befogás: {0}</value>
+  </data>
+  <data name="LcdMod_ShipClass_Format" xml:space="preserve">
+    <value>{0} osztály</value>
+  </data>
+  <data name="LcdMod_ShipClass_Major" xml:space="preserve">
+    <value>Major {0} osztály</value>
+  </data>
+  <data name="LcdMod_ShipClass_Minor" xml:space="preserve">
+    <value>Minor {0} osztály</value>
+  </data>
+  <data name="LcdMod_Integrity_NoProjector" xml:space="preserve">
+    <value>Nincs kiválasztott projektor</value>
+  </data>
+  <data name="LcdMod_Integrity_SnapshotMismatch" xml:space="preserve">
+    <value>A pillanatkép nem illik ehhez a rácshoz</value>
+  </data>
+  <data name="LcdMod_Integrity_Snapshot_Title" xml:space="preserve">
+    <value>Jelenlegi rács rögzítése</value>
+  </data>
+  <data name="LcdMod_Integrity_Snapshot_Tooltip" xml:space="preserve">
+    <value>Megjegyzi a rácsot a jelenlegi állapotában, hogy a képernyő projektor nélkül is összehasonlíthassa vele. A blokkok ennek a képernyőnek a blokkjához viszonyítva tárolódnak.</value>
+  </data>
+  <data name="LcdMod_Integrity_ClearSnapshot_Title" xml:space="preserve">
+    <value>Pillanatkép törlése</value>
+  </data>
+  <data name="LcdMod_Integrity_ClearSnapshot_Tooltip" xml:space="preserve">
+    <value>Elfelejti a rácsot, amelyet ez a képernyő megjegyzett.</value>
+  </data>
+  <data name="LcdMod_ExternalSensors" xml:space="preserve">
+    <value>Külső érzékelők</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_ThirdPerson" xml:space="preserve">
+    <value>Külső nézet</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_FirstPerson" xml:space="preserve">
+    <value>Belső nézet</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_Camera" xml:space="preserve">
+    <value>Belső nézet kamerája</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_NoCameras" xml:space="preserve">
+    <value>Nincs működő kamera vagy lövegtorony: csak a hajó látszik</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_CameraLost" xml:space="preserve">
+    <value>A kiválasztott kamera nem működik</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_SwitchView" xml:space="preserve">
+    <value>Váltás külső és belső nézet között</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_LockCamera" xml:space="preserve">
+    <value>Kamera visszaállítása az alapnézetre</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic" xml:space="preserve">
+    <value>Saját állapot</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_Hits" xml:space="preserve">
+    <value>Találatok</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_Missiles" xml:space="preserve">
+    <value>Közeledő rakéták</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_NoSnapshot" xml:space="preserve">
+    <value>Nincs pillanatkép</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_ProjectorBackup" xml:space="preserve">
+    <value>Nincs pillanatkép: összehasonlítás a projektorral</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsOrbit_Line1" xml:space="preserve">
+    <value>Húzással körülnézhetsz a hajó körül.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsOrbit_Line2" xml:space="preserve">
+    <value>Görgetéssel közelebb vagy távolabb viheted a kamerát.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsCameras_Line1" xml:space="preserve">
+    <value>A többi hajó, az aszteroidák és az ellenséges rakéták csak akkor látszanak, ha egy kamera vagy lövegtorony látja őket.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsCameras_Line2" xml:space="preserve">
+    <value>A szövetséges hajók, amelyek antennája elér, a kameráikat is megosztják.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsFirstPerson_Line1" xml:space="preserve">
+    <value>Nyomd meg a jobb felső **nézet** gombot, hogy egy kamerán át nézz.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsFirstPerson_Line2" xml:space="preserve">
+    <value>Utána válaszd ki a kamerát a(z) **Belső nézet kamerája** listában.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMap3D_Line1" xml:space="preserve">
+    <value>Nyomd meg a **3D** gombot a terep 3D-s nézetéhez.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMap3D_Line2" xml:space="preserve">
+    <value>A hegyláncok valódi magasságukban látszanak, és sokkal közelebb nagyíthatsz.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapStreetView_Line1" xml:space="preserve">
+    <value>Húzd a **Street View** fogantyút a bolygóra.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapStreetView_Line2" xml:space="preserve">
+    <value>A kamera ott a földre ereszkedik nézőként.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapRoads_Line1" xml:space="preserve">
+    <value>Nyomd meg az **utak** gombot az utak megjelenítéséhez vagy elrejtéséhez.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapRoads_Line2" xml:space="preserve">
+    <value>Nélkülük a terep könnyebben olvasható.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView3D_Line1" xml:space="preserve">
+    <value>Nyomd meg a **3D** gombot a hajó 3D-s nézetéhez.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView3D_Line2" xml:space="preserve">
+    <value>Húzással forgatsz, görgetéssel nagyítasz, középső gombbal húzva mozgatsz.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView2D_Line1" xml:space="preserve">
+    <value>Nyomd meg a **2D** gombot a hajó sík térképéhez.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView2D_Line2" xml:space="preserve">
+    <value>Nyomd meg újra, hogy visszatérj a 3D-hez.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridXRay_Line1" xml:space="preserve">
+    <value>Nyisd meg a bal alsó **röntgent**, hogy egy blokktípust lásd a hajótesten át.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridXRay_Line2" xml:space="preserve">
+    <value>Tartsd lenyomva a **Ctrl**-t és kattints több réteg együttes megjelenítéséhez.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridCameraLock_Line1" xml:space="preserve">
+    <value>Nyomd meg a **lakatot**, hogy visszatérj a beállított oldalhoz.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridCameraLock_Line2" xml:space="preserve">
+    <value>Zárolt állapotban nyomd meg újra egy másik oldal választásához: X, Y vagy Z.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridLegend_Line1" xml:space="preserve">
+    <value>Nyomd meg az **Info** gombot, hogy lásd, mit jelentenek a színek.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridLegend_Line2" xml:space="preserve">
+    <value>3D-ben a hiányzó és sérült blokkokat is megszámolja.</value>
+  </data>
+  <data name="LcdMod_Ftue_PreviewGridSnapshot_Line1" xml:space="preserve">
+    <value>Nincs projektor? Nyomd meg a **Jelenlegi rács rögzítése** gombot, amíg a hajó ép.</value>
+  </data>
+  <data name="LcdMod_Ftue_PreviewGridSnapshot_Line2" xml:space="preserve">
+    <value>A képernyő ezután megmutatja, mi hiányzik vagy sérült hozzá képest.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticSnapshot_Line1" xml:space="preserve">
+    <value>Nyomd meg a **Jelenlegi rács rögzítése** gombot, amíg a hajó ép.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticSnapshot_Line2" xml:space="preserve">
+    <value>A találatokat és elveszett blokkokat ehhez méri, az alrácsokat is beleértve.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticCombat_Line1" xml:space="preserve">
+    <value>A találatot kapott és sérült blokkok pirosak, és villognak, amíg tűz alatt vagy.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticCombat_Line2" xml:space="preserve">
+    <value>A közeledő rakéták pirossal jelöltek, egy vonallal a céljuk felé.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoLock_Line1" xml:space="preserve">
+    <value>Fogj be egy rácsot, hogy itt megvizsgáld.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoLock_Line2" xml:space="preserve">
+    <value>A képernyő megjegyzi, így amit lelősz, hiányzóként látszik.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoMemory_Line1" xml:space="preserve">
+    <value>Befogás elveszett: ez a célpont utoljára látott állapota.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoMemory_Line2" xml:space="preserve">
+    <value>Fogd be újra, hogy élőben lásd.</value>
+  </data>
+  <data name="LcdMod_Ftue_MediaPlayerVideos_Line1" xml:space="preserve">
+    <value>Tedd a saját videóidat (.mkv vagy .webm) ide: {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_MediaPlayerVideos_Line2" xml:space="preserve">
+    <value>Az ottani readme leírja, hogyan alakíts át bármilyen videót ffmpeggel.</value>
+  </data>
+  <data name="LcdMod_PreparingAutomaticRepair" xml:space="preserve">
+    <value>Automatikus javítás előkészítése</value>
   </data>
 </root>

@@ -4,28 +4,57 @@ using LcdMod.Client.Apps.Controls;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Modules.Defense;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.DefenseDashboard
 {
+    /// <summary>What the defense view model reads from its app (<see cref="DefenseDashboardApp"/>; a design-time host in the preview).</summary>
+    internal interface IDefenseDashboardHost
+    {
+        IReadOnlyList<ShieldInfo> NativeShields { get; }
+        IReadOnlyList<DefenseDashboardApp.WeaponAggregate> NativeWeapons { get; }
+        Color NativeCardColor { get; }
+        Color NativeAccentColor { get; }
+        Color NativeWarningColor { get; }
+        Color NativeErrorColor { get; }
+        Color NativeForegroundColor { get; }
+        Color NativeMutedColor { get; }
+        Color NativeSuccessColor { get; }
+        Color NativeTrackColor { get; }
+        string NativeTextFont { get; }
+        float SurfaceFontSize { get; }
+    }
+
+    [PreviewWith("Weapons.TrackColor", "#1C1A1C")]
+    [PreviewWith("Weapons.ShadowColor", "#0C060D")]
+    [PreviewWith("Weapons.Foreground", "#C5EDFF")]
+    [PreviewWith("Weapons.CardColor", "#3A203F")]
+    [PreviewWith("Shields.TrackColor", "#1C1A1C")]
+    [PreviewWith("Shields.ShadowColor", "#0C060D")]
+    [PreviewWith("Shields.Foreground", "#C5EDFF")]
+    [PreviewWith("Shields.CardColor", "#3A203F")]
     internal sealed class DefenseDashboardViewModel : ObservableObject
     {
-        readonly DefenseDashboardApp _app;
+        readonly IDefenseDashboardHost _app;
         readonly List<ShieldStatusEntry> _shields = new List<ShieldStatusEntry>();
         readonly List<WeaponStatusEntry> _weapons = new List<WeaponStatusEntry>();
         readonly Dictionary<string, ShieldStatusEntry> _shieldByKey = new Dictionary<string, ShieldStatusEntry>(StringComparer.Ordinal);
         readonly Dictionary<string, WeaponStatusEntry> _weaponByKey = new Dictionary<string, WeaponStatusEntry>(StringComparer.OrdinalIgnoreCase);
         readonly HashSet<string> _shieldKeys = new HashSet<string>(StringComparer.Ordinal);
 
-        public DefenseDashboardViewModel(DefenseDashboardApp app)
+        public DefenseDashboardViewModel(IDefenseDashboardHost app)
         {
             _app = app;
         }
 
+        [PreviewWith(1)]
         public IReadOnlyList<ShieldStatusEntry> Shields => _shields;
+        [PreviewWith(3)]
         public IReadOnlyList<WeaponStatusEntry> Weapons => _weapons;
+        [PreviewWith(true)]
         public bool HasShields => _shields.Count > 0;
+        [PreviewWith(true)]
         public bool HasWeapons => _weapons.Count > 0;
 
         public void Refresh()
@@ -91,7 +120,7 @@ namespace LcdMod.Client.Apps.DefenseDashboard
         public readonly float FontSize;
         public readonly string Font;
 
-        public DefensePalette(DefenseDashboardApp app)
+        public DefensePalette(IDefenseDashboardHost app)
         {
             Card = app.NativeCardColor;
             Shadow = Card.MulValue(.2f);
@@ -151,18 +180,29 @@ namespace LcdMod.Client.Apps.DefenseDashboard
         float _chargeFontSize;
         float _deltaFontSize;
 
+        [PreviewWith("Defense Shields")]
         public string Title => _title;
+        [PreviewWith("64.0 kHP / 100.0 kHP")]
         public string ChargeText => _chargeText;
+        [PreviewWith("+1.8 kHP/s")]
         public string DeltaText => _deltaText;
+        [PreviewWith("White-Bold")]
         public string ChargeFont => _chargeFont;
+        [PreviewWith(230.4f)]
         public float Sweep => _sweep;
         public float GhostSweep => _ghostSweep;
         public bool HasGhost => _hasGhost;
+        [PreviewWith("#D1B1D7")]
         public Color StatusColor => _statusColor;
+        [PreviewWith("#363436")]
         public Color GhostColor => _ghostColor;
+        [PreviewWith("#81C784")]
         public Color DeltaColor => _deltaColor;
+        [PreviewWith(0.5f)]
         public float TitleFontSize => _titleFontSize;
+        [PreviewWith(0.78f)]
         public float ChargeFontSize => _chargeFontSize;
+        [PreviewWith(0.48f)]
         public float DeltaFontSize => _deltaFontSize;
 
         public void Update(ShieldInfo shield, DefensePalette palette)
@@ -277,11 +317,16 @@ namespace LcdMod.Client.Apps.DefenseDashboard
         float _total;
         float _titleFontSize;
 
+        [PreviewWith("Gatling Turret", "Artillery Turret", "Assault Cannon Turret")]
         public string Title => _title;
+        [PreviewWith("MyObjectBuilder_LargeGatlingTurret/LargeGatlingTurretReskin", "MyObjectBuilder_LargeMissileTurret/LargeCalibreTurret", "MyObjectBuilder_LargeMissileTurret/LargeBlockMediumCalibreTurret")]
         public string Icon => _icon;
+        [PreviewWith(2)]
         public IReadOnlyList<WeaponStatusRow> Rows => _rows;
         public IReadOnlyList<BarSegment> Segments => _segments;
+        [PreviewWith(6f, 4f, 2f)]
         public float Total => _total;
+        [PreviewWith(0.56f)]
         public float TitleFontSize => _titleFontSize;
 
         public void Update(DefenseDashboardApp.WeaponAggregate weapon, DefensePalette palette)
@@ -343,9 +388,13 @@ namespace LcdMod.Client.Apps.DefenseDashboard
         Color _foreground;
         float _fontSize;
 
+        [PreviewWith("(4) Ready", "(2) Firing")]
         public string Text => _text;
+        [PreviewWith("#81C784", "#D1B1D7")]
         public Color DotColor => _dotColor;
+        [PreviewWith("#C5EDFF")]
         public Color Foreground => _foreground;
+        [PreviewWith(0.5f)]
         public float FontSize => _fontSize;
 
         public void Update(string text, Color dot, Color foreground, float fontSize)

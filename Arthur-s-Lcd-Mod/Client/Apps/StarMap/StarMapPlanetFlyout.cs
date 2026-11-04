@@ -1,5 +1,5 @@
-using Adk.Gui.Controls.Primitives;
-using Adk.Gui.Core.PropertySystem;
+using Acrux.Controls.Primitives;
+using Acrux.Core.PropertySystem;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.StarMap

@@ -49,11 +49,11 @@ namespace LcdMod.Client.Games.Chess
                 possibleMoves.Clear();
 
                 var cell = GetCell(point) ?? 0;
-                if (cell == 0) // empty cell doesn't move
+                if (cell == 0)
                     continue;
 
                 var color = GetColor(cell);
-                if (currentColor != color) // enemy cell doesn't move
+                if (currentColor != color)
                     continue;
 
                 var type = GetPieceType(cell);
@@ -259,7 +259,6 @@ namespace LcdMod.Client.Games.Chess
                 if (cell == null || GetColor(cell.Value) == color)
                     continue;
 
-                //if (!IsPositionInDanger(current, color, _board)) //(think this is not needed since the simulation already takes care of that)
                 possibleMoves.Add(current);
             }
             

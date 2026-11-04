@@ -9,7 +9,7 @@ using LcdMod.Client.Modules.EyeTracking;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame.Utilities;
@@ -845,7 +845,7 @@ namespace LcdMod.Client.Games.Minesweeper
                     var cell = Region(count++);
                     int index = i;
                     cell.Bounds = _gridCells[i];
-                    cell.Cursor = canClick ? GetCellCursor() : PointerCursor.Default;
+                    cell.Cursor = canClick ? GetCellCursor() : PointerCursor.Arrow;
                     cell.Clicked = canClick ? (Action)(() => ClickCellFromRegion(index)) : null;
                     cell.SecondaryClicked = canClick ? (Action)(() => FlagCellFromRegion(index)) : null;
                 }
@@ -873,7 +873,7 @@ namespace LcdMod.Client.Games.Minesweeper
         {
         }
 
-        public PointerCursor CursorAt(Vector2 position) => PointerCursor.Default;
+        public PointerCursor CursorAt(Vector2 position) => PointerCursor.Arrow;
 
         void ClickCellFromRegion(int index)
         {

@@ -1,37 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:inventory="using:LcdMod.Client.Apps.Inventory"
     x:Class="LcdMod.Client.Apps.Inventory.InventoryView"
-    x:DataType="LcdMod.Client.Apps.Inventory.InventoryViewModel">
+    x:DataType="LcdMod.Client.Apps.Inventory.InventoryViewModel"
+    Design.DataContext="{x:Static inventory:InventoryViewModelPreview.Default}"
+    Layout="{Binding Layout}"
+    Classes="{Binding Layout, Converter={StaticResource EnumClass}}">
   <UserControl.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Inventory.xaml" />
+    <!-- The display mode (the view's class) picks each item's template. -->
+    <Style Selector="UserControl.card inventory|InventoryItemControl">
+      <Setter Property="Tiles" Value="True" />
+      <Setter Property="Cards" Value="True" />
+    </Style>
+    <Style Selector="UserControl.grid inventory|InventoryItemControl">
+      <Setter Property="Tiles" Value="True" />
+    </Style>
+    <Style Selector="UserControl.table inventory|InventoryItemControl">
+      <Setter Property="Table" Value="True" />
+    </Style>
   </UserControl.Styles>
   <Grid RowDefinitions="Auto,*">
-    <Grid Height="{Binding HeaderHeight}" IsVisible="{Binding ShowHeaders}">
+    <Grid x:Name="Header">
       <inventory:InventorySortHeader x:Name="NameSort" Caption="{Binding NameHeader}"
           Active="{Binding SortByName}" Descending="{Binding SortDescending}"
-          Margin="{Binding NameHeaderMargin}" Command="{Binding NameSortCommand}" />
+          Command="{Binding NameSortCommand}" />
       <inventory:InventorySortHeader x:Name="AmountSort" Caption="{Binding AmountHeader}"
           Active="{Binding SortByAmount}" Descending="{Binding SortDescending}"
-          Width="{Binding AmountHeaderWidth}" HorizontalAlignment="Right" IsAmount="True"
+          HorizontalAlignment="Right" IsAmount="True"
           Command="{Binding AmountSortCommand}" />
       <Border Height="1" VerticalAlignment="Bottom" Background="{DynamicResource dividerColor}" />
     </Grid>
     <ScrollViewer x:Name="Scroller" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
-      <ItemsControl ItemsSource="{Binding Items}">
+      <ItemsControl x:Name="ItemList" ItemsSource="{Binding Items}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
-            <WrapPanel ItemWidth="{Binding CellWidth}" ItemHeight="{Binding CellHeight}" />
+            <WrapPanel />
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="inventory:InventoryItemModel">
             <inventory:InventoryItemControl ItemIcon="{Binding Icon}" ItemName="{Binding Name}"
                 Amount="{Binding Amount}" Status="{Binding Status}" Command="{Binding Command}"
-                Tiles="{Binding Tiles}" Cards="{Binding Cards}" Table="{Binding Table}" Odd="{Binding Odd}" />
+                Odd="{Binding Odd}" />
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>

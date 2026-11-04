@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Acrux.Sprites;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
 using LcdMod.Client.Images;
@@ -21,7 +22,6 @@ namespace LcdMod.Client.Helpers
 {
     public static class TextureHelper
     {
-        static readonly HashSet<MyCubeBlockDefinition> HashSet = new HashSet<MyCubeBlockDefinition>();
         const string GENERATED_PREFIX = "NpcMarket_";
 
         static readonly Dictionary<string, string> RegisteredGeneratedTextures =
@@ -95,52 +95,22 @@ namespace LcdMod.Client.Helpers
                 handler();
         }
 
+        // Block icons are registered by the toolkit (Acrux.Sprites.BlockSprites), shared with its other clients.
         public static void ClearBlockIconCache()
         {
-            if (HashSet.Count == 0)
-                return;
-
-            var registeredDefinitions = new List<MyCubeBlockDefinition>(HashSet);
-            HashSet.Clear();
-            for (var i = 0; i < registeredDefinitions.Count; i++)
-            {
-                var definition = registeredDefinitions[i];
-                if (definition != null)
-                    GetOrAddTextureForBlock(definition);
-            }
+            BlockSprites.Refresh();
         }
 
         public static void PreloadAllTextures()
         {
-            var sb = new StringBuilder();
-            var line = new StringBuilder();
-
-            foreach (var myDefinitionBase in MyDefinitionManager.Static.GetAllDefinitions())
-            {
-                var definition = myDefinitionBase as MyCubeBlockDefinition;
-                if (definition != null && !HashSet.Contains(definition))
-                    line.Append(GetOrAddTextureForBlock(definition) + ", ");
-
-                if (line.Length > 160)
-                {
-                    sb.AppendLine(line.ToString());
-                    line.Clear();
-                }
-            }
-
-            sb.AppendLine(line.ToString());
-            var textures = sb.ToString().TrimEnd('\n', ',');
-            LogHelper.LogInfo($"Added new Sprite textures for blocks: {{\n{textures}\n}}");
+            int added = BlockSprites.RegisterAll();
+            LogHelper.LogInfo($"Added {added} new Sprite textures for blocks");
         }
 
         public static string GetOrAddTextureForBlock(MyCubeBlockDefinition definition)
         {
-            if (!HashSet.Add(definition))
-                return definition.Id.ToString();
-
-            var texture = CreateLcdTextureDefinition(definition);
-            MyDefinitionManager.Static.Definitions.AddOrReplaceDefinition(texture);
-            return texture.Id.SubtypeName;
+            string name = definition.Id.ToString();
+            return BlockSprites.Register(name) ?? name;
         }
 
         public static string GetOrAddTextureForPath(string registrationKey, string displayName, string spritePath)
@@ -208,7 +178,6 @@ namespace LcdMod.Client.Helpers
         /// <summary>Forgets registrations so the next session registers its own definitions again.</summary>
         public static void ClearRegistrations()
         {
-            HashSet.Clear();
             RegisteredGeneratedTextures.Clear();
             UnresolvableSprites.Clear();
         }
@@ -218,15 +187,7 @@ namespace LcdMod.Client.Helpers
             if (spriteNames == null)
                 return;
 
-            foreach (var definition in HashSet)
-            {
-                if (definition == null)
-                    continue;
-
-                var spriteName = definition.Id.ToString();
-                if (!string.IsNullOrEmpty(spriteName))
-                    spriteNames.Add(spriteName);
-            }
+            BlockSprites.GetRegistered(spriteNames);
 
             foreach (var texture in RegisteredGeneratedTextures.Values)
                 spriteNames.Add(texture);
@@ -241,11 +202,7 @@ namespace LcdMod.Client.Helpers
 
         public static void GetBlockSpriteNames(List<string> spriteNames)
         {
-            foreach (var definition in HashSet)
-            {
-                if (definition != null)
-                    spriteNames.Add(definition.Id.ToString());
-            }
+            BlockSprites.GetRegistered(spriteNames);
         }
 
         /// <summary>Generated textures as "kind/name" paths from their registration keys ("Prefab:Name" becomes "Prefab/Name").</summary>
@@ -264,28 +221,9 @@ namespace LcdMod.Client.Helpers
 
         public static bool TryGetOrAddTextureForBlockName(string blockDefinitionName, out string textureName)
         {
-            textureName = blockDefinitionName;
-            if (string.IsNullOrEmpty(blockDefinitionName))
-                return false;
-
-            string requestedType;
-            string requestedSubtype;
-            SplitDefinitionName(blockDefinitionName, out requestedType, out requestedSubtype);
-            foreach (var definitionBase in MyDefinitionManager.Static.GetAllDefinitions())
-            {
-                var blockDefinition = definitionBase as MyCubeBlockDefinition;
-                if (blockDefinition == null)
-                    continue;
-
-                if (!string.Equals(blockDefinition.Id.ToString(), blockDefinitionName, StringComparison.Ordinal) &&
-                    !MatchesDefinitionId(blockDefinition, requestedType, requestedSubtype))
-                    continue;
-
-                textureName = GetOrAddTextureForBlock(blockDefinition);
-                return true;
-            }
-
-            return false;
+            string registered = BlockSprites.Register(blockDefinitionName);
+            textureName = registered ?? blockDefinitionName;
+            return registered != null;
         }
 
         public static HashSet<string> BuildSpriteCatalog(IMyTextSurface surface)
@@ -315,33 +253,6 @@ namespace LcdMod.Client.Helpers
                 return ResolveItemSprite(definition, surface);
 
             return ResolveItemSprite(itemType.ToString(), surface, null);
-        }
-
-        static void SplitDefinitionName(string definitionName, out string typeId, out string subtypeId)
-        {
-            typeId = definitionName ?? string.Empty;
-            subtypeId = string.Empty;
-            var slash = typeId.IndexOf('/');
-            if (slash < 0)
-                return;
-
-            subtypeId = slash + 1 < typeId.Length ? typeId.Substring(slash + 1) : string.Empty;
-            typeId = typeId.Substring(0, slash);
-        }
-
-        static bool MatchesDefinitionId(MyCubeBlockDefinition blockDefinition, string typeId, string subtypeId)
-        {
-            if (blockDefinition == null || string.IsNullOrEmpty(typeId))
-                return false;
-
-            var definitionType = blockDefinition.Id.TypeId.ToString();
-            var definitionSubtype = blockDefinition.Id.SubtypeName ?? string.Empty;
-            if (!string.Equals(definitionSubtype, subtypeId ?? string.Empty, StringComparison.Ordinal))
-                return false;
-
-            return string.Equals(definitionType, typeId, StringComparison.Ordinal) ||
-                   string.Equals(definitionType, "MyObjectBuilder_" + typeId, StringComparison.Ordinal) ||
-                   definitionType.EndsWith("." + typeId, StringComparison.Ordinal);
         }
 
         public static string ResolveItemSprite(MyPhysicalItemDefinition definition, IMyTextSurface surface)
@@ -486,21 +397,6 @@ namespace LcdMod.Client.Helpers
 
                 return hash;
             }
-        }
-
-        static MyLCDTextureDefinition CreateLcdTextureDefinition(MyCubeBlockDefinition blockDefinition)
-        {
-            MyLCDTextureDefinition textureDefinition = new MyLCDTextureDefinition
-            {
-                Id = new MyDefinitionId((MyObjectBuilderType)typeof(MyObjectBuilder_LCDTextureDefinition),
-                    blockDefinition.Id.ToString()),
-                Public = false,
-                LocalizationId = blockDefinition.DisplayNameString,
-                SpritePath = blockDefinition.Icons.Length != 0 ? blockDefinition.Icons[0] : string.Empty,
-                Selectable = false
-            };
-
-            return textureDefinition;
         }
     }
 }

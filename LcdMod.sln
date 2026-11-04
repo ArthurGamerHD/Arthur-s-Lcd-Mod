@@ -6,13 +6,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LcdMod.CodeGenerator", "Lcd
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arthur-s-Lcd-Mod.Tests", "Arthur-s-Lcd-Mod.Tests\Arthur-s-Lcd-Mod.Tests.csproj", "{14CA1271-9420-44F7-B3B1-8167F52675C2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adk.Analyzer", "External\Adk\Adk.Analyzer\Adk.Analyzer.csproj", "{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adk.Analyzer", "External\AcruxUI\External\Adk\Adk.Analyzer\Adk.Analyzer.csproj", "{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Adk.Gui", "External\Adk\Adk.Gui\Adk.Gui.shproj", "{5D175573-C301-4CB0-B4B1-88CBE2D6A81E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AcruxUiToolkit", "External\AcruxUI\AcruxUiToolkit\AcruxUiToolkit.csproj", "{3EECE890-ADFC-4A7D-8976-CBD102DC9529}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Adk.Gui.Lcd", "External\Adk\Adk.Gui.Lcd\Adk.Gui.Lcd.shproj", "{0B94A9EF-926C-4D88-BC49-9AF4E52BED6C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Acrux.Generator", "External\AcruxUI\Framework\Acrux.Generator\Acrux.Generator.csproj", "{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Adk.Gui.ScreenSpace", "External\Adk\Adk.Gui.ScreenSpace\Adk.Gui.ScreenSpace.shproj", "{4A8F3D24-0D2C-4D1A-8D71-5FC6A0BE03AA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AcruxPreviewHost", "External\AcruxUI\Tools\AcruxPreviewHost\AcruxPreviewHost.csproj", "{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,16 +45,31 @@ Global
 		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Experimental|x64.Build.0 = Experimental|Any CPU
 		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Release|x64.ActiveCfg = Release|Any CPU
 		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Release|x64.Build.0 = Release|Any CPU
+		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Debug|x64.ActiveCfg = Debug|x64
+		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Debug|x64.Build.0 = Debug|x64
+		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Experimental|x64.ActiveCfg = Release|x64
+		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Experimental|x64.Build.0 = Release|x64
+		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Release|x64.ActiveCfg = Release|x64
+		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Release|x64.Build.0 = Release|x64
+		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Debug|x64.ActiveCfg = Debug|x64
+		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Debug|x64.Build.0 = Debug|x64
+		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Experimental|x64.ActiveCfg = Experimental|x64
+		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Experimental|x64.Build.0 = Experimental|x64
+		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Release|x64.ActiveCfg = Release|x64
+		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Release|x64.Build.0 = Release|x64
+		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Debug|x64.Build.0 = Debug|Any CPU
+		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Experimental|x64.ActiveCfg = Debug|Any CPU
+		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Experimental|x64.Build.0 = Debug|Any CPU
+		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Release|x64.ActiveCfg = Release|Any CPU
+		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		External\Adk\Adk.Audio\Adk.Audio.projitems*{8a3cdcc5-4b55-4d87-a415-698a0e1ff06f}*SharedItemsImports = 13
-		External\Adk\Adk.Compression\Adk.Compression.projitems*{3b928576-fdc2-4d82-9ff5-e65b218d37fb}*SharedItemsImports = 13
-		External\Adk\Adk.Gui\Adk.Gui.projitems*{5d175573-c301-4cb0-b4b1-88cbe2d6a81e}*SharedItemsImports = 13
-		External\Adk\Adk.Gui.Lcd\Adk.Gui.Lcd.projitems*{0b94a9ef-926c-4d88-bc49-9af4e52bed6c}*SharedItemsImports = 13
-		External\Adk\Adk.Gui.ScreenSpace\Adk.Gui.ScreenSpace.projitems*{4a8f3d24-0d2c-4d1a-8d71-5fc6a0be03aa}*SharedItemsImports = 13
-		External\Adk\Adk.Image\Adk.Image.projitems*{87fdc905-a339-4758-885f-0b2b5199f7e7}*SharedItemsImports = 13
+		External\AcruxUI\External\Adk\Adk.Audio\Adk.Audio.projitems*{8a3cdcc5-4b55-4d87-a415-698a0e1ff06f}*SharedItemsImports = 13
+		External\AcruxUI\External\Adk\Adk.Compression\Adk.Compression.projitems*{3b928576-fdc2-4d82-9ff5-e65b218d37fb}*SharedItemsImports = 13
+		External\AcruxUI\External\Adk\Adk.Image\Adk.Image.projitems*{87fdc905-a339-4758-885f-0b2b5199f7e7}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

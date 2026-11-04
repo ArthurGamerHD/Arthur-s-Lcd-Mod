@@ -1,8 +1,8 @@
 using System;
-using Adk.Gui.Core;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Rendering;
+using Acrux.Core;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Rendering;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.IntegrityMonitor
@@ -52,7 +52,7 @@ namespace LcdMod.Client.Apps.IntegrityMonitor
             set { SetValue(MapScaleProperty, value); }
         }
 
-        /// <summary>Grid cells along the longer side before any rotation; keeps the map size stable while it turns.</summary>
+        // Grid cells along the longer side before any rotation; keeps the map size stable while it turns.
         public int FitSide
         {
             get { return GetValue(FitSideProperty); }

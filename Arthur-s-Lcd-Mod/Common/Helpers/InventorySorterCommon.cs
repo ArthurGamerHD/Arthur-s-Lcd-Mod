@@ -148,10 +148,8 @@ namespace LcdMod.Common.Helpers
             return moved;
         }
 
-        /// <summary>
-        /// Distinct item types found across <paramref name="inventories"/>, ordered by the chosen
-        /// criterion. Items are then packed into containers in this order.
-        /// </summary>
+        // Distinct item types found across inventories, ordered by the chosen criterion. Items are then packed into
+        // containers in this order.
         static List<MyItemType> BuildSortedTypeList(List<IMyInventory> inventories, InventorySortMode mode)
         {
             var amounts = new Dictionary<MyItemType, double>();

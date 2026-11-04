@@ -326,7 +326,6 @@ namespace LcdMod.Client.Extensions
                 {
                     result = candidate;
 
-                    // Move closer to the user's preferred value.
                     if (lighter)
                         high = mid;
                     else
@@ -334,7 +333,6 @@ namespace LcdMod.Client.Extensions
                 }
                 else
                 {
-                    // Move farther away from the base/preferred color.
                     if (lighter)
                         low = mid;
                     else

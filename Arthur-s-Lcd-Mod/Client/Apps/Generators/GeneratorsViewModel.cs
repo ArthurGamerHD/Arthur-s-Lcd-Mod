@@ -1,28 +1,51 @@
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Mvvm;
-using Adk.Gui.Styling;
+using Adk.Mvvm;
+using Acrux.Styling;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Generators
 {
+    /// <summary>What the generators view model reads from and asks of its app (<see cref="GeneratorsApp"/>; a design-time host in the preview).</summary>
+    internal interface IGeneratorsHost
+    {
+        bool IsGridDisplay { get; }
+        float SurfaceFontSize { get; }
+        IReadOnlyList<PowerApp.PowerEntry> NativeEntries { get; }
+        string NativeMaxLabel { get; }
+        string NativeCurrentLabel { get; }
+        Color NativeAccentFill { get; }
+        Color NativeHeaderColor { get; }
+        Color NativeErrorColor { get; }
+        Color NativeForeground { get; }
+        bool NativeDrawLines { get; }
+        int RangeTier { get; }
+        void SetRangeTier(int tier);
+    }
+
+    [PreviewWith("Columns", 1)]
+    [PreviewWith("CardHeight", 132f)]
     internal sealed class GeneratorsViewModel : Views.CardGridViewModel
     {
-        readonly GeneratorsApp _app;
+        readonly IGeneratorsHost _app;
         readonly List<GeneratorDisplayEntry> _entries = new List<GeneratorDisplayEntry>();
         readonly Dictionary<string, GeneratorDisplayEntry> _byKey = new Dictionary<string, GeneratorDisplayEntry>();
         int _rangeTier = -1;
         float _fontScale = 1f;
 
-        public GeneratorsViewModel(GeneratorsApp app)
+        public GeneratorsViewModel(IGeneratorsHost app)
         {
             _app = app;
         }
 
+        [PreviewWith(4)]
         public IReadOnlyList<GeneratorDisplayEntry> Entries => _entries;
+        [PreviewWith("Graph Time Window:")]
         public string GraphWindowLabel => LocHelper.GetLoc("LcdMod_GraphWindow") + ":";
+        [PreviewWith(2)]
         public int RangeTier => _rangeTier;
+        [PreviewWith(1f)]
         public float FontScale => _fontScale;
 
         public void SetRangeTier(int tier)
@@ -72,14 +95,22 @@ namespace LcdMod.Client.Apps.Generators
         Vector4 _lineThickness;
 
         public GeneratorDisplayEntry(string key) { Key = key; }
+        [PreviewWith("solar", "wind", "reactor", "engine")]
         public string Key { get; private set; }
+        [PreviewWith("Solar Panels", "Wind Turbines", "Reactors", "Hydrogen Engines")]
         public string Label => _label;
+        [PreviewWith("Max: 3 MW\nCurrent: 1.86 MW\n24 blocks", "Max: 4 MW\nCurrent: 1.4 MW\n10 blocks", "Max: 30 MW\nCurrent: 14.4 MW\n2 blocks", "Max: 5 MW\nCurrent: 0 W\nIdle")]
         public string InfoText => _info;
+        [PreviewWith(0.62f, 0.35f, 0.48f, 0f)]
         public float Usage => _usage;
         public BackgroundBrush UsageBrush => _usageBrush;
+        [PreviewWith("#C5EDFF")]
         public Color TextColor => _textColor;
+        [PreviewWith("#3A203F", "#3A203F", "#3A203F", "#602020")]
         public Color CardBackground => _cardBackground;
+        [PreviewWith("#0C060D", "#0C060D", "#0C060D", "#130606")]
         public Color CardShadow => _cardShadow;
+        [PreviewWith("#C5EDFF")]
         public Color LineColor => _lineColor;
         public Vector4 LineThickness => _lineThickness;
 

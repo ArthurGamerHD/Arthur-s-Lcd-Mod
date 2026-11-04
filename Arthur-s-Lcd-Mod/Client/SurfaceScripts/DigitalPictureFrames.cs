@@ -62,7 +62,6 @@ namespace LcdMod.Client.SurfaceScripts
         DigitalPictureFramesApp _app;
         protected override string DefaultTitle => TITLE;
         public override IApp App => _app;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public List<MyTerminalControlComboBoxItem> GetDisplayModes()
         {
             return PictureFrameDisplayModes;

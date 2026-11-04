@@ -81,7 +81,7 @@ namespace LcdMod.Client.Apps
                 SetVisualizerInstances(MediaVisualizerInstanceSettings.Copy(saved), true);
         }
 
-        /// <summary>Opens the settings as XML in the cockpit text box; the edited text is imported when it closes.</summary>
+        // Opens the settings as XML in the cockpit text box; the edited text is imported when it closes.
         void IVisualizerSettingsHost.EditVisualizerXml()
         {
             var document = new MediaVisualizerSettingsDocument

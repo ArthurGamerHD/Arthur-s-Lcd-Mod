@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+<Window xmlns="https://github.com/ArthurGamerHD/AcruxUI"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:pad="using:LcdMod.Client.Apps.ButtonPad"
         xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
         x:Class="LcdMod.Client.Apps.ButtonPad.ActionPickerView"
         x:DataType="pad:ActionPickerViewModel"
+        Design.DataContext="{x:Static pad:ActionPickerViewModelPreview.Default}"
         Title="{ext:loc LcdMod_ButtonPad_SelectAction}" Width="440" Height="440" MinWidth="330" MinHeight="275"
         Padding="14 4 14 14">
   <Window.Styles>
-    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Toolkit/Dialogs.xaml" />
   </Window.Styles>
   <Grid RowDefinitions="Auto,*">
     <!-- Like the pre-migration compact dialog, a very short screen shows only the list. -->

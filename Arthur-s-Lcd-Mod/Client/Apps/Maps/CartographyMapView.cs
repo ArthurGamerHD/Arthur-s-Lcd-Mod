@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core;
-using Adk.Gui.Core.Input;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Rendering;
+using Acrux.Core;
+using Acrux.Core.Input;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Rendering;
 using Sandbox.ModAPI;
 using VRageMath;
 
@@ -39,9 +39,15 @@ namespace LcdMod.Client.Apps.Maps
         static readonly Color Shadow = new Color(0, 0, 0, 210);
 
         IDynamicTexture _texture;
+        // The texture shown before a resize, kept on screen until the new one has a frame: a fresh generated
+        // texture is empty, and switching to it at once flashes the background.
+        IDynamicTexture _previous;
+        bool _textureHasFrame;
         IDynamicTextureFactory _factory;
         IMapSurface _textureSurface;
         int _paintedVersion = -1;
+        // The newest version a request is painting, so a second frame in flight never repeats it.
+        int _requestedVersion = -1;
         Vector2 _pressPoint;
         bool _dragging;
         Vector2 _middlePressPoint;
@@ -110,15 +116,50 @@ namespace LcdMod.Client.Apps.Maps
             return Surface != null;
         }
 
+        // The view has no pointer-left event: a hover still reported once the pointer is gone is cleared on the next draw.
+        bool _hovering;
+
+        internal override void PointerHovered(Vector2 point)
+        {
+            var hover = Surface as IMapSurfaceHover;
+            Vector2 pixel;
+            if (hover == null || !TryMapToCanvas(point, out pixel))
+                return;
+            _hovering = true;
+            hover.Hover(pixel);
+        }
+
         protected override void DrawSelf(RenderContext context)
         {
             IMapSurface surface = Surface;
+            if (_hovering && !IsPointerOver)
+            {
+                _hovering = false;
+                var hover = surface as IMapSurfaceHover;
+                if (hover != null)
+                    hover.Hover(null);
+            }
             if (surface == null || Bounds.Width <= 0f || Bounds.Height <= 0f)
                 return;
-            if (!EnsureTexture(context, surface))
+            bool ready = EnsureTexture(context, surface);
+            if (ready && _textureHasFrame)
+            {
+                context.DrawTexture(_texture.Source, Bounds, Color.White);
+                DrawMarkers(context);
                 return;
-            context.DrawTexture(_texture.Source, Bounds, Color.White);
-            DrawMarkers(context);
+            }
+            if (_previous != null && _previous.IsAvailable)
+            {
+                context.DrawTexture(_previous.Source, Bounds, Color.White);
+                DrawMarkers(context);
+                context.MarkVolatile();
+                return;
+            }
+            if (ready)
+            {
+                context.DrawTexture(_texture.Source, Bounds, Color.White);
+                DrawMarkers(context);
+            }
         }
 
         bool EnsureTexture(RenderContext context, IMapSurface surface)
@@ -138,7 +179,10 @@ namespace LcdMod.Client.Apps.Maps
             var pendingTexture = _texture as AsyncMapTexture;
             // Finish the accepted frame before resizing; repeated layout changes
             // must not spawn overlapping jobs or throw away work in progress.
-            if (pendingTexture != null && pendingTexture.IsPending && ReferenceEquals(_textureSurface, surface))
+            // A new request may start while one paints (two in flight), but the texture is only replaced once
+            // none is painting into it.
+            if (pendingTexture != null && pendingTexture.IsPending && ReferenceEquals(_textureSurface, surface) &&
+                (pendingTexture.IsFull || _texture.Size != size || !ReferenceEquals(_factory, factory)))
             {
                 context.MarkVolatile();
                 return true;
@@ -146,37 +190,59 @@ namespace LcdMod.Client.Apps.Maps
             if (_texture == null || !_texture.IsAvailable || !ReferenceEquals(_factory, factory) ||
                 !ReferenceEquals(_textureSurface, surface) || _texture.Size != size)
             {
-                Release();
+                bool resize = _texture != null && _texture.IsAvailable && _textureHasFrame &&
+                              ReferenceEquals(_factory, factory) && ReferenceEquals(_textureSurface, surface);
+                ReleasePrevious();
+                if (resize)
+                    _previous = _texture;
+                else
+                    Release();
+                _textureHasFrame = false;
                 _texture = surface is IAsyncMapSurface
                     ? new AsyncMapTexture(size)
                     : factory.Create("CartographyMap", size);
                 _factory = factory;
                 _textureSurface = surface;
                 _paintedVersion = -1;
+                _requestedVersion = -1;
                 created = true;
                 if (_texture != null && _texture.IsAvailable)
                     surface.SetCanvasSize(_texture.Size);
             }
             if (_texture == null || !_texture.IsAvailable)
                 return false;
-            if (_paintedVersion != Version)
+            if (_paintedVersion != Version && _requestedVersion != Version)
             {
                 var asyncTexture = _texture as AsyncMapTexture;
                 if (asyncTexture != null)
                 {
                     int requestedVersion = Version;
-                    asyncTexture.Request((IAsyncMapSurface)surface, published =>
+                    bool accepted = asyncTexture.Request((IAsyncMapSurface)surface, published =>
                     {
                         if (!ReferenceEquals(_texture, asyncTexture))
                             return;
                         if (published)
+                        {
                             _paintedVersion = requestedVersion;
+                            _textureHasFrame = true;
+                            ReleasePrevious();
+                        }
+                        else if (_requestedVersion == requestedVersion)
+                        {
+                            _requestedVersion = -1;
+                        }
                         Invalidate(UiInvalidation.Render);
                     });
+                    if (accepted)
+                        _requestedVersion = requestedVersion;
                     context.MarkVolatile();
                 }
                 else if (_texture.Update(surface.Paint))
+                {
                     _paintedVersion = Version;
+                    _textureHasFrame = true;
+                    ReleasePrevious();
+                }
             }
             if (!created)
                 return true;
@@ -392,10 +458,19 @@ namespace LcdMod.Client.Apps.Maps
             if (_texture != null)
                 _texture.Dispose();
             _texture = null;
+            _textureHasFrame = false;
+        }
+
+        void ReleasePrevious()
+        {
+            if (_previous != null)
+                _previous.Dispose();
+            _previous = null;
         }
 
         public override void Dispose()
         {
+            ReleasePrevious();
             Release();
             base.Dispose();
         }

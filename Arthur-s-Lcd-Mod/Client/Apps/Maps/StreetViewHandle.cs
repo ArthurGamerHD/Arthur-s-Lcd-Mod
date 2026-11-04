@@ -1,8 +1,8 @@
 using System;
-using Adk.Gui.Core;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Rendering;
+using Acrux.Core;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Rendering;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Maps

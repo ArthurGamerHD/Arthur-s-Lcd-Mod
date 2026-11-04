@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using VRage.Game;
+using VRage.Utils;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 using IMyTextSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
@@ -35,10 +36,8 @@ namespace LcdMod.Client.Helpers
             }
         }
 
-        /// <summary>
-        /// Measures UI text with the font resolved by the supplied control's style.
-        /// The string-font overload remains available for non-UI callers such as games.
-        /// </summary>
+        // Measures UI text with the font resolved by the supplied control's style. The string-font overload remains
+        // available for non-UI callers such as games.
         public static Vector2 GetSizeInPixel(string text, ITextStyleProvider styleSource, float fontSize,
             IMyTextSurface surface)
         {
@@ -320,9 +319,6 @@ namespace LcdMod.Client.Helpers
         public static float LineHeight(float scale, IMyTextSurface surface, string font = "White", string probe = "Ag")
             => GetSizeInPixel(probe, font, scale, surface).Y;
 
-        /// <summary>
-        /// Measures a UI line with the font resolved by the supplied control's style.
-        /// </summary>
         public static float LineHeight(float scale, ITextStyleProvider styleSource, IMyTextSurface surface,
             string probe = "Ag")
             => GetSizeInPixel(probe, styleSource, scale, surface).Y;

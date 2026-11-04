@@ -1,15 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using LcdMod.Client.Apps.Maps;
 using LcdMod.Client.Apps.Views;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Helpers;
-using Cartography;
-using Cartography.Maps;
+using Acrux.Cartography;
+using Acrux.Cartography.Maps;
 using LcdMod.Common.Config.Components;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using VRage.Game;
@@ -19,19 +19,12 @@ using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps.StarMap
 {
-    internal interface IStarMapHost : IMapHost
+    internal interface IStarMapHost : IMapHost, IMarkerColors
     {
         StarMapConfigComponent Config { get; }
-        bool IsHud { get; }
         IMyCubeBlock Block { get; }
         string Title { get; }
-        string Font { get; }
-        float FontScale { get; }
-        Color HeaderColor { get; }
-        Color WarningColor { get; }
-        Color ErrorColor { get; }
         Color ForegroundColor { get; }
-        Vector3D LinearVelocity { get; }
         bool HasJumpDrives { get; }
         bool TryGetJumpPoint(PlanetSnapshot planet, double gravityRange, out Vector3D jumpPoint);
         void SyncConfig();
@@ -41,6 +34,7 @@ namespace LcdMod.Client.Apps.StarMap
     {
         string _text = string.Empty;
 
+        [PreviewWith("Radius: 60.0 km", "Gravity: 1.00 g", "Atmosphere: breathable", "Distance: 1.24 Mm")]
         public string Text => _text;
 
         internal void Update(string text)
@@ -67,13 +61,13 @@ namespace LcdMod.Client.Apps.StarMap
             _dismiss = dismiss;
         }
 
-        /// <summary>The planet's centre on the map, normalized to the canvas.</summary>
+        // The planet's centre on the map, normalized to the canvas.
         public Vector2 AnchorCenter { get; private set; }
 
-        /// <summary>The planet's radius on the map, normalized to the canvas width.</summary>
+        // The planet's radius on the map, normalized to the canvas width.
         public float AnchorRadius { get; private set; }
 
-        /// <summary>True when the user picked the planet, so clicking elsewhere dismisses it.</summary>
+        // True when the user picked the planet, so clicking elsewhere dismisses it.
         public bool IsPinned { get; private set; }
 
         internal void Dismiss()
@@ -89,12 +83,19 @@ namespace LcdMod.Client.Apps.StarMap
             IsPinned = pinned;
         }
 
+        [PreviewWith("Earthlike")]
         public string Name => _name;
+        [PreviewWith(4)]
         public IReadOnlyList<StarMapInfoLine> Lines => _lines;
+        [PreviewWith("Create GPS")]
         public string PositionText => _positionText;
+        [PreviewWith("Jump here")]
         public string JumpText => _jumpText;
+        [PreviewWith(true)]
         public bool CanJump => _canJump;
+        [PreviewWith(true)]
         public bool IsVisible => _isVisible;
+        [PreviewWith(true)]
         public bool IsOpen => _isOpen;
         public event Action Opened;
 
@@ -134,18 +135,15 @@ namespace LcdMod.Client.Apps.StarMap
     /// Star Map backported from the standalone Minimap: the orbit (Planetarium) view, or the same renderer driven from
     /// the reference block as a first-person HUD with an artificial horizon on top.
     /// </summary>
+    [PreviewWith("Message.IsVisible", false)]
+    [PreviewWith("IsStarMap", true)]
+    [PreviewWith("IsPlanetary", false)]
+    [PreviewWith("WaterVisible", true)]
     internal sealed class StarMapViewModel : CartographyMapViewModel
     {
-        const float DEFAULT_FOV_DEGREES = 70f;
-        const float LADDER_STEP_RADIANS = .087266445f;
-        const int MAGNIFICATION_VISIBLE_UPDATES = 30;
         const int GPS_CREATED_STATUS_UPDATES = 18;
-        const int RADIO_REFRESH_UPDATES = 6;
-        const float CLUSTER_DISTANCE = 30f;
         const double JUMP_RUNS_PER_SECOND = 6d;
         const double JUMP_DISTANCE_PER_SECOND = 1000000d;
-        const long ALTITUDE_SAMPLE_FRAMES = 60L;
-        const int ALTITUDE_WARNING_UPDATES = 24;
 
         struct JumpThrottle
         {
@@ -155,25 +153,13 @@ namespace LcdMod.Client.Apps.StarMap
         }
 
         readonly IStarMapHost _host;
-        readonly List<IMyGps> _gpsEntries = new List<IMyGps>();
-        readonly List<GpsMarkerProjection> _gpsProjections = new List<GpsMarkerProjection>();
-        readonly List<GpsMarkerCluster> _gpsClusters = new List<GpsMarkerCluster>();
-        readonly List<byte> _gpsConsumed = new List<byte>();
-        readonly RadioSignalMarkerCollector _radioCollector = new RadioSignalMarkerCollector();
-        readonly List<RadioSignalMarker> _radioSignals = new List<RadioSignalMarker>();
-        readonly List<RadioSignalMarkerProjection> _radioProjections = new List<RadioSignalMarkerProjection>();
-        readonly List<RadioSignalMarkerCluster> _radioClusters = new List<RadioSignalMarkerCluster>();
-        readonly List<byte> _radioConsumed = new List<byte>();
+        readonly MapSignalMarkers _signals;
+        readonly MapSignalMarkers.Projector _project;
         readonly Dictionary<long, JumpThrottle> _jumpThrottles = new Dictionary<long, JumpThrottle>();
         readonly List<string> _infoLines = new List<string>();
-        IMyGravityProviderSystem _gravityProvider;
         long _runs;
-        bool _isHud;
-        int _hudVersion;
         long _selectedPlanetId;
         bool _selectionPinned;
-        float _knownFov = float.NaN;
-        long _magnificationUntil = long.MinValue;
         string _gpsCreatedStatus;
         long _gpsCreatedStatusUntil;
         bool _applyingConfig;
@@ -185,16 +171,14 @@ namespace LcdMod.Client.Apps.StarMap
         float _knownZoom = 1f;
         bool _knownLinesHidden;
         bool _knownRenderSkybox = true;
+        bool _knownRenderAtmosphere = true;
         int _knownLayer;
-        int _lastAltitude;
-        long _lastAltitudeFrame = long.MinValue;
-        long _lastAltitudePlanet;
-        int _verticalSpeed;
-        long _altitudeWarningAt = long.MinValue;
 
         public StarMapViewModel(IStarMapHost host) : base(host, MapMode.StarMap)
         {
             _host = host;
+            _signals = new MapSignalMarkers(host);
+            _project = Project;
             SelectedPlanet = new StarMapPlanetInfo(CreatePositionGps, CreateJumpGps, () => _selectionPinned = false);
             SelectedPlanet.Opened += () => PlanetDetailsOpened?.Invoke();
         }
@@ -202,31 +186,20 @@ namespace LcdMod.Client.Apps.StarMap
         public event Action StaticCameraOrbitChanged;
         public event Action PlanetDetailsOpened;
 
-        public StarMapHud Hud { get; } = new StarMapHud();
-        public int HudVersion => _hudVersion;
         public StarMapPlanetInfo SelectedPlanet { get; }
         public StatusMessage Message { get; } = new StatusMessage();
-        public bool IsHud => _isHud;
-        public bool IsPlanetarium => !_isHud;
+        // Changes every tick: the planet flyout follows its planet's label.
+        public int InfoVersion => _infoVersion;
+        int _infoVersion;
 
         public void Tick()
         {
             _runs++;
-            bool hud = _host.IsHud;
-            if (RaiseAndSetIfChanged(ref _isHud, hud, nameof(IsHud)))
-            {
-                RaisePropertyChanged<bool>(nameof(IsPlanetarium));
-                _selectionPinned = false;
-                MarkDirty();
-            }
             ApplyConfig(false);
-            UpdateFixedCamera();
             Update();
             UpdateSelection();
-            UpdateHud();
             UpdateMessage();
-            if (_isHud)
-                Invalidate();
+            RaiseAndSetIfChanged(ref _infoVersion, _infoVersion + 1, nameof(InfoVersion));
         }
 
         public void ApplyConfig(bool force)
@@ -243,6 +216,11 @@ namespace LcdMod.Client.Apps.StarMap
                 if (force || config.RenderSkybox != _knownRenderSkybox)
                 {
                     State.RenderSkybox = config.RenderSkybox;
+                    changed = true;
+                }
+                if (force || config.RenderAtmosphere != _knownRenderAtmosphere)
+                {
+                    State.AtmosphereVisible = config.RenderAtmosphere;
                     changed = true;
                 }
                 if (force || !SameBasis(config.StaticOrbitBasis, _knownBasis) ||
@@ -278,13 +256,6 @@ namespace LcdMod.Client.Apps.StarMap
                         : CartographyLayer.Satellite;
                     changed = true;
                 }
-                if (float.IsNaN(_knownFov) || Math.Abs(config.FoV - _knownFov) > .001f)
-                {
-                    if (!float.IsNaN(_knownFov))
-                        _magnificationUntil = _runs + MAGNIFICATION_VISIBLE_UPDATES;
-                    _knownFov = config.FoV;
-                    changed = true;
-                }
             }
             finally
             {
@@ -306,6 +277,7 @@ namespace LcdMod.Client.Apps.StarMap
             _knownZoom = config.StaticZoom;
             _knownLinesHidden = config.StaticOrbitLinesHidden;
             _knownRenderSkybox = config.RenderSkybox;
+            _knownRenderAtmosphere = config.RenderAtmosphere;
             _knownLayer = config.MapLayer;
         }
 
@@ -335,202 +307,13 @@ namespace LcdMod.Client.Apps.StarMap
             if (!changed)
                 return;
             _host.SyncConfig();
-            if (!_isHud)
-                StaticCameraOrbitChanged?.Invoke();
-        }
-
-        void UpdateFixedCamera()
-        {
-            State.HasFixedStarCamera = _isHud;
-            if (!_isHud)
-                return;
-            MatrixD? reference = _host.ReferenceWorldMatrix;
-            if (reference.HasValue)
-                State.FixedStarCamera = reference.Value;
-            State.FixedStarCameraVerticalFovRadians = MathHelper.ToRadians(FovDegrees);
-        }
-
-        float FovDegrees
-        {
-            get
-            {
-                StarMapConfigComponent config = _host.Config;
-                return config == null || config.FoV <= 0f ? DEFAULT_FOV_DEGREES : config.FoV;
-            }
-        }
-
-        public bool ScrollFov(int delta)
-        {
-            StarMapConfigComponent config = _host.Config;
-            if (config == null)
-                return false;
-            float magnification = Terminal.Controls.Generic.SliderFov.FovToMagnification(config.FoV);
-            float next = Terminal.Controls.Generic.SliderFov.MagnificationToFov(magnification * (delta > 0 ? 1.1f : 1f / 1.1f));
-            if (Math.Abs(next - config.FoV) <= .001f)
-                return false;
-            config.FoV = next;
-            _host.SyncConfig();
-            ApplyConfig(false);
-            ViewChanged();
-            return true;
-        }
-
-        protected override bool HandleScroll(int delta)
-        {
-            return _isHud ? ScrollFov(delta) : base.HandleScroll(delta);
-        }
-
-        protected override bool CanOrbit => !_isHud;
-
-        void UpdateHud()
-        {
-            StarMapHud hud = Hud;
-            hud.Visible = _isHud;
-            hud.Ladder.Clear();
-            hud.HasHorizon = hud.HasAltitude = hud.PullUp = hud.ShowSpeed = hud.BoreSight = hud.HasVelocity = false;
-            hud.Magnification = _isHud && _runs <= _magnificationUntil
-                ? string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "StarMap_MagnificationFormat"),
-                    Math.Tan(MathHelper.ToRadians(DEFAULT_FOV_DEGREES) * .5) / Math.Tan(MathHelper.ToRadians(Math.Max(.1f, FovDegrees)) * .5))
-                : null;
-            hud.VerticalFovRadians = MathHelper.ToRadians(FovDegrees);
-            hud.Color = _host.ForegroundColor;
-            hud.ErrorColor = _host.ErrorColor;
-            hud.Font = _host.Font;
-            hud.FontScale = _host.FontScale;
-            hud.EssentialOnly = SelectedPlanet.IsOpen;
-            MatrixD? reference = _host.ReferenceWorldMatrix;
-            if (_isHud && reference.HasValue && _host.Block != null && _host.Block.CubeGrid != null)
-                BuildInstruments(hud, reference.Value);
-            RaiseAndSetIfChanged(ref _hudVersion, _hudVersion + 1, nameof(HudVersion));
-        }
-
-        void BuildInstruments(StarMapHud hud, MatrixD world)
-        {
-            Vector3D velocity = _host.LinearVelocity;
-            if (Vector3D.Dot(velocity, world.Forward) >= -.1d)
-            {
-                Vector3D direction = velocity;
-                hud.HasVelocity = true;
-                hud.VelocityDirection = velocity.LengthSquared() < 9d || direction.Normalize() <= 1e-6
-                    ? new Vector3(0f, 0f, 1f)
-                    : ToCamera(world, direction);
-            }
-            hud.ShowSpeed = true;
-            hud.Speed = (int)velocity.Length();
-            hud.BoreSight = true;
-
-            Vector3D position = world.Translation;
-            IMyNaturalGravityComponent gravityWell;
-            if (!TryGetGravityWell(position, out gravityWell))
-            {
-                ResetAltitude();
-                return;
-            }
-            Vector3D gravity = gravityWell.Position - position;
-            if (gravity.Normalize() <= 1e-6)
-                return;
-            Vector3D horizonForward = Vector3D.Reject(world.Forward, gravity);
-            if (horizonForward.Normalize() <= 1e-6)
-                return;
-
-            Vector3D gravityRoll = Vector3D.Normalize(Vector3D.Reject(gravity, world.Forward));
-            if (double.IsNaN(gravityRoll.X))
-                gravityRoll = -world.Up;
-            double roll = -(Math.Acos(MathHelper.Clamp((float)Vector3D.Dot(gravityRoll, world.Left), -1f, 1f)) - Math.PI * .5d);
-            if (Vector3D.Dot(gravity, world.Up) >= 0d)
-                roll = Math.PI - roll;
-            double pitch = Math.Acos(MathHelper.Clamp((float)Vector3D.Dot(gravity, world.Forward), -1f, 1f)) - Math.PI * .5d;
-            hud.Roll = (float)roll;
-            hud.HasHorizon = true;
-            hud.HorizonDirection = ToCamera(world, horizonForward);
-
-            int center = (int)Math.Round(pitch / LADDER_STEP_RADIANS);
-            MatrixD level = MatrixD.CreateWorld(position, horizonForward, -gravity);
-            for (int index = center - 5; index <= center + 5; index++)
-            {
-                if (index == 0)
-                    continue;
-                MatrixD step = MatrixD.CreateRotationX(index * LADDER_STEP_RADIANS) * level;
-                hud.Ladder.Add(new HudLadderStep
-                {
-                    Direction = ToCamera(world, step.Forward),
-                    Label = (index > 18 ? 180 - index * 5 : Math.Abs(index * 5)).ToString(FormatingHelper.Culture),
-                    Negative = index < 0
-                });
-            }
-
-            MyPlanet planet = gravityWell as MyPlanet;
-            if (planet == null || planet.MarkedForClose)
-            {
-                ResetAltitude();
-                return;
-            }
-            int altitude = Math.Max(0, (int)Math.Round(Vector3D.Distance(position, planet.GetClosestSurfacePointGlobal(position))));
-            SampleAltitude(altitude, planet.EntityId);
-            hud.HasAltitude = true;
-            hud.Altitude = altitude;
-            hud.VerticalSpeed = _verticalSpeed;
-            double descent = Vector3D.Dot(velocity, gravity);
-            hud.PullUp = descent > 0d && altitude <= Math.Max(50d, descent * 3d) && _runs % 10 > 2;
-        }
-
-        static Vector3 ToCamera(MatrixD world, Vector3D direction)
-        {
-            return new Vector3(
-                (float)Vector3D.Dot(direction, world.Right),
-                (float)Vector3D.Dot(direction, world.Up),
-                (float)Vector3D.Dot(direction, world.Forward));
-        }
-
-        bool TryGetGravityWell(Vector3D position, out IMyNaturalGravityComponent well)
-        {
-            well = null;
-            if (_gravityProvider == null)
-                _gravityProvider = (IMyGravityProviderSystem)MyAPIGateway.Session.GetComponentByInterfaceType<IMyGravityProviderSystem>();
-            if (_gravityProvider == null || !_gravityProvider.IsPositionInNaturalGravity(position))
-                return false;
-            _gravityProvider.GetStrongestNaturalGravityWell(position, out well);
-            return well != null;
-        }
-
-        void SampleAltitude(int altitude, long planetId)
-        {
-            long frame = MyAPIGateway.Session.GameplayFrameCounter;
-            float warningAltitude = 100f;
-            var grid = _host.Block.CubeGrid as MyCubeGrid;
-            if (grid != null)
-                warningAltitude += grid.PositionComp.LocalAABB.Height;
-            if (_lastAltitudeFrame != long.MinValue && _lastAltitude >= warningAltitude && altitude < warningAltitude)
-                _altitudeWarningAt = _runs;
-
-            if (_lastAltitudeFrame == long.MinValue || _lastAltitudePlanet != planetId || frame < _lastAltitudeFrame)
-            {
-                _lastAltitude = altitude;
-                _lastAltitudeFrame = frame;
-                _lastAltitudePlanet = planetId;
-                _verticalSpeed = 0;
-                return;
-            }
-            long elapsed = frame - _lastAltitudeFrame;
-            if (elapsed < ALTITUDE_SAMPLE_FRAMES)
-                return;
-            _verticalSpeed = (int)Math.Round((altitude - _lastAltitude) * 60d / elapsed);
-            _lastAltitude = altitude;
-            _lastAltitudeFrame = frame;
-        }
-
-        void ResetAltitude()
-        {
-            _lastAltitudeFrame = long.MinValue;
-            _verticalSpeed = 0;
+            StaticCameraOrbitChanged?.Invoke();
         }
 
         void UpdateMessage()
         {
             if (Data.Planets.Count == 0)
                 Message.Show(LocHelper.Empty, "Warning", _host.WarningColor);
-            else if (_isHud && _altitudeWarningAt != long.MinValue && _runs - _altitudeWarningAt <= ALTITUDE_WARNING_UPDATES)
-                Message.Show(LocHelper.GetLoc("DisplayName_TSS_ArtificialHorizon_AltitudeWarning"), "Warning", _host.WarningColor);
             else
                 Message.Hide();
         }
@@ -574,8 +357,7 @@ namespace LcdMod.Client.Apps.StarMap
             _selectedPlanetId = planetId;
             _selectionPinned = true;
             Host.PlayClick();
-            if (!_isHud)
-                FocusPlanet(planetId);
+            FocusPlanet(planetId);
             UpdateSelection();
         }
 
@@ -590,13 +372,7 @@ namespace LcdMod.Client.Apps.StarMap
             PlanetSnapshot planet = null;
             if (_selectionPinned)
                 planet = Data.FindPlanet(_selectedPlanetId);
-            if (planet == null && _isHud && HasCanvas)
-            {
-                long planetId;
-                if (TryGetPlanetAt(new Vector2(Canvas.Width * .5f, Canvas.Height * .5f), out planetId))
-                    planet = Data.FindPlanet(planetId);
-            }
-            if (planet == null && !_isHud)
+            if (planet == null)
                 planet = Data.FindPlanet(State.FocusedPlanetId);
             if (planet == null || planet.Planet == null || planet.Planet.MarkedForClose)
             {
@@ -748,7 +524,7 @@ namespace LcdMod.Client.Apps.StarMap
 
         string Property(string name, object value)
         {
-            return string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + name + (_isHud ? "_Short" : string.Empty)), value);
+            return string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + name), value);
         }
 
         static string PlanetName(PlanetSnapshot planet)
@@ -762,8 +538,13 @@ namespace LcdMod.Client.Apps.StarMap
         protected override void CollectMarkers(List<MapMarker> markers)
         {
             CollectPlanetLabels(markers);
-            CollectRadio(markers);
-            CollectGps(markers);
+            _signals.CollectRadio(markers, _host.Config, _host.Block, _project);
+            _signals.CollectGps(markers, _host.Config, _project);
+        }
+
+        bool Project(Vector3D world, out Vector2 pixel)
+        {
+            return TryProjectStar(world, out pixel) && IsInsideCanvas(pixel, 32f);
         }
 
         void CollectPlanetLabels(List<MapMarker> markers)
@@ -774,8 +555,6 @@ namespace LcdMod.Client.Apps.StarMap
             for (int i = 0; i < labels.Count; i++)
             {
                 StarMapLabel label = labels[i];
-                if (_isHud && label.PlanetId != _selectedPlanetId)
-                    continue;
                 PlanetSnapshot planet = Data.FindPlanet(label.PlanetId);
                 if (planet == null)
                     continue;
@@ -788,133 +567,6 @@ namespace LcdMod.Client.Apps.StarMap
                     Color = _host.ForegroundColor,
                     CenterLabel = true
                 });
-            }
-        }
-
-        void CollectGps(List<MapMarker> markers)
-        {
-            StarMapConfigComponent config = _host.Config;
-            var session = MyAPIGateway.Session;
-            if (config == null)
-                return;
-            GpsDisplayWaypoint[] always = config.AlwaysDisplayedGpsWaypoints ?? Array.Empty<GpsDisplayWaypoint>();
-            int[] legacy = config.AlwaysDisplayedGpsHashes ?? Array.Empty<int>();
-            _gpsProjections.Clear();
-            if ((config.DisplayMyGps || legacy.Length != 0) && session.GPS != null && session.Player != null)
-            {
-                _gpsEntries.Clear();
-                session.GPS.GetGpsList(session.Player.IdentityId, _gpsEntries);
-                for (int i = 0; i < _gpsEntries.Count; i++)
-                    if (GpsMarkerLayout.ShouldRenderLiveGps(_gpsEntries[i], config.DisplayMyGps, always, legacy))
-                        AddGps(GpsMarkerLayout.FromGps(_gpsEntries[i]));
-            }
-            for (int i = 0; i < always.Length; i++)
-            {
-                GpsMarker marker;
-                if (GpsMarkerLayout.TryCreateMarker(always[i], out marker))
-                    AddGps(marker);
-            }
-            GpsMarkerLayout.Cluster(_gpsProjections, CLUSTER_DISTANCE, _gpsClusters, _gpsConsumed);
-            for (int i = 0; i < _gpsClusters.Count; i++)
-            {
-                GpsMarkerCluster cluster = _gpsClusters[i];
-                bool isCluster = cluster.Count > 1;
-                Color color = cluster.RepresentativeMarker.Color;
-                color.A = byte.MaxValue;
-                markers.Add(new MapMarker
-                {
-                    Kind = MapMarkerKind.Gps,
-                    Position = cluster.ScreenPosition,
-                    Icon = "WaypointIcon",
-                    Color = color,
-                    Size = isCluster ? 1.35f : 1.4f,
-                    CountText = isCluster ? cluster.Count.ToString() : null,
-                    Label = isCluster
-                        ? string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "Gps_ClusterFormat"), cluster.Count)
-                        : string.IsNullOrWhiteSpace(cluster.RepresentativeMarker.Name)
-                            ? LocHelper.GetLoc(MOD_PREFIX + "Gps_Unnamed")
-                            : cluster.RepresentativeMarker.Name
-                });
-            }
-        }
-
-        void AddGps(GpsMarker marker)
-        {
-            Vector2 pixel;
-            if (TryProjectStar(marker.WorldPosition, out pixel) && IsInsideCanvas(pixel, 32f))
-                _gpsProjections.Add(new GpsMarkerProjection { Marker = marker, ScreenPosition = pixel });
-        }
-
-        void CollectRadio(List<MapMarker> markers)
-        {
-            StarMapConfigComponent config = _host.Config;
-            if (config == null || !config.IncludeRadioSignals)
-                return;
-            if (_runs % RADIO_REFRESH_UPDATES == 1 || _radioSignals.Count == 0)
-                _radioCollector.Collect(_host.Block, _radioSignals);
-            _radioProjections.Clear();
-            for (int i = 0; i < _radioSignals.Count; i++)
-            {
-                Vector2 pixel;
-                if (TryProjectStar(_radioSignals[i].WorldPosition, out pixel) && IsInsideCanvas(pixel, 32f))
-                    _radioProjections.Add(new RadioSignalMarkerProjection { Marker = _radioSignals[i], ScreenPosition = pixel });
-            }
-            RadioSignalMarkerLayout.Cluster(_radioProjections, CLUSTER_DISTANCE, _radioClusters, _radioConsumed);
-            for (int i = 0; i < _radioClusters.Count; i++)
-            {
-                RadioSignalMarkerCluster cluster = _radioClusters[i];
-                RadioSignalMarker marker = cluster.RepresentativeMarker;
-                bool isCluster = cluster.Count > 1;
-                Color color = RadioColor(marker.Relationship);
-                markers.Add(new MapMarker
-                {
-                    Kind = MapMarkerKind.Radio,
-                    Position = cluster.ScreenPosition,
-                    Icon = isCluster ? "CircleHollow" : RadioTexture(marker.Relationship),
-                    Color = color,
-                    Size = isCluster ? 1.35f : 1f,
-                    CountText = isCluster ? cluster.Count.ToString() : null,
-                    Label = isCluster
-                        ? string.Format(FormatingHelper.Culture, LocHelper.GetLoc(MOD_PREFIX + "RadioSignal_ClusterFormat"), cluster.Count)
-                        : string.IsNullOrWhiteSpace(marker.Name) ? LocHelper.GetLoc(MOD_PREFIX + "RadioSignal_Unnamed") : marker.Name,
-                    Name = marker.Name,
-                    WorldPosition = marker.WorldPosition,
-                    Clickable = !isCluster
-                });
-            }
-        }
-
-        Color RadioColor(MyRelationsBetweenPlayerAndBlock relationship)
-        {
-            Color color;
-            switch (relationship)
-            {
-                case MyRelationsBetweenPlayerAndBlock.Enemies:
-                    color = _host.ErrorColor;
-                    break;
-                case MyRelationsBetweenPlayerAndBlock.Owner:
-                case MyRelationsBetweenPlayerAndBlock.FactionShare:
-                    color = _host.HeaderColor;
-                    break;
-                default:
-                    color = _host.WarningColor;
-                    break;
-            }
-            color.A = byte.MaxValue;
-            return color;
-        }
-
-        static string RadioTexture(MyRelationsBetweenPlayerAndBlock relationship)
-        {
-            switch (relationship)
-            {
-                case MyRelationsBetweenPlayerAndBlock.Enemies:
-                    return "Circle";
-                case MyRelationsBetweenPlayerAndBlock.Owner:
-                case MyRelationsBetweenPlayerAndBlock.FactionShare:
-                    return "SquareSimple";
-                default:
-                    return "Triangle";
             }
         }
     }

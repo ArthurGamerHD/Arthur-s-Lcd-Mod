@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using LcdMod.Common.Helpers;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRage;
 using VRage.Game.Entity;
 using VRage.Game.ModAPI.Ingame;

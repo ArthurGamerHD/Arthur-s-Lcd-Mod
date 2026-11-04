@@ -1,26 +1,45 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
-using Adk.Gui.Styling;
-using LcdMod.Common.Mvvm;
+using Acrux.Core.Input;
+using Acrux.Styling;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Apps.DigitalPictureFrames
 {
+    /// <summary>
+    /// What the picture frames view model reads from and asks of its app (<see cref="DigitalPictureFramesApp"/>; a
+    /// design-time host in the preview).
+    /// </summary>
+    internal interface IDigitalPictureFramesHost
+    {
+        IReadOnlyList<string> NativeSprites { get; }
+        int NativeDisplayMode { get; }
+        bool NativeCanEdit { get; }
+        string NativePickText { get; }
+        bool NativeIsLoading(string sprite);
+        int NativeSelectedIndex(int count);
+        // The texture to draw for a sprite: an animated image's current frame, or the sprite itself.
+        string NativeTextureFor(string sprite);
+        BackgroundBrush CreateNativeBrush(string sprite, string texture);
+        void OpenNativePicker();
+    }
+
     internal sealed class DigitalPictureFramesViewModel : ObservableObject
     {
-        readonly DigitalPictureFramesApp _app;
+        readonly IDigitalPictureFramesHost _app;
         readonly List<PicturePage> _pages = new List<PicturePage>();
         int _selectedPage;
         bool _canEdit;
         string _pickText = string.Empty;
         int _displayMode = -1;
 
-        public DigitalPictureFramesViewModel(DigitalPictureFramesApp app)
+        public DigitalPictureFramesViewModel(IDigitalPictureFramesHost app)
         {
             _app = app;
             OpenPickerCommand = new DelegateCommand(_ => _app.OpenNativePicker());
         }
 
+        [PreviewWith(3)]
         public IReadOnlyList<PicturePage> Pages => _pages;
         public int SelectedPage
         {
@@ -28,9 +47,12 @@ namespace LcdMod.Client.Apps.DigitalPictureFrames
             set { RaiseAndSetIfChanged(ref _selectedPage, value, nameof(SelectedPage)); }
         }
         public ICommand OpenPickerCommand { get; }
+        [PreviewWith(true)]
         public bool HasImage => _pages.Count > 0;
         public bool ShowPickerButton => _pages.Count == 0;
+        [PreviewWith(true)]
         public bool CanEdit => _canEdit;
+        [PreviewWith("Pick picture")]
         public string PickText => _pickText;
 
         public void Refresh()
@@ -87,6 +109,7 @@ namespace LcdMod.Client.Apps.DigitalPictureFrames
             Sprite = sprite;
         }
 
+        [PreviewWith("LCD_Frozen_Poster01", "LCD_Frozen_Poster02", "LCD_Frozen_Poster03")]
         public string Sprite { get; }
         public BackgroundBrush Image => _image;
         public bool IsLoading => _isLoading;

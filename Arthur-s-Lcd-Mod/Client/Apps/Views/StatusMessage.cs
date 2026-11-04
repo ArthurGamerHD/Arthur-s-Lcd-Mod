@@ -1,10 +1,14 @@
-using Adk.Gui.Styling;
-using LcdMod.Common.Mvvm;
+using Acrux.Styling;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Views
 {
     /// <summary>A centered status shown instead of, or over, an app's content: an icon or a loading wheel above a text.</summary>
+    [PreviewWith("Text", "No blocks found on this grid")]
+    [PreviewWith("IsVisible", true)]
+    [PreviewWith("HasIcon", true)]
+    [PreviewWith("Color", "#E0A010")]
     internal sealed class StatusMessage : ObservableObject
     {
         string _text = string.Empty;
@@ -16,6 +20,7 @@ namespace LcdMod.Client.Apps.Views
 
         public string Text => _text;
         public BackgroundBrush IconMask => _iconMask;
+        [PreviewWith("#FFFFFF")]
         public Color Color => _color;
         public bool IsLoading => _isLoading;
         public bool HasIcon => !_isLoading && _iconMask != null;

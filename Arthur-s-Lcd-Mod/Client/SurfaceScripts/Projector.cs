@@ -37,7 +37,6 @@ namespace LcdMod.Client.SurfaceScripts
         ProjectorApp _app;
 
         public override IApp App => _app;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public override string Title => _app != null ? _app.Title : base.Title;
         protected override string DefaultTitle => TITLE;
 
@@ -75,8 +74,6 @@ namespace LcdMod.Client.SurfaceScripts
 
             RenderSprites();
         }
-
-        protected override bool RendersInParallel => true;
 
 
         public override List<MySprite> GetSprites()

@@ -57,8 +57,6 @@ namespace LcdMod.Client.SurfaceScripts
             RenderSprites();
         }
 
-        protected override bool RendersInParallel => true;
-
 
         public override List<MySprite> GetSprites()
         {

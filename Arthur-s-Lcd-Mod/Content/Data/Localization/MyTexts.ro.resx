@@ -12,9 +12,6 @@
     <data name="LcdMod_Radar_DetectedEntities" xml:space="preserve">
     <value>Entități detectate:</value>
   </data>
-    <data name="LcdMod_TopEnergy" xml:space="preserve">
-    <value>Cel mai mare consum de energie</value>
-  </data>
     <data name="LcdMod_EnergyDashboard" xml:space="preserve">
     <value>Panou energie</value>
   </data>
@@ -45,44 +42,14 @@
     <data name="LcdMod_GW_5m" xml:space="preserve">
     <value>5 minute</value>
   </data>
-    <data name="LcdMod_OreScannerRadar" xml:space="preserve">
-    <value>Radar scaner minereu</value>
-  </data>
-    <data name="LcdMod_OreScanner_Moving" xml:space="preserve">
-    <value>ÍN MIȘCARE — scaner deconectat</value>
-  </data>
-    <data name="LcdMod_OreScanner_Charging" xml:space="preserve">
-    <value>SE ÍNCARCĂ {0}s</value>
-  </data>
-    <data name="LcdMod_OreScanner_Scanning" xml:space="preserve">
-    <value>SCANARE {0}% — baleiaj con</value>
-  </data>
     <data name="LcdMod_OreScanner_Clear" xml:space="preserve">
     <value>LIBER — fără minereu</value>
-  </data>
-    <data name="LcdMod_OreScanner_Signal" xml:space="preserve">
-    <value>SEMNAL {0}%</value>
   </data>
     <data name="LcdMod_OreScanner_Range" xml:space="preserve">
     <value>Rază: {0}</value>
   </data>
-    <data name="LcdMod_OreScanner_NoDetector" xml:space="preserve">
-    <value>NICIUN DETECTOR DE MINEREU PE GRID</value>
-  </data>
-    <data name="LcdMod_OreScanner_MultipleDetectors" xml:space="preserve">
-    <value>MAI MULȚI DETECTORI DE MINEREU — lasă doar unul</value>
-  </data>
-    <data name="LcdMod_OreScanner_ConeAngle" xml:space="preserve">
-    <value>Înclinarea semnalului</value>
-  </data>
-    <data name="LcdMod_OreScanner_TiltLabel" xml:space="preserve">
-    <value>Înclinarea semnalului:   {0}</value>
-  </data>
     <data name="LcdMod_OreScanner_Reference" xml:space="preserve">
     <value>Cabină / scaun de control de referință</value>
-  </data>
-    <data name="LcdMod_OreScanner_Reference_None" xml:space="preserve">
-    <value>(folosește gravitația)</value>
   </data>
     <data name="LcdMod_Damaged" xml:space="preserve">
     <value>Deteriorat</value>
@@ -159,29 +126,8 @@
     <data name="LcdMod_NotAvailable" xml:space="preserve">
     <value>N/D</value>
   </data>
-    <data name="LcdMod_StarMap_Info_Gravity" xml:space="preserve">
-    <value>Gravitație: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_Radius" xml:space="preserve">
-    <value>Rază: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_RadiusShort" xml:space="preserve">
-    <value>Rază: {0}</value>
-  </data>
     <data name="LcdMod_Atmosphere_Short" xml:space="preserve">
     <value>Atmosferă: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_O2" xml:space="preserve">
-    <value>Oxigen: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_Temperature" xml:space="preserve">
-    <value>Temperatură: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Info_Wind" xml:space="preserve">
-    <value>Vânt: {0}</value>
-  </data>
-    <data name="LcdMod_StarMap_Label_Temperature" xml:space="preserve">
-    <value>Temperatură</value>
   </data>
     <data name="LcdMod_Chess" xml:space="preserve">
     <value>Șah</value>
@@ -403,47 +349,14 @@
     <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>deschisă</value>
   </data>
-    <data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
-    <value>Consum curent: {0}</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
-    <value>Capacitate maximă: {0}</value>
-  </data>
     <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
     <value>Producție: {0}</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
-    <value>Solar</value>
   </data>
     <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
     <value>Vânt</value>
   </data>
-    <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
-    <value>Reactor</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
-    <value>Motor pe hidrogen</value>
-  </data>
     <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
     <value>Baterie</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
-    <value>Producție de energie</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
-    <value>Consum de energie</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
-    <value>Încărcare</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
-    <value>Descărcare</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
-    <value>{0} baterie</value>
-  </data>
-    <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
-    <value>{0} baterii</value>
   </data>
     <data name="LcdMod_Magnification" xml:space="preserve">
     <value>Mărire</value>
@@ -505,18 +418,6 @@
     <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
     <value>Nu a fost găsit niciun asamblor</value>
   </data>
-    <data name="LcdMod_Common_Button_Select" xml:space="preserve">
-    <value>Selectează</value>
-  </data>
-    <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
-    <value>Asamblori: niciunul</value>
-  </data>
-    <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
-    <value>Asamblor: {0}</value>
-  </data>
-    <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
-    <value>Asamblori: {0} selectați</value>
-  </data>
     <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
     <value>Asamblor</value>
   </data>
@@ -576,38 +477,14 @@
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>Lingouri</value>
   </data>
-    <data name="LcdMod_InputOutput" xml:space="preserve">
-    <value>Intrare / Ieșire</value>
-  </data>
-    <data name="LcdMod_InputOutput_Input" xml:space="preserve">
-    <value>Intrare</value>
-  </data>
-    <data name="LcdMod_InputOutput_Output" xml:space="preserve">
-    <value>Ieșire</value>
-  </data>
     <data name="LcdMod_InputOutput_All" xml:space="preserve">
     <value>Toate</value>
   </data>
     <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
     <value>Gol</value>
   </data>
-  <data name="LcdMod_Cargo_Sort_Quantity" xml:space="preserve">
-    <value>Cantitate</value>
-  </data>
-  <data name="LcdMod_Cargo_Sort_Weight" xml:space="preserve">
-    <value>Greutate</value>
-  </data>
-  <data name="LcdMod_Cargo_Sort_Alphabetical" xml:space="preserve">
-    <value>Alfabetic</value>
-  </data>
-  <data name="LcdMod_Cargo_SortDone" xml:space="preserve">
-    <value>Sortat: {0} obiecte mutate</value>
-  </data>
   <data name="LcdMod_Cargo_SortRequested" xml:space="preserve">
     <value>Sortare solicitata</value>
-  </data>
-  <data name="LcdMod_Cargo_Sorter" xml:space="preserve">
-    <value>Sorteaza</value>
   </data>
   <data name="LcdMod_SubGrid" xml:space="preserve">
     <value>Subgrid</value>
@@ -635,15 +512,6 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>Next</value>
-  </data>
-  <data name="LcdMod_Cargo_FillWeapons" xml:space="preserve">
-    <value>Arme</value>
-  </data>
-  <data name="LcdMod_Cargo_FillReactors" xml:space="preserve">
-    <value>Reactoare</value>
-  </data>
-  <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
-    <value>{0} obiecte mutate</value>
   </data>
 <data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
     <value>Ramă foto</value>
@@ -679,41 +547,11 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   <data name="LcdMod_CargoActions_Title" xml:space="preserve">
     <value>Acțiuni marfă</value>
   </data>
-  <data name="LcdMod_CargoActions_Config" xml:space="preserve">
-    <value>Settings</value>
-  </data>
-  <data name="LcdMod_CargoActions_ShowConfigButton" xml:space="preserve">
-    <value>Afișează butonul de setări</value>
-  </data>
-  <data name="LcdMod_CargoActions_ShowConfigButton_Tooltip" xml:space="preserve">
-    <value>Afișează sau ascunde butonul de setări pe acest ecran.</value>
-  </data>
-  <data name="LcdMod_CargoActions_Sort" xml:space="preserve">
-    <value>Sorting</value>
-  </data>
-  <data name="LcdMod_CargoActions_Uranium" xml:space="preserve">
-    <value>Uranium (kg)</value>
-  </data>
   <data name="LcdMod_CargoActions_Ammo" xml:space="preserve">
     <value>Ammo</value>
   </data>
   <data name="LcdMod_CargoActions_Default" xml:space="preserve">
     <value>Default</value>
-  </data>
-  <data name="LcdMod_CargoActions_GridLarge" xml:space="preserve">
-    <value>Large grid</value>
-  </data>
-  <data name="LcdMod_CargoActions_GridSmall" xml:space="preserve">
-    <value>Small grid</value>
-  </data>
-  <data name="LcdMod_CargoActions_ReactorSmall" xml:space="preserve">
-    <value>Small reactor</value>
-  </data>
-  <data name="LcdMod_CargoActions_ReactorLarge" xml:space="preserve">
-    <value>Large reactor</value>
-  </data>
-  <data name="LcdMod_Cargo_FillRequested" xml:space="preserve">
-    <value>Reumplere solicitată</value>
   </data>
   <data name="LcdMod_CargoActions_ActionDone" xml:space="preserve">
     <value>{0}: {1}</value>
@@ -723,9 +561,6 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   </data>
   <data name="LcdMod_MarketApp_Refresh" xml:space="preserve">
     <value>Refresh</value>
-  </data>
-  <data name="LcdMod_MarketApp_Loading" xml:space="preserve">
-    <value>Requesting market data...</value>
   </data>
   <data name="LcdMod_MarketApp_Empty" xml:space="preserve">
     <value>No valid offers found.</value>
@@ -849,8 +684,7 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
     <value>Dincolo de {0} pot fi detectate doar semnale radio.</value>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
-    <value>Drag to orbit the radar camera, middle-drag to pan.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Trage pentru a roti camera radarului, trage cu butonul din mijloc pentru a o deplasa.</value>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
     <value>Derulează pentru a mări sau micșora harta radarului.</value>
@@ -859,44 +693,34 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
     <value>Player media - (experimental)</value>
   </data>
   <data name="LcdMod_Common_Button_Close" xml:space="preserve">
-    <value>Close</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Închide</value>
   </data>
   <data name="LcdMod_MediaPlayer_ConfigureVisualizer" xml:space="preserve">
-    <value>Configure visualizer</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Configurează vizualizatorul</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerSettings" xml:space="preserve">
-    <value>Visualizer settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Setări vizualizator</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerInstanceEnabled" xml:space="preserve">
-    <value>Enabled</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activat</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerReset" xml:space="preserve">
-    <value>Reset to defaults</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Resetează la valorile implicite</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXml" xml:space="preserve">
-    <value>Export / import XML</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Exportă / importă XML</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXmlTitle" xml:space="preserve">
-    <value>Visualizer settings XML</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>XML setări vizualizator</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXmlInvalid" xml:space="preserve">
-    <value>The visualizer settings XML could not be read: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>XML-ul setărilor vizualizatorului nu a putut fi citit: {0}</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerSaveUser" xml:space="preserve">
-    <value>Save as my settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Salvează ca setările mele</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerLoadUser" xml:space="preserve">
-    <value>Load my settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Încarcă setările mele</value>
   </data>
   <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
     <value>(În pauză) - {0}</value>
@@ -912,15 +736,6 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   </data>
   <data name="LcdMod_MediaPlayer_SaveQueue" xml:space="preserve">
     <value>Salvează</value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueuePlayedPrefix" xml:space="preserve">
-    <value>redate: </value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueueCurrentPrefix" xml:space="preserve">
-    <value>&gt; </value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueueNextPrefix" xml:space="preserve">
-    <value>următorul: </value>
   </data>
   <data name="LcdMod_MediaPlayer_Pick" xml:space="preserve">
     <value>Alege</value>
@@ -992,48 +807,34 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
     <value>Redă tot</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_Delete" xml:space="preserve">
-    <value>Delete</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Șterge</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteLocalAudioTitle" xml:space="preserve">
-    <value>Delete local audio</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Șterge audio local</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteLocalAudioPromptFormat" xml:space="preserve">
-    <value>Delete &quot;{0}&quot; from local audio? This cannot be undone.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ștergi „{0}&quot; din audio local? Acțiunea nu poate fi anulată.</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeletePlaylistTitle" xml:space="preserve">
-    <value>Delete playlist</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Șterge playlistul</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeletePlaylistPromptFormat" xml:space="preserve">
-    <value>Delete playlist &quot;{0}&quot;? This cannot be undone.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ștergi playlistul „{0}&quot;? Acțiunea nu poate fi anulată.</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteFailedFormat" xml:space="preserve">
-    <value>Delete failed: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ștergerea a eșuat: {0}</value>
   </data>
   <data name="LcdMod_MediaPlayer_LocalAudioDeletedFormat" xml:space="preserve">
-    <value>Deleted local audio {0}.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Audio local {0} a fost șters.</value>
   </data>
   <data name="LcdMod_MediaPlayer_PlaylistDeletedFormat" xml:space="preserve">
-    <value>Deleted playlist {0}.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Playlistul {0} a fost șters.</value>
   </data>
   <data name="LcdMod_FilePicker_PickFile" xml:space="preserve">
     <value>Alege fișier</value>
   </data>
   <data name="LcdMod_FilePicker_PickFolder" xml:space="preserve">
     <value>Alege folder</value>
-  </data>
-  <data name="LcdMod_FilePicker_SearchTitle" xml:space="preserve">
-    <value>Caută fișier</value>
-  </data>
-  <data name="LcdMod_FilePicker_SearchSubtitle" xml:space="preserve">
-    <value>Filtrează fișierele și folderele din folderul curent</value>
   </data>
   <data name="LcdMod_FilePicker_SearchPlaceholder" xml:space="preserve">
     <value>Caută fișiere</value>
@@ -1074,9 +875,6 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   <data name="LcdMod_RenderScale" xml:space="preserve">
     <value>Scară de randare</value>
   </data>
-  <data name="LcdMod_RaysPerTick" xml:space="preserve">
-    <value>Raze pe tick</value>
-  </data>
   <data name="LcdMod_PlanetTextureQuality" xml:space="preserve">
     <value>Calitatea texturii planetei</value>
   </data>
@@ -1100,15 +898,6 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_NoPlanet" xml:space="preserve">
     <value>Nu a fost găsită nicio planetă.</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_CartographyNotReady" xml:space="preserve">
-    <value>Datele hărții planetare nu sunt încă pregătite.</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_NoColorCubemap" xml:space="preserve">
-    <value>Texturile hărții planetare nu sunt disponibile.</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_NoResult" xml:space="preserve">
-    <value>Nu au fost returnate date pentru harta planetară.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_CartographyFailed" xml:space="preserve">
     <value>Cartografierea a eșuat pentru acest tip de planetă.</value>
@@ -1167,6 +956,18 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   <data name="LcdMod_PlanetaryMap_FreeCamera_Tooltip" xml:space="preserve">
     <value>Menține camera hărții fixă până când urmărirea este activată din nou.</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_View2D_Title" xml:space="preserve">
+    <value>Hartă 2D</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View2D_Tooltip" xml:space="preserve">
+    <value>Proiecție plană a globului. Fă clic pentru a trece la vizualizarea 3D a terenului.</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View3D_Title" xml:space="preserve">
+    <value>Teren 3D</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View3D_Tooltip" xml:space="preserve">
+    <value>Teren cu relief real. Trage pentru a deplasa, trage cu butonul din mijloc pentru a roti și înclina. Fă clic pentru a reveni la harta 2D.</value>
+  </data>
   <data name="LcdMod_Gps_DisplayMyGps_Title" xml:space="preserve">
     <value>Afișează GPS-urile mele</value>
   </data>
@@ -1202,12 +1003,6 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   </data>
   <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
     <value>Necunoscut</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_MapLayerFormat" xml:space="preserve">
-    <value>Strat hartă: {0}</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>Alege culorile pentru satelit, teren, materiale sau biomuri.</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>Teren</value>
@@ -1282,129 +1077,86 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
     <value>Punct de salt: {0}</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportLocalAudio_Summary" xml:space="preserve">
-    <value>Imports a local WAV file into the audio library.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Importă un fișier WAV local în biblioteca audio.</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportAudios_Summary" xml:space="preserve">
-    <value>Imports the WAV files listed in audio_import.txt.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Importă fișierele WAV listate în audio_import.txt.</value>
   </data>
   <data name="LcdMod_ChatCommand_PlayAudio_Summary" xml:space="preserve">
-    <value>Plays a local WAV file for the current player.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Redă un fișier WAV local pentru jucătorul curent.</value>
   </data>
   <data name="LcdMod_ChatCommand_PlayGameAudio_Summary" xml:space="preserve">
-    <value>Plays a game audio definition by subtype.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Redă o definiție audio a jocului după subtip.</value>
   </data>
   <data name="LcdMod_ChatCommand_StreamAudio_Summary" xml:space="preserve">
-    <value>Broadcasts an imported audio asset to LCD media players.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Transmite un fișier audio importat către playerele media ale LCD-urilor.</value>
   </data>
   <data name="LcdMod_ChatCommand_TestAudio_Summary" xml:space="preserve">
-    <value>Tests referenced game audio files and writes a compatibility report.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Testează fișierele audio ale jocului referite și scrie un raport de compatibilitate.</value>
   </data>
   <data name="LcdMod_ChatCommand_TestCartography_Summary" xml:space="preserve">
-    <value>Tests loaded planet cartography definitions and writes diagnostic archives.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Testează definițiile cartografice ale planetelor încărcate și scrie arhive de diagnostic.</value>
   </data>
   <data name="LcdMod_ChatCommand_Advanced_Summary" xml:space="preserve">
-    <value>Enables or disables advanced terminal tweakables.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activează sau dezactivează reglajele avansate ale terminalului.</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles rendering of textures owned by other users.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activează, dezactivează sau comută randarea texturilor altor jucători.</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles interactive control-boundary debugging.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles debug surface mode.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activează, dezactivează sau comută depanarea limitelor controalelor interactive.</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles the sprite-count debug overlay.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activează, dezactivează sau comută suprapunerea de depanare a numărului de sprite-uri.</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles visible clipping debug overlays.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Activează, dezactivează sau comută suprapunerile de depanare pentru decuparea vizibilă.</value>
   </data>
   <data name="LcdMod_ChatCommand_TextInput_Summary" xml:space="preserve">
-    <value>Opens a diagnostic text input dialog.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_Profile_Summary" xml:space="preserve">
-    <value>Profiles LCD app rendering for a specified duration or cancels the active profile.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Deschide un dialog de introducere a textului pentru diagnostic.</value>
   </data>
   <data name="LcdMod_ChatCommand_FactionColor_Summary" xml:space="preserve">
-    <value>Sets the local player's faction icon color.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Setează culoarea pictogramei de facțiune a jucătorului local.</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_Summary" xml:space="preserve">
-    <value>Resets completed first-time user experience tips.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Resetează sfaturile de început deja parcurse.</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Summary" xml:space="preserve">
-    <value>Shows the list of available chat commands.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Afișează lista comenzilor de chat disponibile.</value>
   </data>
   <data name="LcdMod_ChatCommand_PreloadTextures_Summary" xml:space="preserve">
-    <value>Preloads block textures as LCD sprites.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Preîncarcă texturile blocurilor ca sprite-uri LCD.</value>
   </data>
   <data name="LcdMod_ChatCommand_RemoveLocalTexture_Summary" xml:space="preserve">
-    <value>Removes an image from your local image library.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Elimină o imagine din biblioteca ta locală de imagini.</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportTextures_Summary" xml:space="preserve">
-    <value>Imports new .png and .dds images from the mod storage folder.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Importă imaginile noi .png și .dds din folderul de stocare al modului.</value>
   </data>
 
   <data name="LcdMod_ChatCommand_Advanced_Enabled_Message" xml:space="preserve">
-    <value>Advanced tweakables mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modul de reglaje avansate a fost activat.</value>
   </data>
   <data name="LcdMod_ChatCommand_Advanced_Disabled_Message" xml:space="preserve">
-    <value>Advanced tweakables mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modul de reglaje avansate a fost dezactivat.</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Enabled_Message" xml:space="preserve">
-    <value>Rendering textures owned by other users enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Randarea texturilor altor jucători a fost activată.</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Disabled_Message" xml:space="preserve">
-    <value>Rendering textures owned by other users disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Randarea texturilor altor jucători a fost dezactivată.</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Enabled_Message" xml:space="preserve">
-    <value>DebugInteractive mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modul DebugInteractive a fost activat.</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Disabled_Message" xml:space="preserve">
-    <value>DebugInteractive mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Enabled_Message" xml:space="preserve">
-    <value>DebugSurface mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Disabled_Message" xml:space="preserve">
-    <value>DebugSurface mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modul DebugInteractive a fost dezactivat.</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Enabled_Message" xml:space="preserve">
-    <value>SpriteCountDebug mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modul SpriteCountDebug a fost activat.</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Disabled_Message" xml:space="preserve">
-    <value>SpriteCountDebug mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modul SpriteCountDebug a fost dezactivat.</value>
   </data>
   <data name="LcdMod_ChatCommand_VerifyFrameCache_Enabled_Message" xml:space="preserve">
     <value>Frame cache verification enabled.</value>
@@ -1418,366 +1170,275 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   <data name="LcdMod_ChatCommand_StyleCache_Disabled_Message" xml:space="preserve">
     <value>Style cache disabled; views reload styles from disk.</value>
   </data>
-  <data name="LcdMod_ChatCommand_HotReload_Enabled_Message" xml:space="preserve">
-    <value>View hot reload enabled; rebuilt {0} of {1} views.</value>
-  </data>
   <data name="LcdMod_ChatCommand_HotReload_Disabled_Message" xml:space="preserve">
     <value>View hot reload disabled.</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Enabled_Message" xml:space="preserve">
-    <value>VisibleClip mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modul VisibleClip a fost activat.</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Disabled_Message" xml:space="preserve">
-    <value>VisibleClip mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Modul VisibleClip a fost dezactivat.</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_Cleared_Message_Format" xml:space="preserve">
-    <value>FTUE tip {0} cleared.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Sfatul FTUE {0} a fost resetat.</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_NotFound_Message_Format" xml:space="preserve">
-    <value>FTUE tip {0} was not found. Try:&#10;{1}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Sfatul FTUE {0} nu a fost găsit. Încearcă:&#10;{1}</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_NoneFound_Message" xml:space="preserve">
-    <value>No completed FTUE tips were found.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nu s-au găsit sfaturi FTUE parcurse.</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Title" xml:space="preserve">
-    <value>Available commands</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Comenzi disponibile</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Subtitle" xml:space="preserve">
-    <value>List of all available chat commands</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Lista tuturor comenzilor de chat disponibile</value>
   </data>
   <data name="LcdMod_DefenseDashboard" xml:space="preserve">
     <value>Panou de apărare</value>
   </data>
   <data name="LcdMod_ButtonPad" xml:space="preserve">
-    <value>Button Pad</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Panou de butoane</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionUnavailable" xml:space="preserve">
-    <value>Action unavailable</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Acțiune indisponibilă</value>
   </data>
   <data name="LcdMod_ButtonPad_NoCompatibleTarget" xml:space="preserve">
-    <value>No compatible target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nicio țintă compatibilă</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionFailed" xml:space="preserve">
-    <value>Action failed</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Acțiunea a eșuat</value>
   </data>
   <data name="LcdMod_ButtonPad_Button" xml:space="preserve">
-    <value>Button</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Buton</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonFormat" xml:space="preserve">
-    <value>Button {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Butonul {0}</value>
   </data>
   <data name="LcdMod_ButtonPad_Title" xml:space="preserve">
-    <value>Title</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Titlu</value>
   </data>
   <data name="LcdMod_ButtonPad_TitleHelp" xml:space="preserve">
-    <value>Button title displayed above the icon</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Titlul butonului afișat deasupra pictogramei</value>
   </data>
   <data name="LcdMod_ButtonPad_Apply" xml:space="preserve">
-    <value>Apply</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Aplică</value>
   </data>
   <data name="LcdMod_ButtonPad_Delete" xml:space="preserve">
-    <value>Delete</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Șterge</value>
   </data>
   <data name="LcdMod_ButtonPad_SelectTarget" xml:space="preserve">
-    <value>Select Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Selectează ținta</value>
   </data>
   <data name="LcdMod_ButtonPad_SelectAction" xml:space="preserve">
-    <value>Select Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Selectează acțiunea</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonColor" xml:space="preserve">
-    <value>Button Color</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Culoarea butonului</value>
   </data>
   <data name="LcdMod_ButtonPad_Color" xml:space="preserve">
-    <value>Color</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Culoare</value>
   </data>
   <data name="LcdMod_ButtonPad_ColorHexHelp" xml:space="preserve">
-    <value>Hex color, for example #ff00ff</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Culoare hex, de exemplu #ff00ff</value>
   </data>
   <data name="LcdMod_ButtonPad_InvalidColor" xml:space="preserve">
-    <value>Invalid color. Use #RRGGBB.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Culoare invalidă. Folosește #RRGGBB.</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_Title" xml:space="preserve">
-    <value>Pick Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Alege ținta</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchTitle" xml:space="preserve">
-    <value>Search Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Caută ținta</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchPlaceholder" xml:space="preserve">
-    <value>Search targets</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Caută ținte</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchHelp" xml:space="preserve">
-    <value>Filter targets containing this text</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Filtrează țintele care conțin acest text</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_NoTargets" xml:space="preserve">
-    <value>No targets</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nicio țintă</value>
   </data>
   <data name="LcdMod_ButtonPad_NoMatches" xml:space="preserve">
-    <value>No matches</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Niciun rezultat</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_Block" xml:space="preserve">
-    <value>Block</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Bloc</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_Group" xml:space="preserve">
-    <value>Group</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Grup</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_BlockType" xml:space="preserve">
-    <value>Block Type</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Tip de bloc</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_BlockSubtype" xml:space="preserve">
-    <value>Block Subtype</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Subtip de bloc</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchTitle" xml:space="preserve">
-    <value>Search Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Caută acțiunea</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchPlaceholder" xml:space="preserve">
-    <value>Search actions</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Caută acțiuni</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchHelp" xml:space="preserve">
-    <value>Filter actions containing this text</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Filtrează acțiunile care conțin acest text</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_NoCompatibleActions" xml:space="preserve">
-    <value>No compatible actions</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nicio acțiune compatibilă</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Title" xml:space="preserve">
-    <value>Configure Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Configurează acțiunea</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Scroll" xml:space="preserve">
-    <value>Scroll</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Derulare</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_NoParameters" xml:space="preserve">
-    <value>No configurable parameters</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Niciun parametru configurabil</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_EnterValue" xml:space="preserve">
-    <value>Enter value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Introdu o valoare</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Parameter" xml:space="preserve">
-    <value>Parameter</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Parametru</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_NumberValue" xml:space="preserve">
-    <value>Number value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Valoare numerică</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_TextValue" xml:space="preserve">
-    <value>Text value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Valoare text</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ColorValue" xml:space="preserve">
-    <value>Color value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Valoare culoare</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_BooleanMode" xml:space="preserve">
-    <value>Boolean mode</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Mod boolean</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ClickAction" xml:space="preserve">
-    <value>Click Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Acțiune la clic</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_On" xml:space="preserve">
-    <value>On</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Pornit</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Off" xml:space="preserve">
-    <value>Off</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Oprit</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Toggle" xml:space="preserve">
-    <value>Toggle</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Comută</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Decrease" xml:space="preserve">
-    <value>Decrease</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Scade</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Increase" xml:space="preserve">
-    <value>Increase</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Crește</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Normal" xml:space="preserve">
     <value>Normal</value>
-    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Reversed" xml:space="preserve">
-    <value>Reversed</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Inversat</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_None" xml:space="preserve">
-    <value>None</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Niciunul</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ScrollFormat" xml:space="preserve">
-    <value>{0}, Scroll: {1}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0}, derulare: {1}</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCount" xml:space="preserve">
-    <value>Button count</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Număr de butoane</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCountTooltip" xml:space="preserve">
-    <value>Number of buttons. Values are snapped to complete rows and columns.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Numărul de butoane. Valorile sunt ajustate pentru a completa rânduri și coloane întregi.</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCountFormat" xml:space="preserve">
-    <value>{0} buttons ({1} × {2})</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0} butoane ({1} × {2})</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonStyle" xml:space="preserve">
-    <value>Button Style</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Stilul butoanelor</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonStyleTooltip" xml:space="preserve">
-    <value>Visual style used by Button Panel buttons.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Stilul vizual al butoanelor panoului.</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Default" xml:space="preserve">
-    <value>Default</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Implicit</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Classic" xml:space="preserve">
-    <value>Classic</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Clasic</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Transparent" xml:space="preserve">
     <value>Transparent</value>
-    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_ButtonPad_Style_Border" xml:space="preserve">
-    <value>Border</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Chenar</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Copy" xml:space="preserve">
-    <value>Copy settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Copiază setările</value>
   </data>
   <data name="LcdMod_SettingsClipboard_CopyTooltip" xml:space="preserve">
-    <value>Copy the selected LCD Mod settings and text-surface display properties into a temporary client-side clipboard.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Copiază setările LCD Mod selectate și proprietățile de afișare ale suprafeței de text într-un clipboard temporar pe client.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_NoSettings" xml:space="preserve">
-    <value>No LCD Mod settings found for this surface.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nu s-au găsit setări LCD Mod pentru această suprafață.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Copied" xml:space="preserve">
-    <value>Settings copied.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Setările au fost copiate.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_CopyFailedFormat" xml:space="preserve">
-    <value>Failed to copy settings: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Copierea setărilor a eșuat: {0}</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Paste" xml:space="preserve">
-    <value>Paste settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Lipește setările</value>
   </data>
   <data name="LcdMod_SettingsClipboard_PasteTooltip" xml:space="preserve">
-    <value>Paste compatible LCD Mod settings and text-surface display properties without changing the destination app type.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Lipește setările LCD Mod compatibile și proprietățile de afișare ale suprafeței de text fără a schimba tipul aplicației de destinație.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_NoCopiedSettings" xml:space="preserve">
-    <value>No copied settings are available for this surface.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nu există setări copiate disponibile pentru această suprafață.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Pasted" xml:space="preserve">
-    <value>Compatible settings pasted.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Setările compatibile au fost lipite.</value>
   </data>
   <data name="LcdMod_SettingsClipboard_PasteFailedFormat" xml:space="preserve">
-    <value>Failed to paste settings: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Lipirea setărilor a eșuat: {0}</value>
   </data>
   <data name="LcdMod_DefenseDashboard_ShieldFallback" xml:space="preserve">
-    <value>Shield</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Scut</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Offline" xml:space="preserve">
     <value>Offline</value>
-    <comment>TODO_TRANSLATION</comment>
   </data>
   <data name="LcdMod_DefenseDashboard_FullyCharged" xml:space="preserve">
-    <value>Fully charged</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Încărcat complet</value>
   </data>
   <data name="LcdMod_DefenseDashboard_RechargeInSecondsFormat" xml:space="preserve">
-    <value>Recharge in {0}s</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Reîncărcare în {0} s</value>
   </data>
   <data name="LcdMod_DefenseDashboard_RechargeUnavailable" xml:space="preserve">
-    <value>Recharge unavailable</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Reîncărcare indisponibilă</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Ready" xml:space="preserve">
-    <value>Ready</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Pregătit</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Firing" xml:space="preserve">
-    <value>Firing</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Trage</value>
   </data>
   <data name="LcdMod_DefenseDashboard_NotReady" xml:space="preserve">
-    <value>Not Ready</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Nepregătit</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Disabled" xml:space="preserve">
-    <value>Disabled</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Dezactivat</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ColorHexHelp" xml:space="preserve">
-    <value>Hex color, for example #ff8800</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Culoare hex, de exemplu #ff8800</value>
   </data>
   <data name="LcdMod_SpritePicker_Title" xml:space="preserve">
-    <value>Sprite Picker</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Selector de sprite-uri</value>
   </data>
   <data name="LcdMod_SpritePicker_SelectedFormat" xml:space="preserve">
-    <value>{0} selected</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0} selectate</value>
   </data>
   <data name="LcdMod_SpritePicker_MultiSelectHint" xml:space="preserve">
-    <value>Ctrl+click adds a sprite, Shift+click selects a range</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ctrl+clic adaugă un sprite, Shift+clic selectează un interval</value>
   </data>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>Imaginile mele</value>
@@ -1795,34 +1456,130 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
     <value>Eliminați din bibliotecă</value>
   </data>
   <data name="LcdMod_Common_Button_Apply" xml:space="preserve">
-    <value>Apply</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Aplică</value>
   </data>
   <data name="LcdMod_CraftDialog_CraftAll" xml:space="preserve">
-    <value>Craft all</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Fabrică tot</value>
   </data>
   <data name="LcdMod_CraftDialog_Amount" xml:space="preserve">
-    <value>Amount</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Cantitate</value>
   </data>
   <data name="LcdMod_PlanetaryMap_RenderSkybox" xml:space="preserve">
     <value>Afișează fundalul cerului</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_RenderAtmosphere" xml:space="preserve">
+    <value>Afișează atmosfera</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinX" xml:space="preserve">
+    <value>Secțiune X: început (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxX" xml:space="preserve">
+    <value>Secțiune X: sfârșit (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinY" xml:space="preserve">
+    <value>Secțiune Y: început (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxY" xml:space="preserve">
+    <value>Secțiune Y: sfârșit (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinZ" xml:space="preserve">
+    <value>Secțiune Z: început (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxZ" xml:space="preserve">
+    <value>Secțiune Z: sfârșit (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_HighlightMissing" xml:space="preserve">
+    <value>Evidențiază blocurile lipsă</value>
+  </data>
+  <data name="LcdMod_Integrity_HighlightDamaged" xml:space="preserve">
+    <value>Evidențiază blocurile deteriorate</value>
+  </data>
+  <data name="LcdMod_Integrity_View2D_Title" xml:space="preserve">
+    <value>Hartă 2D</value>
+  </data>
+  <data name="LcdMod_Integrity_View2D_Tooltip" xml:space="preserve">
+    <value>Hartă de adâncime văzută din axa selectată. Fă clic pentru a trece la vizualizarea 3D.</value>
+  </data>
+  <data name="LcdMod_Integrity_View3D_Title" xml:space="preserve">
+    <value>Vizualizare 3D</value>
+  </data>
+  <data name="LcdMod_Integrity_View3D_Tooltip" xml:space="preserve">
+    <value>Nava în 3D. Trage pentru a orbita, derulează pentru zoom. Fă clic pentru a reveni la harta 2D.</value>
+  </data>
+  <data name="LcdMod_Integrity_XRayOff_Title" xml:space="preserve">
+    <value>Vizualizare completă</value>
+  </data>
+  <data name="LcdMod_Integrity_XRayOff_Tooltip" xml:space="preserve">
+    <value>Nava așa cum este, cu blocurile deteriorate și lipsă evidențiate.</value>
+  </data>
+  <data name="LcdMod_Integrity_XRay_Tooltip" xml:space="preserve">
+    <value>Raze X: aceste blocuri sunt afișate prin carenă.</value>
+  </data>
+  <data name="LcdMod_Integrity_Legend" xml:space="preserve">
+    <value>Legendă</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraLocked_Title" xml:space="preserve">
+    <value>Cameră blocată</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraLocked_Tooltip" xml:space="preserve">
+    <value>Camera urmează axa, rotația și scara configurate.</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraFree_Title" xml:space="preserve">
+    <value>Cameră liberă</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraFree_Tooltip" xml:space="preserve">
+    <value>Camera rămâne unde ai lăsat-o. Fă clic pentru a reveni la vizualizarea configurată.</value>
+  </data>
+  <data name="LcdMod_Integrity_XRay_Combine_Tooltip" xml:space="preserve">
+    <value>Ctrl+clic pentru a combina straturile.</value>
+  </data>
   <data name="LcdMod_StarMap_PlanetInfo" xml:space="preserve">
     <value>Informații despre planetă</value>
   </data>
+  <data name="LcdMod_StarMap_Loading3DScene" xml:space="preserve">
+    <value>Se încarcă scena 3D</value>
+  </data>
   <data name="LcdMod_Games_NewGamePrompt" xml:space="preserve">
-    <value>Start a new game? The current game will be lost.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Începi un joc nou? Jocul curent se va pierde.</value>
   </data>
   <data name="LcdMod_Games_GameOver" xml:space="preserve">
-    <value>Game Over</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Joc terminat</value>
   </data>
   <data name="LcdMod_Games_PlayAgain" xml:space="preserve">
-    <value>Play again?</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Mai joci o dată?</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Move" xml:space="preserve">
+    <value>Mișcare</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Aim" xml:space="preserve">
+    <value>Țintire</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Shoot" xml:space="preserve">
+    <value>Tragere</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Use" xml:space="preserve">
+    <value>Folosire</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Strafe" xml:space="preserve">
+    <value>Pas lateral</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Pause" xml:space="preserve">
+    <value>Pauză</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Run" xml:space="preserve">
+    <value>Alergare</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Weapon" xml:space="preserve">
+    <value>Armă</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Menu" xml:space="preserve">
+    <value>Meniu</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Cursor" xml:space="preserve">
+    <value>Cursor</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Exit" xml:space="preserve">
+    <value>Ieșire</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerManageInstances" xml:space="preserve">
     <value>Gestionează instanțele</value>
@@ -1832,5 +1589,194 @@ Vom aștepta puțin, apoi o vom reporni pentru tine.</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerRemoveInstance" xml:space="preserve">
     <value>Elimină</value>
+  </data>
+  <data name="LcdMod_TargetInfo" xml:space="preserve">
+    <value>Vizualizare țintă</value>
+  </data>
+  <data name="LcdMod_TargetInfo_NoTarget" xml:space="preserve">
+    <value>Nicio țintă blocată</value>
+  </data>
+  <data name="LcdMod_TargetInfo_Lost" xml:space="preserve">
+    <value>Țintă pierdută: ultima stare cunoscută</value>
+  </data>
+  <data name="LcdMod_TargetInfo_LossAlert" xml:space="preserve">
+    <value>Țintă pierdută!</value>
+  </data>
+  <data name="LcdMod_TargetInfo_Scanning" xml:space="preserve">
+    <value>Scanare... {0}%</value>
+  </data>
+  <data name="LcdMod_TargetInfo_LockCandidate" xml:space="preserve">
+    <value>Fixează: {0}</value>
+  </data>
+  <data name="LcdMod_ShipClass_Format" xml:space="preserve">
+    <value>Clasa {0}</value>
+  </data>
+  <data name="LcdMod_ShipClass_Major" xml:space="preserve">
+    <value>Clasa Major {0}</value>
+  </data>
+  <data name="LcdMod_ShipClass_Minor" xml:space="preserve">
+    <value>Clasa Minor {0}</value>
+  </data>
+  <data name="LcdMod_Integrity_NoProjector" xml:space="preserve">
+    <value>Niciun proiector selectat</value>
+  </data>
+  <data name="LcdMod_Integrity_SnapshotMismatch" xml:space="preserve">
+    <value>Instantaneul nu se potrivește cu această structură</value>
+  </data>
+  <data name="LcdMod_Integrity_Snapshot_Title" xml:space="preserve">
+    <value>Capturează structura curentă</value>
+  </data>
+  <data name="LcdMod_Integrity_Snapshot_Tooltip" xml:space="preserve">
+    <value>Reține structura așa cum este acum, ca ecranul să o poată compara fără proiector. Blocurile sunt păstrate față de blocul acestui ecran.</value>
+  </data>
+  <data name="LcdMod_Integrity_ClearSnapshot_Title" xml:space="preserve">
+    <value>Șterge instantaneul</value>
+  </data>
+  <data name="LcdMod_Integrity_ClearSnapshot_Tooltip" xml:space="preserve">
+    <value>Uită structura reținută de acest ecran.</value>
+  </data>
+  <data name="LcdMod_ExternalSensors" xml:space="preserve">
+    <value>Senzori externi</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_ThirdPerson" xml:space="preserve">
+    <value>Persoana a treia</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_FirstPerson" xml:space="preserve">
+    <value>Persoana întâi</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_Camera" xml:space="preserve">
+    <value>Cameră la persoana întâi</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_NoCameras" xml:space="preserve">
+    <value>Nicio cameră sau turelă funcțională: se vede doar nava</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_CameraLost" xml:space="preserve">
+    <value>Camera aleasă nu funcționează</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_SwitchView" xml:space="preserve">
+    <value>Comută între persoana a treia și persoana întâi</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_LockCamera" xml:space="preserve">
+    <value>Readu camera la vederea implicită</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic" xml:space="preserve">
+    <value>Stare proprie</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_Hits" xml:space="preserve">
+    <value>Lovituri</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_Missiles" xml:space="preserve">
+    <value>Rachete care se apropie</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_NoSnapshot" xml:space="preserve">
+    <value>Niciun instantaneu</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_ProjectorBackup" xml:space="preserve">
+    <value>Niciun instantaneu: comparare cu proiectorul</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsOrbit_Line1" xml:space="preserve">
+    <value>Trage pentru a privi în jurul navei.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsOrbit_Line2" xml:space="preserve">
+    <value>Derulează pentru a apropia sau depărta camera.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsCameras_Line1" xml:space="preserve">
+    <value>Celelalte nave, asteroizii și rachetele inamice apar doar cât timp le vede o cameră sau o turelă.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsCameras_Line2" xml:space="preserve">
+    <value>Navele aliate a căror antenă ajunge la tine își împart și ele camerele.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsFirstPerson_Line1" xml:space="preserve">
+    <value>Apasă butonul de **vedere** din dreapta sus ca să privești printr-o cameră.</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsFirstPerson_Line2" xml:space="preserve">
+    <value>Apoi alege camera din lista **Cameră la persoana întâi**.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMap3D_Line1" xml:space="preserve">
+    <value>Apasă **3D** pentru a vedea terenul în 3D.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMap3D_Line2" xml:space="preserve">
+    <value>Lanțurile muntoase apar la înălțimea reală și poți apropia mult mai mult.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapStreetView_Line1" xml:space="preserve">
+    <value>Trage mânerul **Street View** pe planetă.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapStreetView_Line2" xml:space="preserve">
+    <value>Camera coboară acolo la sol, ca spectator.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapRoads_Line1" xml:space="preserve">
+    <value>Apasă butonul **drumuri** pentru a afișa sau ascunde drumurile.</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapRoads_Line2" xml:space="preserve">
+    <value>Fără ele, terenul se citește mai ușor.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView3D_Line1" xml:space="preserve">
+    <value>Apasă **3D** pentru a vedea nava în 3D.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView3D_Line2" xml:space="preserve">
+    <value>Trage pentru a roti, derulează pentru zoom, trage cu butonul din mijloc pentru a muta.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView2D_Line1" xml:space="preserve">
+    <value>Apasă **2D** pentru o hartă plană a navei.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView2D_Line2" xml:space="preserve">
+    <value>Apasă din nou pentru a reveni la 3D.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridXRay_Line1" xml:space="preserve">
+    <value>Deschide **razele X** din stânga jos pentru a vedea un tip de bloc prin carcasă.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridXRay_Line2" xml:space="preserve">
+    <value>Ține apăsat **Ctrl** și dă clic pentru a combina mai multe straturi.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridCameraLock_Line1" xml:space="preserve">
+    <value>Apasă **lacătul** pentru a reveni la latura configurată.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridCameraLock_Line2" xml:space="preserve">
+    <value>Apasă din nou când e blocat pentru a alege altă latură: X, Y sau Z.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridLegend_Line1" xml:space="preserve">
+    <value>Apasă **Info** pentru a vedea ce înseamnă fiecare culoare.</value>
+  </data>
+  <data name="LcdMod_Ftue_GridLegend_Line2" xml:space="preserve">
+    <value>În 3D numără și blocurile lipsă și cele deteriorate.</value>
+  </data>
+  <data name="LcdMod_Ftue_PreviewGridSnapshot_Line1" xml:space="preserve">
+    <value>Niciun proiector? Apasă **Capturează structura curentă** cât timp nava e întreagă.</value>
+  </data>
+  <data name="LcdMod_Ftue_PreviewGridSnapshot_Line2" xml:space="preserve">
+    <value>Ecranul arată apoi ce lipsește sau e deteriorat față de ea.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticSnapshot_Line1" xml:space="preserve">
+    <value>Apasă **Capturează structura curentă** cât timp nava e întreagă.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticSnapshot_Line2" xml:space="preserve">
+    <value>Loviturile și blocurile pierdute se măsoară față de ea, inclusiv substructurile.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticCombat_Line1" xml:space="preserve">
+    <value>Blocurile lovite și avariate apar cu roșu și clipesc cât timp ești sub foc.</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticCombat_Line2" xml:space="preserve">
+    <value>Rachetele care se apropie sunt marcate cu roșu, cu o linie spre ținta lor.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoLock_Line1" xml:space="preserve">
+    <value>Blochează o structură pentru a o inspecta aici.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoLock_Line2" xml:space="preserve">
+    <value>Ecranul o reține, astfel ce dobori apare ca lipsă.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoMemory_Line1" xml:space="preserve">
+    <value>Blocare pierdută: aceasta este ținta așa cum a fost văzută ultima dată.</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoMemory_Line2" xml:space="preserve">
+    <value>Blocheaz-o din nou pentru a o vedea în direct.</value>
+  </data>
+  <data name="LcdMod_Ftue_MediaPlayerVideos_Line1" xml:space="preserve">
+    <value>Adaugă propriile videoclipuri (.mkv sau .webm) în {0}.</value>
+  </data>
+  <data name="LcdMod_Ftue_MediaPlayerVideos_Line2" xml:space="preserve">
+    <value>Un fișier readme de acolo explică cum convertești orice video cu ffmpeg.</value>
+  </data>
+  <data name="LcdMod_PreparingAutomaticRepair" xml:space="preserve">
+    <value>Se pregătește repararea automată</value>
   </data>
 </root>

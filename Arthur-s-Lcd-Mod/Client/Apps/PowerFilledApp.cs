@@ -14,7 +14,7 @@ namespace LcdMod.Client.Apps
 {
     [LcdApp(8)]
     [ConfigComponent(Constants.APP, typeof(PowerConfigComponent), PropertyName = "PowerComponent")]
-    internal sealed partial class PowerFilledApp : App, IApp
+    internal sealed partial class PowerFilledApp : App, IApp, PowerFilled.IPowerFilledHost
     {
         readonly IAppHost _surfaceHost;
         readonly List<PowerCollector> _collectors = new List<PowerCollector>();
@@ -27,8 +27,13 @@ namespace LcdMod.Client.Apps
         internal IReadOnlyList<PowerCollector> NativeCollectors => _collectors;
         internal Color NativeForeground => _surfaceHost.Surface.ScriptForegroundColor;
         internal Color NativeBackground => _surfaceHost.BackgroundColor;
+        bool PowerFilled.IPowerFilledHost.IsGridDisplay => IsGridDisplay;
+        Color PowerFilled.IPowerFilledHost.NativeForeground => NativeForeground;
+        Color PowerFilled.IPowerFilledHost.NativeBackground => NativeBackground;
+        IReadOnlyList<PowerEntry> PowerFilled.IPowerFilledHost.NativeEntries => NativeEntries;
+        IReadOnlyList<PowerCollector> PowerFilled.IPowerFilledHost.NativeCollectors => NativeCollectors;
+        void PowerFilled.IPowerFilledHost.NotifyEntryDetailsOpened() { NotifyEntryDetailsOpened(); }
 
-        /// <summary>Raised when an entry's details flyout opens.</summary>
         public event Action EntryDetailsOpened;
 
         internal void NotifyEntryDetailsOpened()

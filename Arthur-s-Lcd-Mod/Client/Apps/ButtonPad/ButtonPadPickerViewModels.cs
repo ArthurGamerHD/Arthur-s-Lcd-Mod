@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using LcdMod.Client.Apps.Dialogs;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Apps.ButtonPad
 {
@@ -114,13 +114,19 @@ namespace LcdMod.Client.Apps.ButtonPad
 
         public string Name { get; }
         public string Icon { get; }
+        [PreviewWith("dialog-row selected", "dialog-row", "dialog-row", "dialog-row")]
         public string Classes { get; }
         public ICommand Command { get; }
+        [PreviewWith(0.65f)]
         public float FontSize => _owner.FontSize;
         // Compact dialogs fill a very short screen; smaller rows keep three of them visible.
+        [PreviewWith(44f)]
         public float RowHeight => _owner.IsCompact ? 26f : 44f;
+        [PreviewWith(38f)]
         public float IconSize => _owner.IsCompact ? 20f : 38f;
+        [PreviewWith("0 0 0 3")]
         public VRageMath.Vector4 RowMargin => new VRageMath.Vector4(0f, 0f, 0f, _owner.IsCompact ? 2f : 3f);
+        [PreviewWith("0 0 10 0")]
         public VRageMath.Vector4 IconMargin => new VRageMath.Vector4(0f, 0f, _owner.IsCompact ? 6f : 10f, 0f);
 
         internal void RaiseLayout()
@@ -132,6 +138,17 @@ namespace LcdMod.Client.Apps.ButtonPad
         }
     }
 
+    [PreviewWith("Title", "")]
+    [PreviewWith("SmallFontSize", 0.5525f)]
+    [PreviewWith("SearchText", "")]
+    [PreviewWith("Rows.Name", "Hangar Doors", "Rotor (Crane)", "Sliding Door 3", "Interior Light 12")]
+    [PreviewWith("Rows.Icon", "SquareSimple", "MyObjectBuilder_MotorStator/LargeStator", "MyObjectBuilder_AirtightSlideDoor/LargeBlockSlideDoor", "MyObjectBuilder_InteriorLight/SmallLight")]
+    [PreviewWith("Rows", 4)]
+    [PreviewWith("IsRegular", true)]
+    [PreviewWith("IsEmpty", false)]
+    [PreviewWith("IsCompact", false)]
+    [PreviewWith("FontSize", 0.65f)]
+    [PreviewWith("EmptyText", "No targets")]
     internal sealed class TargetPickerViewModel : ListPickerViewModel<PickActionTargetResult>
     {
         public static readonly PickActionTargetKind[] Kinds =
@@ -152,6 +169,7 @@ namespace LcdMod.Client.Apps.ButtonPad
             SetItems(_load(_kind));
         }
 
+        [PreviewWith("Group")]
         public PickActionTargetKind Kind => _kind;
         protected override string NothingText => Loc("LcdMod_ButtonPad_TargetDialog_NoTargets");
 
@@ -185,6 +203,17 @@ namespace LcdMod.Client.Apps.ButtonPad
         }
     }
 
+    [PreviewWith("Title", "")]
+    [PreviewWith("SmallFontSize", 0.5525f)]
+    [PreviewWith("SearchText", "")]
+    [PreviewWith("Rows.Name", "Toggle block On/Off", "Turn On", "Turn Off", "Set velocity")]
+    [PreviewWith("Rows.Icon", "BooleanInput", "BooleanInput", "BooleanInput", "NumberInput")]
+    [PreviewWith("Rows", 4)]
+    [PreviewWith("IsRegular", true)]
+    [PreviewWith("IsEmpty", false)]
+    [PreviewWith("IsCompact", false)]
+    [PreviewWith("FontSize", 0.65f)]
+    [PreviewWith("EmptyText", "No compatible actions")]
     internal sealed class ActionPickerViewModel : ListPickerViewModel<ButtonPanelActionSettings>
     {
         readonly ButtonPanelActionSettings _current;

@@ -12,9 +12,6 @@
   <data name="LcdMod_Radar_DetectedEntities" xml:space="preserve">
     <value>检测到的实体:</value>
   </data>
-  <data name="LcdMod_TopEnergy" xml:space="preserve">
-    <value>最大能源消耗</value>
-  </data>
   <data name="LcdMod_EnergyDashboard" xml:space="preserve">
     <value>能源仪表盘</value>
   </data>
@@ -45,44 +42,14 @@
   <data name="LcdMod_GW_5m" xml:space="preserve">
     <value>5 分钟</value>
   </data>
-  <data name="LcdMod_OreScannerRadar" xml:space="preserve">
-    <value>矿石扫描雷达</value>
-  </data>
-  <data name="LcdMod_OreScanner_Moving" xml:space="preserve">
-    <value>移动中 — 扫描器离线</value>
-  </data>
-  <data name="LcdMod_OreScanner_Charging" xml:space="preserve">
-    <value>充能中 {0}秒</value>
-  </data>
-  <data name="LcdMod_OreScanner_Scanning" xml:space="preserve">
-    <value>扫描中 {0}% — 锥形扫描</value>
-  </data>
   <data name="LcdMod_OreScanner_Clear" xml:space="preserve">
     <value>无信号 — 无矿石</value>
-  </data>
-  <data name="LcdMod_OreScanner_Signal" xml:space="preserve">
-    <value>信号 {0}%</value>
   </data>
   <data name="LcdMod_OreScanner_Range" xml:space="preserve">
     <value>范围: {0}</value>
   </data>
-  <data name="LcdMod_OreScanner_NoDetector" xml:space="preserve">
-    <value>网格上没有矿石探测器</value>
-  </data>
-  <data name="LcdMod_OreScanner_MultipleDetectors" xml:space="preserve">
-    <value>多个矿石探测器 — 只保留一个</value>
-  </data>
-  <data name="LcdMod_OreScanner_ConeAngle" xml:space="preserve">
-    <value>信号倾斜</value>
-  </data>
-  <data name="LcdMod_OreScanner_TiltLabel" xml:space="preserve">
-    <value>信号倾斜:   {0}</value>
-  </data>
   <data name="LcdMod_OreScanner_Reference" xml:space="preserve">
     <value>参考驾驶舱 / 控制座椅</value>
-  </data>
-  <data name="LcdMod_OreScanner_Reference_None" xml:space="preserve">
-    <value>（使用重力）</value>
   </data>
   <data name="LcdMod_Damaged" xml:space="preserve">
     <value>受损</value>
@@ -159,29 +126,8 @@
   <data name="LcdMod_NotAvailable" xml:space="preserve">
     <value>无</value>
   </data>
-  <data name="LcdMod_StarMap_Info_Gravity" xml:space="preserve">
-    <value>重力: {0}</value>
-  </data>
-  <data name="LcdMod_StarMap_Info_Radius" xml:space="preserve">
-    <value>半径: {0}</value>
-  </data>
-  <data name="LcdMod_StarMap_Info_RadiusShort" xml:space="preserve">
-    <value>半径: {0}</value>
-  </data>
   <data name="LcdMod_Atmosphere_Short" xml:space="preserve">
     <value>大气: {0}</value>
-  </data>
-  <data name="LcdMod_StarMap_Info_O2" xml:space="preserve">
-    <value>氧气: {0}</value>
-  </data>
-  <data name="LcdMod_StarMap_Info_Temperature" xml:space="preserve">
-    <value>温度: {0}</value>
-  </data>
-  <data name="LcdMod_StarMap_Info_Wind" xml:space="preserve">
-    <value>风速: {0}</value>
-  </data>
-  <data name="LcdMod_StarMap_Label_Temperature" xml:space="preserve">
-    <value>温度</value>
   </data>
 <data name="LcdMod_Chess" xml:space="preserve">
     <value>国际象棋</value>
@@ -403,47 +349,14 @@
   <data name="LcdMod_EightBallPool_GroupOpen" xml:space="preserve">
     <value>开放</value>
   </data>
-<data name="LcdMod_EnergyDashboard_CurrentConsumption" xml:space="preserve">
-    <value>当前消耗：{0}</value>
-  </data>
-  <data name="LcdMod_EnergyDashboard_MaxCapacity" xml:space="preserve">
-    <value>最大容量：{0}</value>
-  </data>
   <data name="LcdMod_EnergyDashboard_Production" xml:space="preserve">
     <value>生产：{0}</value>
-  </data>
-  <data name="LcdMod_EnergyDashboard_Solar" xml:space="preserve">
-    <value>太阳能</value>
   </data>
   <data name="LcdMod_EnergyDashboard_Wind" xml:space="preserve">
     <value>风力</value>
   </data>
-  <data name="LcdMod_EnergyDashboard_Reactor" xml:space="preserve">
-    <value>反应堆</value>
-  </data>
-  <data name="LcdMod_EnergyDashboard_Engine" xml:space="preserve">
-    <value>氢气引擎</value>
-  </data>
   <data name="LcdMod_EnergyDashboard_Battery" xml:space="preserve">
     <value>电池</value>
-  </data>
-  <data name="LcdMod_EnergyDashboard_ProductionGraph" xml:space="preserve">
-    <value>能源生产</value>
-  </data>
-  <data name="LcdMod_EnergyDashboard_ConsumptionGraph" xml:space="preserve">
-    <value>能源消耗</value>
-  </data>
-  <data name="LcdMod_EnergyDashboard_Charging" xml:space="preserve">
-    <value>正在充电</value>
-  </data>
-  <data name="LcdMod_EnergyDashboard_Discharging" xml:space="preserve">
-    <value>正在放电</value>
-  </data>
-  <data name="LcdMod_EnergyDashboard_BatteryCountSingular" xml:space="preserve">
-    <value>{0} 个电池</value>
-  </data>
-  <data name="LcdMod_EnergyDashboard_BatteryCountPlural" xml:space="preserve">
-    <value>{0} 个电池</value>
   </data>
   <data name="LcdMod_Magnification" xml:space="preserve">
     <value>放大倍率</value>
@@ -505,18 +418,6 @@
   <data name="LcdMod_CraftDialog_AssemblerSelection_Empty" xml:space="preserve">
     <value>未找到装配器</value>
   </data>
-  <data name="LcdMod_Common_Button_Select" xml:space="preserve">
-    <value>选择</value>
-  </data>
-  <data name="LcdMod_CraftDialog_Assemblers_None" xml:space="preserve">
-    <value>装配器：无</value>
-  </data>
-  <data name="LcdMod_CraftDialog_Assemblers_Single" xml:space="preserve">
-    <value>装配器：{0}</value>
-  </data>
-  <data name="LcdMod_CraftDialog_Assemblers_SelectedCount" xml:space="preserve">
-    <value>装配器：已选择 {0} 个</value>
-  </data>
   <data name="LcdMod_CraftDialog_Assembler_FallbackName" xml:space="preserve">
     <value>装配器</value>
   </data>
@@ -576,38 +477,14 @@
     <data name="LcdMod_Projector_Ingots" xml:space="preserve">
     <value>錠</value>
   </data>
-    <data name="LcdMod_InputOutput" xml:space="preserve">
-    <value>输入 / 输出</value>
-  </data>
-    <data name="LcdMod_InputOutput_Input" xml:space="preserve">
-    <value>输入</value>
-  </data>
-    <data name="LcdMod_InputOutput_Output" xml:space="preserve">
-    <value>输出</value>
-  </data>
     <data name="LcdMod_InputOutput_All" xml:space="preserve">
     <value>全部</value>
   </data>
     <data name="LcdMod_InputOutput_Empty" xml:space="preserve">
     <value>空</value>
   </data>
-  <data name="LcdMod_Cargo_Sort_Quantity" xml:space="preserve">
-    <value>数量</value>
-  </data>
-  <data name="LcdMod_Cargo_Sort_Weight" xml:space="preserve">
-    <value>重量</value>
-  </data>
-  <data name="LcdMod_Cargo_Sort_Alphabetical" xml:space="preserve">
-    <value>字母顺序</value>
-  </data>
-  <data name="LcdMod_Cargo_SortDone" xml:space="preserve">
-    <value>已整理：移动了 {0} 个物品</value>
-  </data>
   <data name="LcdMod_Cargo_SortRequested" xml:space="preserve">
     <value>已请求整理</value>
-  </data>
-  <data name="LcdMod_Cargo_Sorter" xml:space="preserve">
-    <value>整理</value>
   </data>
   <data name="LcdMod_SubGrid" xml:space="preserve">
     <value>子网格</value>
@@ -635,15 +512,6 @@
   </data>
   <data name="LcdMod_Transfer_Next" xml:space="preserve">
     <value>下一步</value>
-  </data>
-  <data name="LcdMod_Cargo_FillWeapons" xml:space="preserve">
-    <value>武器</value>
-  </data>
-  <data name="LcdMod_Cargo_FillReactors" xml:space="preserve">
-    <value>反应堆</value>
-  </data>
-  <data name="LcdMod_Cargo_FillDone" xml:space="preserve">
-    <value>已移动 {0} 个物品</value>
   </data>
 <data name="LcdMod_DigitalPictureFrames" xml:space="preserve">
     <value>相框</value>
@@ -679,41 +547,11 @@
   <data name="LcdMod_CargoActions_Title" xml:space="preserve">
     <value>货物操作</value>
   </data>
-  <data name="LcdMod_CargoActions_Config" xml:space="preserve">
-    <value>设置</value>
-  </data>
-  <data name="LcdMod_CargoActions_ShowConfigButton" xml:space="preserve">
-    <value>显示设置按钮</value>
-  </data>
-  <data name="LcdMod_CargoActions_ShowConfigButton_Tooltip" xml:space="preserve">
-    <value>显示或隐藏此屏幕上的设置按钮。</value>
-  </data>
-  <data name="LcdMod_CargoActions_Sort" xml:space="preserve">
-    <value>排序</value>
-  </data>
-  <data name="LcdMod_CargoActions_Uranium" xml:space="preserve">
-    <value>铀 (kg)</value>
-  </data>
   <data name="LcdMod_CargoActions_Ammo" xml:space="preserve">
     <value>弹药</value>
   </data>
   <data name="LcdMod_CargoActions_Default" xml:space="preserve">
     <value>默认</value>
-  </data>
-  <data name="LcdMod_CargoActions_GridLarge" xml:space="preserve">
-    <value>大型网格</value>
-  </data>
-  <data name="LcdMod_CargoActions_GridSmall" xml:space="preserve">
-    <value>小型网格</value>
-  </data>
-  <data name="LcdMod_CargoActions_ReactorSmall" xml:space="preserve">
-    <value>小型反应堆</value>
-  </data>
-  <data name="LcdMod_CargoActions_ReactorLarge" xml:space="preserve">
-    <value>大型反应堆</value>
-  </data>
-  <data name="LcdMod_Cargo_FillRequested" xml:space="preserve">
-    <value>已请求补充</value>
   </data>
   <data name="LcdMod_CargoActions_ActionDone" xml:space="preserve">
     <value>{0}：{1}</value>
@@ -723,9 +561,6 @@
   </data>
   <data name="LcdMod_MarketApp_Refresh" xml:space="preserve">
     <value>Refresh</value>
-  </data>
-  <data name="LcdMod_MarketApp_Loading" xml:space="preserve">
-    <value>Requesting market data...</value>
   </data>
   <data name="LcdMod_MarketApp_Empty" xml:space="preserve">
     <value>No valid offers found.</value>
@@ -849,8 +684,7 @@
     <value>超过 {0} 范围时只能检测到无线电信号。</value>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line1" xml:space="preserve">
-    <value>Drag to orbit the radar camera, middle-drag to pan.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>拖动以环绕雷达摄像机，按住中键拖动以平移。</value>
   </data>
   <data name="LcdMod_Ftue_RadarCamera_Line2" xml:space="preserve">
     <value>滚动以缩放雷达地图。</value>
@@ -859,44 +693,34 @@
     <value>媒体播放器 - (实验性)</value>
   </data>
   <data name="LcdMod_Common_Button_Close" xml:space="preserve">
-    <value>Close</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>关闭</value>
   </data>
   <data name="LcdMod_MediaPlayer_ConfigureVisualizer" xml:space="preserve">
-    <value>Configure visualizer</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>配置可视化效果</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerSettings" xml:space="preserve">
-    <value>Visualizer settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>可视化效果设置</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerInstanceEnabled" xml:space="preserve">
-    <value>Enabled</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已启用</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerReset" xml:space="preserve">
-    <value>Reset to defaults</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>恢复默认设置</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXml" xml:space="preserve">
-    <value>Export / import XML</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>导出 / 导入 XML</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXmlTitle" xml:space="preserve">
-    <value>Visualizer settings XML</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>可视化效果设置 XML</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerXmlInvalid" xml:space="preserve">
-    <value>The visualizer settings XML could not be read: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>无法读取可视化效果设置 XML：{0}</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerSaveUser" xml:space="preserve">
-    <value>Save as my settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>保存为我的设置</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerLoadUser" xml:space="preserve">
-    <value>Load my settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>加载我的设置</value>
   </data>
   <data name="LcdMod_MediaPlayer_PausedTitleFormat" xml:space="preserve">
     <value>(已暂停) - {0}</value>
@@ -912,15 +736,6 @@
   </data>
   <data name="LcdMod_MediaPlayer_SaveQueue" xml:space="preserve">
     <value>保存</value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueuePlayedPrefix" xml:space="preserve">
-    <value>已播放：</value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueueCurrentPrefix" xml:space="preserve">
-    <value>&gt; </value>
-  </data>
-  <data name="LcdMod_MediaPlayer_QueueNextPrefix" xml:space="preserve">
-    <value>下一个：</value>
   </data>
   <data name="LcdMod_MediaPlayer_Pick" xml:space="preserve">
     <value>选择</value>
@@ -992,48 +807,34 @@
     <value>全部播放</value>
   </data>
   <data name="LcdMod_MediaPlayer_Context_Delete" xml:space="preserve">
-    <value>Delete</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>删除</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteLocalAudioTitle" xml:space="preserve">
-    <value>Delete local audio</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>删除本地音频</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteLocalAudioPromptFormat" xml:space="preserve">
-    <value>Delete &quot;{0}&quot; from local audio? This cannot be undone.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>要从本地音频中删除“{0}”吗？此操作无法撤销。</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeletePlaylistTitle" xml:space="preserve">
-    <value>Delete playlist</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>删除播放列表</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeletePlaylistPromptFormat" xml:space="preserve">
-    <value>Delete playlist &quot;{0}&quot;? This cannot be undone.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>要删除播放列表“{0}”吗？此操作无法撤销。</value>
   </data>
   <data name="LcdMod_MediaPlayer_DeleteFailedFormat" xml:space="preserve">
-    <value>Delete failed: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>删除失败：{0}</value>
   </data>
   <data name="LcdMod_MediaPlayer_LocalAudioDeletedFormat" xml:space="preserve">
-    <value>Deleted local audio {0}.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已删除本地音频 {0}。</value>
   </data>
   <data name="LcdMod_MediaPlayer_PlaylistDeletedFormat" xml:space="preserve">
-    <value>Deleted playlist {0}.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已删除播放列表 {0}。</value>
   </data>
   <data name="LcdMod_FilePicker_PickFile" xml:space="preserve">
     <value>选择文件</value>
   </data>
   <data name="LcdMod_FilePicker_PickFolder" xml:space="preserve">
     <value>选择文件夹</value>
-  </data>
-  <data name="LcdMod_FilePicker_SearchTitle" xml:space="preserve">
-    <value>搜索文件</value>
-  </data>
-  <data name="LcdMod_FilePicker_SearchSubtitle" xml:space="preserve">
-    <value>筛选当前文件夹中的文件和文件夹</value>
   </data>
   <data name="LcdMod_FilePicker_SearchPlaceholder" xml:space="preserve">
     <value>搜索文件</value>
@@ -1074,9 +875,6 @@
   <data name="LcdMod_RenderScale" xml:space="preserve">
     <value>渲染比例</value>
   </data>
-  <data name="LcdMod_RaysPerTick" xml:space="preserve">
-    <value>每帧射线数</value>
-  </data>
   <data name="LcdMod_PlanetTextureQuality" xml:space="preserve">
     <value>行星纹理质量</value>
   </data>
@@ -1100,15 +898,6 @@
   </data>
   <data name="LcdMod_PlanetaryMap_NoPlanet" xml:space="preserve">
     <value>未找到行星。</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_CartographyNotReady" xml:space="preserve">
-    <value>行星地图数据尚未准备就绪。</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_NoColorCubemap" xml:space="preserve">
-    <value>行星地图纹理不可用。</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_NoResult" xml:space="preserve">
-    <value>未返回行星地图数据。</value>
   </data>
   <data name="LcdMod_PlanetaryMap_CartographyFailed" xml:space="preserve">
     <value>无法为此类行星生成地图。</value>
@@ -1167,6 +956,18 @@
   <data name="LcdMod_PlanetaryMap_FreeCamera_Tooltip" xml:space="preserve">
     <value>保持地图相机固定，直到再次启用跟随。</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_View2D_Title" xml:space="preserve">
+    <value>2D 地图</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View2D_Tooltip" xml:space="preserve">
+    <value>平面投影的星球地图。点击切换到 3D 地形视图。</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View3D_Title" xml:space="preserve">
+    <value>3D 地形</value>
+  </data>
+  <data name="LcdMod_PlanetaryMap_View3D_Tooltip" xml:space="preserve">
+    <value>带有真实起伏的地形。拖动以平移，按住中键拖动以旋转和倾斜。点击返回 2D 地图。</value>
+  </data>
   <data name="LcdMod_Gps_DisplayMyGps_Title" xml:space="preserve">
     <value>显示我的 GPS</value>
   </data>
@@ -1202,12 +1003,6 @@
   </data>
   <data name="LcdMod_Gps_Unknown_Name" xml:space="preserve">
     <value>未知</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_MapLayerFormat" xml:space="preserve">
-    <value>地图图层：{0}</value>
-  </data>
-  <data name="LcdMod_PlanetaryMap_MapLayer_Tooltip" xml:space="preserve">
-    <value>选择卫星、地形、材质或生物群系配色。</value>
   </data>
   <data name="LcdMod_PlanetaryMap_Layer_Terrain" xml:space="preserve">
     <value>地形</value>
@@ -1282,129 +1077,86 @@
     <value>跃迁点：{0}</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportLocalAudio_Summary" xml:space="preserve">
-    <value>Imports a local WAV file into the audio library.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>将本地 WAV 文件导入音频库。</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportAudios_Summary" xml:space="preserve">
-    <value>Imports the WAV files listed in audio_import.txt.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>导入 audio_import.txt 中列出的 WAV 文件。</value>
   </data>
   <data name="LcdMod_ChatCommand_PlayAudio_Summary" xml:space="preserve">
-    <value>Plays a local WAV file for the current player.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>为当前玩家播放本地 WAV 文件。</value>
   </data>
   <data name="LcdMod_ChatCommand_PlayGameAudio_Summary" xml:space="preserve">
-    <value>Plays a game audio definition by subtype.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>按子类型播放游戏的音频定义。</value>
   </data>
   <data name="LcdMod_ChatCommand_StreamAudio_Summary" xml:space="preserve">
-    <value>Broadcasts an imported audio asset to LCD media players.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>将已导入的音频广播到 LCD 媒体播放器。</value>
   </data>
   <data name="LcdMod_ChatCommand_TestAudio_Summary" xml:space="preserve">
-    <value>Tests referenced game audio files and writes a compatibility report.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>测试游戏引用的音频文件并写入兼容性报告。</value>
   </data>
   <data name="LcdMod_ChatCommand_TestCartography_Summary" xml:space="preserve">
-    <value>Tests loaded planet cartography definitions and writes diagnostic archives.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>测试已加载的星球制图定义并写入诊断存档。</value>
   </data>
   <data name="LcdMod_ChatCommand_Advanced_Summary" xml:space="preserve">
-    <value>Enables or disables advanced terminal tweakables.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>启用或禁用终端高级调整项。</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles rendering of textures owned by other users.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>启用、禁用或切换其他玩家所拥有纹理的渲染。</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles interactive control-boundary debugging.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles debug surface mode.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>启用、禁用或切换交互控件边界调试。</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles the sprite-count debug overlay.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>启用、禁用或切换精灵数量调试叠加层。</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Summary" xml:space="preserve">
-    <value>Enables, disables, or toggles visible clipping debug overlays.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>启用、禁用或切换可见裁剪调试叠加层。</value>
   </data>
   <data name="LcdMod_ChatCommand_TextInput_Summary" xml:space="preserve">
-    <value>Opens a diagnostic text input dialog.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_Profile_Summary" xml:space="preserve">
-    <value>Profiles LCD app rendering for a specified duration or cancels the active profile.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>打开诊断用文本输入对话框。</value>
   </data>
   <data name="LcdMod_ChatCommand_FactionColor_Summary" xml:space="preserve">
-    <value>Sets the local player's faction icon color.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>设置本地玩家的派系图标颜色。</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_Summary" xml:space="preserve">
-    <value>Resets completed first-time user experience tips.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>重置已完成的新手提示。</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Summary" xml:space="preserve">
-    <value>Shows the list of available chat commands.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>显示可用聊天命令列表。</value>
   </data>
   <data name="LcdMod_ChatCommand_PreloadTextures_Summary" xml:space="preserve">
-    <value>Preloads block textures as LCD sprites.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>将方块纹理预加载为 LCD 精灵。</value>
   </data>
   <data name="LcdMod_ChatCommand_RemoveLocalTexture_Summary" xml:space="preserve">
-    <value>Removes an image from your local image library.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>从本地图片库中移除一张图片。</value>
   </data>
   <data name="LcdMod_ChatCommand_ImportTextures_Summary" xml:space="preserve">
-    <value>Imports new .png and .dds images from the mod storage folder.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>从模组存储文件夹导入新的 .png 和 .dds 图片。</value>
   </data>
 
   <data name="LcdMod_ChatCommand_Advanced_Enabled_Message" xml:space="preserve">
-    <value>Advanced tweakables mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已启用高级调整模式。</value>
   </data>
   <data name="LcdMod_ChatCommand_Advanced_Disabled_Message" xml:space="preserve">
-    <value>Advanced tweakables mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已禁用高级调整模式。</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Enabled_Message" xml:space="preserve">
-    <value>Rendering textures owned by other users enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已启用其他玩家纹理的渲染。</value>
   </data>
   <data name="LcdMod_ChatCommand_RenderUserGeneratedTextures_Disabled_Message" xml:space="preserve">
-    <value>Rendering textures owned by other users disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已禁用其他玩家纹理的渲染。</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Enabled_Message" xml:space="preserve">
-    <value>DebugInteractive mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已启用 DebugInteractive 模式。</value>
   </data>
   <data name="LcdMod_ChatCommand_DebugInteractive_Disabled_Message" xml:space="preserve">
-    <value>DebugInteractive mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Enabled_Message" xml:space="preserve">
-    <value>DebugSurface mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
-  </data>
-  <data name="LcdMod_ChatCommand_DebugSurface_Disabled_Message" xml:space="preserve">
-    <value>DebugSurface mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已禁用 DebugInteractive 模式。</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Enabled_Message" xml:space="preserve">
-    <value>SpriteCountDebug mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已启用 SpriteCountDebug 模式。</value>
   </data>
   <data name="LcdMod_ChatCommand_SpriteCountDebug_Disabled_Message" xml:space="preserve">
-    <value>SpriteCountDebug mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已禁用 SpriteCountDebug 模式。</value>
   </data>
   <data name="LcdMod_ChatCommand_VerifyFrameCache_Enabled_Message" xml:space="preserve">
     <value>Frame cache verification enabled.</value>
@@ -1418,366 +1170,275 @@
   <data name="LcdMod_ChatCommand_StyleCache_Disabled_Message" xml:space="preserve">
     <value>Style cache disabled; views reload styles from disk.</value>
   </data>
-  <data name="LcdMod_ChatCommand_HotReload_Enabled_Message" xml:space="preserve">
-    <value>View hot reload enabled; rebuilt {0} of {1} views.</value>
-  </data>
   <data name="LcdMod_ChatCommand_HotReload_Disabled_Message" xml:space="preserve">
     <value>View hot reload disabled.</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Enabled_Message" xml:space="preserve">
-    <value>VisibleClip mode enabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已启用 VisibleClip 模式。</value>
   </data>
   <data name="LcdMod_ChatCommand_VisibleClip_Disabled_Message" xml:space="preserve">
-    <value>VisibleClip mode disabled.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已禁用 VisibleClip 模式。</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_Cleared_Message_Format" xml:space="preserve">
-    <value>FTUE tip {0} cleared.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已重置 FTUE 提示 {0}。</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_NotFound_Message_Format" xml:space="preserve">
-    <value>FTUE tip {0} was not found. Try:&#10;{1}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>未找到 FTUE 提示 {0}。请尝试：&#10;{1}</value>
   </data>
   <data name="LcdMod_ChatCommand_ResetFtue_NoneFound_Message" xml:space="preserve">
-    <value>No completed FTUE tips were found.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>未找到已完成的 FTUE 提示。</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Title" xml:space="preserve">
-    <value>Available commands</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>可用命令</value>
   </data>
   <data name="LcdMod_ChatCommand_Help_Subtitle" xml:space="preserve">
-    <value>List of all available chat commands</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>所有可用聊天命令的列表</value>
   </data>
   <data name="LcdMod_DefenseDashboard" xml:space="preserve">
     <value>防御仪表板</value>
   </data>
   <data name="LcdMod_ButtonPad" xml:space="preserve">
-    <value>Button Pad</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>按钮面板</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionUnavailable" xml:space="preserve">
-    <value>Action unavailable</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>操作不可用</value>
   </data>
   <data name="LcdMod_ButtonPad_NoCompatibleTarget" xml:space="preserve">
-    <value>No compatible target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>没有兼容的目标</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionFailed" xml:space="preserve">
-    <value>Action failed</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>操作失败</value>
   </data>
   <data name="LcdMod_ButtonPad_Button" xml:space="preserve">
-    <value>Button</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>按钮</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonFormat" xml:space="preserve">
-    <value>Button {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>按钮 {0}</value>
   </data>
   <data name="LcdMod_ButtonPad_Title" xml:space="preserve">
-    <value>Title</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>标题</value>
   </data>
   <data name="LcdMod_ButtonPad_TitleHelp" xml:space="preserve">
-    <value>Button title displayed above the icon</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>显示在图标上方的按钮标题</value>
   </data>
   <data name="LcdMod_ButtonPad_Apply" xml:space="preserve">
-    <value>Apply</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>应用</value>
   </data>
   <data name="LcdMod_ButtonPad_Delete" xml:space="preserve">
-    <value>Delete</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>删除</value>
   </data>
   <data name="LcdMod_ButtonPad_SelectTarget" xml:space="preserve">
-    <value>Select Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>选择目标</value>
   </data>
   <data name="LcdMod_ButtonPad_SelectAction" xml:space="preserve">
-    <value>Select Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>选择操作</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonColor" xml:space="preserve">
-    <value>Button Color</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>按钮颜色</value>
   </data>
   <data name="LcdMod_ButtonPad_Color" xml:space="preserve">
-    <value>Color</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>颜色</value>
   </data>
   <data name="LcdMod_ButtonPad_ColorHexHelp" xml:space="preserve">
-    <value>Hex color, for example #ff00ff</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>十六进制颜色，例如 #ff00ff</value>
   </data>
   <data name="LcdMod_ButtonPad_InvalidColor" xml:space="preserve">
-    <value>Invalid color. Use #RRGGBB.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>颜色无效。请使用 #RRGGBB。</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_Title" xml:space="preserve">
-    <value>Pick Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>挑选目标</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchTitle" xml:space="preserve">
-    <value>Search Target</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>搜索目标</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchPlaceholder" xml:space="preserve">
-    <value>Search targets</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>搜索目标</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_SearchHelp" xml:space="preserve">
-    <value>Filter targets containing this text</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>筛选包含此文本的目标</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetDialog_NoTargets" xml:space="preserve">
-    <value>No targets</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>没有目标</value>
   </data>
   <data name="LcdMod_ButtonPad_NoMatches" xml:space="preserve">
-    <value>No matches</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>没有匹配项</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_Block" xml:space="preserve">
-    <value>Block</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>方块</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_Group" xml:space="preserve">
-    <value>Group</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>编组</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_BlockType" xml:space="preserve">
-    <value>Block Type</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>方块类型</value>
   </data>
   <data name="LcdMod_ButtonPad_TargetKind_BlockSubtype" xml:space="preserve">
-    <value>Block Subtype</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>方块子类型</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchTitle" xml:space="preserve">
-    <value>Search Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>搜索操作</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchPlaceholder" xml:space="preserve">
-    <value>Search actions</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>搜索操作</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_SearchHelp" xml:space="preserve">
-    <value>Filter actions containing this text</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>筛选包含此文本的操作</value>
   </data>
   <data name="LcdMod_ButtonPad_ActionDialog_NoCompatibleActions" xml:space="preserve">
-    <value>No compatible actions</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>没有兼容的操作</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Title" xml:space="preserve">
-    <value>Configure Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>配置操作</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Scroll" xml:space="preserve">
-    <value>Scroll</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>滚动</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_NoParameters" xml:space="preserve">
-    <value>No configurable parameters</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>没有可配置的参数</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_EnterValue" xml:space="preserve">
-    <value>Enter value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>输入数值</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Parameter" xml:space="preserve">
-    <value>Parameter</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>参数</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_NumberValue" xml:space="preserve">
-    <value>Number value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>数字值</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_TextValue" xml:space="preserve">
-    <value>Text value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>文本值</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ColorValue" xml:space="preserve">
-    <value>Color value</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>颜色值</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_BooleanMode" xml:space="preserve">
-    <value>Boolean mode</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>布尔模式</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ClickAction" xml:space="preserve">
-    <value>Click Action</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>点击操作</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_On" xml:space="preserve">
-    <value>On</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>开</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Off" xml:space="preserve">
-    <value>Off</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>关</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Toggle" xml:space="preserve">
-    <value>Toggle</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>切换</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Decrease" xml:space="preserve">
-    <value>Decrease</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>减少</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Increase" xml:space="preserve">
-    <value>Increase</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>增加</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Normal" xml:space="preserve">
-    <value>Normal</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>正常</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_Reversed" xml:space="preserve">
-    <value>Reversed</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>反向</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_None" xml:space="preserve">
-    <value>None</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>无</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ScrollFormat" xml:space="preserve">
-    <value>{0}, Scroll: {1}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0}，滚动：{1}</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCount" xml:space="preserve">
-    <value>Button count</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>按钮数量</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCountTooltip" xml:space="preserve">
-    <value>Number of buttons. Values are snapped to complete rows and columns.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>按钮数量。数值会自动调整为完整的行和列。</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonCountFormat" xml:space="preserve">
-    <value>{0} buttons ({1} × {2})</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0} 个按钮（{1} × {2}）</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonStyle" xml:space="preserve">
-    <value>Button Style</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>按钮样式</value>
   </data>
   <data name="LcdMod_ButtonPad_ButtonStyleTooltip" xml:space="preserve">
-    <value>Visual style used by Button Panel buttons.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>按钮面板中按钮的外观样式。</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Default" xml:space="preserve">
-    <value>Default</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>默认</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Classic" xml:space="preserve">
-    <value>Classic</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>经典</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Transparent" xml:space="preserve">
-    <value>Transparent</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>透明</value>
   </data>
   <data name="LcdMod_ButtonPad_Style_Border" xml:space="preserve">
-    <value>Border</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>边框</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Copy" xml:space="preserve">
-    <value>Copy settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>复制设置</value>
   </data>
   <data name="LcdMod_SettingsClipboard_CopyTooltip" xml:space="preserve">
-    <value>Copy the selected LCD Mod settings and text-surface display properties into a temporary client-side clipboard.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>将所选 LCD Mod 设置和文本表面显示属性复制到客户端临时剪贴板。</value>
   </data>
   <data name="LcdMod_SettingsClipboard_NoSettings" xml:space="preserve">
-    <value>No LCD Mod settings found for this surface.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>未找到此表面的 LCD Mod 设置。</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Copied" xml:space="preserve">
-    <value>Settings copied.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>设置已复制。</value>
   </data>
   <data name="LcdMod_SettingsClipboard_CopyFailedFormat" xml:space="preserve">
-    <value>Failed to copy settings: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>复制设置失败：{0}</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Paste" xml:space="preserve">
-    <value>Paste settings</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>粘贴设置</value>
   </data>
   <data name="LcdMod_SettingsClipboard_PasteTooltip" xml:space="preserve">
-    <value>Paste compatible LCD Mod settings and text-surface display properties without changing the destination app type.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>粘贴兼容的 LCD Mod 设置和文本表面显示属性，不更改目标的应用类型。</value>
   </data>
   <data name="LcdMod_SettingsClipboard_NoCopiedSettings" xml:space="preserve">
-    <value>No copied settings are available for this surface.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>此表面没有可用的已复制设置。</value>
   </data>
   <data name="LcdMod_SettingsClipboard_Pasted" xml:space="preserve">
-    <value>Compatible settings pasted.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已粘贴兼容的设置。</value>
   </data>
   <data name="LcdMod_SettingsClipboard_PasteFailedFormat" xml:space="preserve">
-    <value>Failed to paste settings: {0}</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>粘贴设置失败：{0}</value>
   </data>
   <data name="LcdMod_DefenseDashboard_ShieldFallback" xml:space="preserve">
-    <value>Shield</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>护盾</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Offline" xml:space="preserve">
-    <value>Offline</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>离线</value>
   </data>
   <data name="LcdMod_DefenseDashboard_FullyCharged" xml:space="preserve">
-    <value>Fully charged</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已充满</value>
   </data>
   <data name="LcdMod_DefenseDashboard_RechargeInSecondsFormat" xml:space="preserve">
-    <value>Recharge in {0}s</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>{0} 秒后充能完成</value>
   </data>
   <data name="LcdMod_DefenseDashboard_RechargeUnavailable" xml:space="preserve">
-    <value>Recharge unavailable</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>无法充能</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Ready" xml:space="preserve">
-    <value>Ready</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>就绪</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Firing" xml:space="preserve">
-    <value>Firing</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>开火中</value>
   </data>
   <data name="LcdMod_DefenseDashboard_NotReady" xml:space="preserve">
-    <value>Not Ready</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>未就绪</value>
   </data>
   <data name="LcdMod_DefenseDashboard_Disabled" xml:space="preserve">
-    <value>Disabled</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已禁用</value>
   </data>
   <data name="LcdMod_ButtonPad_ConfigureAction_ColorHexHelp" xml:space="preserve">
-    <value>Hex color, for example #ff8800</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>十六进制颜色，例如 #ff8800</value>
   </data>
   <data name="LcdMod_SpritePicker_Title" xml:space="preserve">
-    <value>Sprite Picker</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>精灵选择器</value>
   </data>
   <data name="LcdMod_SpritePicker_SelectedFormat" xml:space="preserve">
-    <value>{0} selected</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>已选择 {0} 个</value>
   </data>
   <data name="LcdMod_SpritePicker_MultiSelectHint" xml:space="preserve">
-    <value>Ctrl+click adds a sprite, Shift+click selects a range</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>Ctrl+单击添加精灵，Shift+单击选择范围</value>
   </data>
   <data name="LcdMod_SpritePicker_Root_Local" xml:space="preserve">
     <value>我的图片</value>
@@ -1795,34 +1456,130 @@
     <value>从图库移除</value>
   </data>
   <data name="LcdMod_Common_Button_Apply" xml:space="preserve">
-    <value>Apply</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>应用</value>
   </data>
   <data name="LcdMod_CraftDialog_CraftAll" xml:space="preserve">
-    <value>Craft all</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>全部制造</value>
   </data>
   <data name="LcdMod_CraftDialog_Amount" xml:space="preserve">
-    <value>Amount</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>数量</value>
   </data>
   <data name="LcdMod_PlanetaryMap_RenderSkybox" xml:space="preserve">
     <value>渲染天空盒</value>
   </data>
+  <data name="LcdMod_PlanetaryMap_RenderAtmosphere" xml:space="preserve">
+    <value>渲染大气</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinX" xml:space="preserve">
+    <value>剖面 X：起点 (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxX" xml:space="preserve">
+    <value>剖面 X：终点 (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinY" xml:space="preserve">
+    <value>剖面 Y：起点 (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxY" xml:space="preserve">
+    <value>剖面 Y：终点 (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMinZ" xml:space="preserve">
+    <value>剖面 Z：起点 (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_CutMaxZ" xml:space="preserve">
+    <value>剖面 Z：终点 (%)</value>
+  </data>
+  <data name="LcdMod_Integrity_HighlightMissing" xml:space="preserve">
+    <value>高亮缺失的方块</value>
+  </data>
+  <data name="LcdMod_Integrity_HighlightDamaged" xml:space="preserve">
+    <value>高亮受损的方块</value>
+  </data>
+  <data name="LcdMod_Integrity_View2D_Title" xml:space="preserve">
+    <value>2D 地图</value>
+  </data>
+  <data name="LcdMod_Integrity_View2D_Tooltip" xml:space="preserve">
+    <value>从所选轴向看的深度图。点击切换到 3D 视图。</value>
+  </data>
+  <data name="LcdMod_Integrity_View3D_Title" xml:space="preserve">
+    <value>3D 视图</value>
+  </data>
+  <data name="LcdMod_Integrity_View3D_Tooltip" xml:space="preserve">
+    <value>以 3D 显示飞船。拖动以环绕，滚动以缩放。点击返回 2D 地图。</value>
+  </data>
+  <data name="LcdMod_Integrity_XRayOff_Title" xml:space="preserve">
+    <value>完整视图</value>
+  </data>
+  <data name="LcdMod_Integrity_XRayOff_Tooltip" xml:space="preserve">
+    <value>飞船原貌，高亮受损和缺失的方块。</value>
+  </data>
+  <data name="LcdMod_Integrity_XRay_Tooltip" xml:space="preserve">
+    <value>X 光：透过船体显示这些方块。</value>
+  </data>
+  <data name="LcdMod_Integrity_Legend" xml:space="preserve">
+    <value>图例</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraLocked_Title" xml:space="preserve">
+    <value>锁定相机</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraLocked_Tooltip" xml:space="preserve">
+    <value>相机跟随设定的轴向、旋转和缩放。</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraFree_Title" xml:space="preserve">
+    <value>自由相机</value>
+  </data>
+  <data name="LcdMod_Integrity_CameraFree_Tooltip" xml:space="preserve">
+    <value>相机停在你离开的位置。点击返回设定视图。</value>
+  </data>
+  <data name="LcdMod_Integrity_XRay_Combine_Tooltip" xml:space="preserve">
+    <value>Ctrl+点击可组合图层。</value>
+  </data>
   <data name="LcdMod_StarMap_PlanetInfo" xml:space="preserve">
     <value>行星信息</value>
   </data>
+  <data name="LcdMod_StarMap_Loading3DScene" xml:space="preserve">
+    <value>正在加载 3D 场景</value>
+  </data>
   <data name="LcdMod_Games_NewGamePrompt" xml:space="preserve">
-    <value>Start a new game? The current game will be lost.</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>要开始新游戏吗？当前游戏将会丢失。</value>
   </data>
   <data name="LcdMod_Games_GameOver" xml:space="preserve">
-    <value>Game Over</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>游戏结束</value>
   </data>
   <data name="LcdMod_Games_PlayAgain" xml:space="preserve">
-    <value>Play again?</value>
-    <comment>TODO_TRANSLATION</comment>
+    <value>再玩一次？</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Move" xml:space="preserve">
+    <value>移动</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Aim" xml:space="preserve">
+    <value>瞄准</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Shoot" xml:space="preserve">
+    <value>射击</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Use" xml:space="preserve">
+    <value>使用</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Strafe" xml:space="preserve">
+    <value>侧移</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Pause" xml:space="preserve">
+    <value>暂停</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Run" xml:space="preserve">
+    <value>奔跑</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Weapon" xml:space="preserve">
+    <value>武器</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Menu" xml:space="preserve">
+    <value>菜单</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Cursor" xml:space="preserve">
+    <value>光标</value>
+  </data>
+  <data name="LcdMod_Games_Doom_Exit" xml:space="preserve">
+    <value>退出</value>
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerManageInstances" xml:space="preserve">
     <value>管理实例</value>
@@ -1832,5 +1589,194 @@
   </data>
   <data name="LcdMod_MediaPlayer_VisualizerRemoveInstance" xml:space="preserve">
     <value>移除</value>
+  </data>
+  <data name="LcdMod_TargetInfo" xml:space="preserve">
+    <value>目标视图</value>
+  </data>
+  <data name="LcdMod_TargetInfo_NoTarget" xml:space="preserve">
+    <value>未锁定目标</value>
+  </data>
+  <data name="LcdMod_TargetInfo_Lost" xml:space="preserve">
+    <value>目标丢失：最后已知状态</value>
+  </data>
+  <data name="LcdMod_TargetInfo_LossAlert" xml:space="preserve">
+    <value>目标丢失！</value>
+  </data>
+  <data name="LcdMod_TargetInfo_Scanning" xml:space="preserve">
+    <value>扫描中... {0}%</value>
+  </data>
+  <data name="LcdMod_TargetInfo_LockCandidate" xml:space="preserve">
+    <value>锁定：{0}</value>
+  </data>
+  <data name="LcdMod_ShipClass_Format" xml:space="preserve">
+    <value>{0}级</value>
+  </data>
+  <data name="LcdMod_ShipClass_Major" xml:space="preserve">
+    <value>Major {0}级</value>
+  </data>
+  <data name="LcdMod_ShipClass_Minor" xml:space="preserve">
+    <value>Minor {0}级</value>
+  </data>
+  <data name="LcdMod_Integrity_NoProjector" xml:space="preserve">
+    <value>未选择投影仪</value>
+  </data>
+  <data name="LcdMod_Integrity_SnapshotMismatch" xml:space="preserve">
+    <value>快照与此网格不匹配</value>
+  </data>
+  <data name="LcdMod_Integrity_Snapshot_Title" xml:space="preserve">
+    <value>记录当前网格</value>
+  </data>
+  <data name="LcdMod_Integrity_Snapshot_Tooltip" xml:space="preserve">
+    <value>记住网格当前的样子，以便屏幕在没有投影仪时进行比较。方块以此屏幕的方块为基准保存。</value>
+  </data>
+  <data name="LcdMod_Integrity_ClearSnapshot_Title" xml:space="preserve">
+    <value>清除快照</value>
+  </data>
+  <data name="LcdMod_Integrity_ClearSnapshot_Tooltip" xml:space="preserve">
+    <value>忘记此屏幕记住的网格。</value>
+  </data>
+  <data name="LcdMod_ExternalSensors" xml:space="preserve">
+    <value>外部传感器</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_ThirdPerson" xml:space="preserve">
+    <value>第三人称</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_FirstPerson" xml:space="preserve">
+    <value>第一人称</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_Camera" xml:space="preserve">
+    <value>第一人称摄像头</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_NoCameras" xml:space="preserve">
+    <value>没有可用的摄像头或炮塔：仅显示飞船</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_CameraLost" xml:space="preserve">
+    <value>所选摄像头无法工作</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_SwitchView" xml:space="preserve">
+    <value>在第三人称和第一人称之间切换</value>
+  </data>
+  <data name="LcdMod_ExternalSensors_LockCamera" xml:space="preserve">
+    <value>将摄像机锁回默认视角</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic" xml:space="preserve">
+    <value>自身状态</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_Hits" xml:space="preserve">
+    <value>命中</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_Missiles" xml:space="preserve">
+    <value>来袭导弹</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_NoSnapshot" xml:space="preserve">
+    <value>未拍摄快照</value>
+  </data>
+  <data name="LcdMod_SelfDiagnostic_ProjectorBackup" xml:space="preserve">
+    <value>无快照：正在与投影仪比较</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsOrbit_Line1" xml:space="preserve">
+    <value>拖动可环视你的飞船。</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsOrbit_Line2" xml:space="preserve">
+    <value>滚动可拉近或拉远摄像机。</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsCameras_Line1" xml:space="preserve">
+    <value>其他飞船、小行星和敌方导弹只有在摄像头或炮塔看到时才会显示。</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsCameras_Line2" xml:space="preserve">
+    <value>天线覆盖到你的友方飞船也会共享它们的摄像头。</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsFirstPerson_Line1" xml:space="preserve">
+    <value>按右上角的 **视角** 按钮即可通过摄像头观看。</value>
+  </data>
+  <data name="LcdMod_Ftue_SensorsFirstPerson_Line2" xml:space="preserve">
+    <value>然后在 **第一人称摄像头** 列表中选择摄像头。</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMap3D_Line1" xml:space="preserve">
+    <value>按 **3D** 以 3D 方式查看地形。</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMap3D_Line2" xml:space="preserve">
+    <value>山脉会显示真实高度，并且可以拉得更近。</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapStreetView_Line1" xml:space="preserve">
+    <value>将 **Street View** 手柄拖到星球上。</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapStreetView_Line2" xml:space="preserve">
+    <value>摄像机会以旁观者身份降落到那里的地面。</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapRoads_Line1" xml:space="preserve">
+    <value>按 **道路** 按钮显示或隐藏道路。</value>
+  </data>
+  <data name="LcdMod_Ftue_PlanetaryMapRoads_Line2" xml:space="preserve">
+    <value>隐藏道路后地形更易辨认。</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView3D_Line1" xml:space="preserve">
+    <value>按 **3D** 以 3D 方式查看飞船。</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView3D_Line2" xml:space="preserve">
+    <value>拖动以环绕，滚轮缩放，按住中键拖动以平移。</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView2D_Line1" xml:space="preserve">
+    <value>按 **2D** 查看飞船的平面地图。</value>
+  </data>
+  <data name="LcdMod_Ftue_GridView2D_Line2" xml:space="preserve">
+    <value>再按一次返回 3D。</value>
+  </data>
+  <data name="LcdMod_Ftue_GridXRay_Line1" xml:space="preserve">
+    <value>打开左下角的 **X 光**，透过船体查看某一类方块。</value>
+  </data>
+  <data name="LcdMod_Ftue_GridXRay_Line2" xml:space="preserve">
+    <value>按住 **Ctrl** 点击可同时显示多个图层。</value>
+  </data>
+  <data name="LcdMod_Ftue_GridCameraLock_Line1" xml:space="preserve">
+    <value>按 **锁** 返回设定的视角。</value>
+  </data>
+  <data name="LcdMod_Ftue_GridCameraLock_Line2" xml:space="preserve">
+    <value>锁定时再按一次可选择其他方向：X、Y 或 Z。</value>
+  </data>
+  <data name="LcdMod_Ftue_GridLegend_Line1" xml:space="preserve">
+    <value>按 **信息** 查看每种颜色的含义。</value>
+  </data>
+  <data name="LcdMod_Ftue_GridLegend_Line2" xml:space="preserve">
+    <value>在 3D 中还会统计缺失和损坏的方块。</value>
+  </data>
+  <data name="LcdMod_Ftue_PreviewGridSnapshot_Line1" xml:space="preserve">
+    <value>没有投影仪？趁飞船完好时按 **记录当前网格**。</value>
+  </data>
+  <data name="LcdMod_Ftue_PreviewGridSnapshot_Line2" xml:space="preserve">
+    <value>之后屏幕会显示与其相比缺失或损坏的部分。</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticSnapshot_Line1" xml:space="preserve">
+    <value>趁飞船完好时按 **记录当前网格**。</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticSnapshot_Line2" xml:space="preserve">
+    <value>命中和损失的方块都以它为基准，包括子网格。</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticCombat_Line1" xml:space="preserve">
+    <value>被击中和受损的方块显示为红色，遭受攻击时会闪烁。</value>
+  </data>
+  <data name="LcdMod_Ftue_SelfDiagnosticCombat_Line2" xml:space="preserve">
+    <value>来袭导弹以红色标出，并画出其飞行方向的线。</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoLock_Line1" xml:space="preserve">
+    <value>锁定一个网格即可在此查看。</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoLock_Line2" xml:space="preserve">
+    <value>屏幕会记住它，被你打掉的部分会显示为缺失。</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoMemory_Line1" xml:space="preserve">
+    <value>锁定丢失：这是目标最后一次被看到时的样子。</value>
+  </data>
+  <data name="LcdMod_Ftue_TargetInfoMemory_Line2" xml:space="preserve">
+    <value>再次锁定即可实时查看。</value>
+  </data>
+  <data name="LcdMod_Ftue_MediaPlayerVideos_Line1" xml:space="preserve">
+    <value>将你自己的视频（.mkv 或 .webm）放入 {0}。</value>
+  </data>
+  <data name="LcdMod_Ftue_MediaPlayerVideos_Line2" xml:space="preserve">
+    <value>那里的 readme 说明了如何用 ffmpeg 转换任意视频。</value>
+  </data>
+  <data name="LcdMod_PreparingAutomaticRepair" xml:space="preserve">
+    <value>正在准备自动修复</value>
   </data>
 </root>

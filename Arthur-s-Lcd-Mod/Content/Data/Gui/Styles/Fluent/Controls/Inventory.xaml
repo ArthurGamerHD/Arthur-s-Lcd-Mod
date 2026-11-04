@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+<Styles xmlns="https://github.com/ArthurGamerHD/AcruxUI"
         xmlns:inventory="using:LcdMod.Client.Apps.Inventory">
   <Style Selector="ScrollBar.scroll-viewer-scrollbar:vertical"><Setter Property="Width" Value="5" /></Style>
   <Style Selector="inventory|InventoryItemControl">

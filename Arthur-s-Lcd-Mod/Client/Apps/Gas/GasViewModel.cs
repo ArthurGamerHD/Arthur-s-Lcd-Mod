@@ -1,22 +1,34 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Helpers;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Gas
 {
+    /// <summary>What the gas view model reads from its app (<see cref="GasApp"/>; a design-time host in the preview).</summary>
+    internal interface IGasHost
+    {
+        IReadOnlyList<GasEntry> Entries { get; }
+        bool NativeGridMode { get; }
+        string NativeEntryClasses { get; }
+        Color NativeFill(float percentage);
+    }
+
+    [PreviewWith("Columns", 2)]
+    [PreviewWith("CardHeight", 72f)]
     internal sealed class GasViewModel : Views.CardGridViewModel
     {
-        readonly GasApp _app;
+        readonly IGasHost _app;
         readonly List<GasDisplayEntry> _entries = new List<GasDisplayEntry>();
         readonly Dictionary<long, GasDisplayEntry> _byId = new Dictionary<long, GasDisplayEntry>();
 
-        public GasViewModel(GasApp app)
+        public GasViewModel(IGasHost app)
         {
             _app = app;
         }
 
+        [PreviewWith(4)]
         public IReadOnlyList<GasDisplayEntry> Entries => _entries;
         protected override float MinimumColumnWidth => _app.NativeGridMode ? 220f : 0f;
         protected override float RowHeight => _app.NativeGridMode ? 72f : 36f;
@@ -54,12 +66,19 @@ namespace LcdMod.Client.Apps.Gas
             Key = key;
         }
 
+        [PreviewWith(1L, 2L, 3L, 4L)]
         public long Key { get; private set; }
+        [PreviewWith("MyObjectBuilder_OxygenTank/LargeHydrogenTank", "MyObjectBuilder_OxygenTank/LargeHydrogenTank", "MyObjectBuilder_OxygenTank/Oxygen", "MyObjectBuilder_OxygenTank/Oxygen")]
         public string Icon => _icon;
+        [PreviewWith("Hydrogen Tank 1", "Hydrogen Tank 2", "Oxygen Tank", "Oxygen Tank (Spare)")]
         public string Name => _name;
+        [PreviewWith(0.82f, 0.41f, 0.97f, 0.05f)]
         public float Percentage => _percentage;
+        [PreviewWith("82%", "41%", "97%", "5%")]
         public string PercentageText => FormatingHelper.PercentageToString(_percentage);
+        [PreviewWith("card")]
         public string Classes => _classes;
+        [PreviewWith("#D1B1D7", "#D1B1D7", "#D1B1D7", "#602020")]
         public Color Fill => _fill;
 
         public void UpdateAppearance(string classes, Color fill)

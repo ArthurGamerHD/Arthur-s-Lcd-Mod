@@ -1,13 +1,18 @@
-using Adk.Gui.Controls;
+using Acrux.Controls;
 
 namespace LcdMod.Client.Apps.ButtonPad
 {
     internal sealed partial class ActionConfigurationView : Window
     {
-        public ActionConfigurationView(ActionConfigurationViewModel model)
+        // Any view model with the bound members works (the IDE preview's clone, for one); the app passes its own.
+        public ActionConfigurationView()
+        {
+            InitializeComponent();
+        }
+
+        public ActionConfigurationView(ActionConfigurationViewModel model) : this()
         {
             DataContext = model;
-            InitializeComponent();
         }
     }
 }

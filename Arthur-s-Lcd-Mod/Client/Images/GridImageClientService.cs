@@ -122,7 +122,7 @@ namespace LcdMod.Client.Images
             }
         }
 
-        /// <summary>The player of an animated image once it is ready, or null for still images. Game thread only.</summary>
+        // The player of an animated image once it is ready, or null for still images. Game thread only.
         public GridImageAnimation GetAnimation(string spriteName)
         {
             string id;
@@ -200,17 +200,15 @@ namespace LcdMod.Client.Images
                 KeepInLocalGridCopy(MyEntities.GetEntityById(packet.GridId) as IMyCubeGrid, packet.Entry, packet.Payload);
         }
 
-        /// <summary>
-        /// Mod storage is not replicated after a grid streams in, and blueprints are built from this client's
-        /// copy of the grid, so images seen or uploaded here are also written into the local copy.
-        /// </summary>
+        // Mod storage is not replicated after a grid streams in, and blueprints are built from this client's copy of
+        // the grid, so images seen or uploaded here are also written into the local copy.
         static void KeepInLocalGridCopy(IMyCubeGrid grid, GridImageManifestEntry entry, GridImagePayload payload)
         {
             if (grid != null && !grid.MarkedForClose && GridImageStorage.FindEntry(grid, entry.Id) == null)
                 GridImageStorage.Add(grid, entry, payload);
         }
 
-        /// <summary>Sends library images referenced by <paramref name="config"/> to the server for the block's grid, once per grid.</summary>
+        // Sends library images referenced by config to the server for the block's grid, once per grid.
         public void UploadReferenced(IMyTerminalBlock block, object config)
         {
             if (block == null || block.CubeGrid == null || config == null)
@@ -455,11 +453,9 @@ namespace LcdMod.Client.Images
                 surface?.RequestRedraw();
         }
 
-        /// <summary>
-        /// Rebuilt images are a per-session cache: on exit every LcdImg_*.dds in this world's storage goes,
-        /// including leftovers from a session that crashed. Only a path already resolved this session is used,
-        /// so exiting never runs the canary.
-        /// </summary>
+        // Rebuilt images are a per-session cache: on exit every LcdImg_*.dds in this world's storage goes, including
+        // leftovers from a session that crashed. Only a path already resolved this session is used, so exiting never
+        // runs the canary.
         static void DeleteWorldImages()
         {
             string storageRoot;

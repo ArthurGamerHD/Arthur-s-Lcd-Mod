@@ -1,6 +1,6 @@
 using System;
-using Adk.Gui.Core;
-using Adk.Gui.Rendering;
+using Acrux.Core;
+using Acrux.Rendering;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Games.ManagedDoom;
 using VRageMath;

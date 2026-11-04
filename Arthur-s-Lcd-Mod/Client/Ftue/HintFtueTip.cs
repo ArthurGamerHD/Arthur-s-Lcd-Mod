@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Animation;
+using Acrux.Animation;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Gui.ControlsTemplates;
@@ -214,7 +214,7 @@ namespace LcdMod.Client.Ftue
                 visible = state.Document != null;
             }
 
-            var owner = surface.RetainedAppGuiHost == null ? null : surface.RetainedAppGuiHost.Root as Adk.Gui.Controls.Window;
+            var owner = surface.RetainedAppGuiHost == null ? null : surface.RetainedAppGuiHost.Root as Acrux.Controls.Window;
             if (!visible || owner == null || !owner.IsOpen)
             {
                 state.Window.Hide();

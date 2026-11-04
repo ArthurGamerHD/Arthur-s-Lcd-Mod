@@ -88,10 +88,8 @@ namespace LcdMod.Client.Images
             return false;
         }
 
-        /// <summary>
-        /// Imports and encodes new images. Sources that failed before are skipped without re-encoding;
-        /// <paramref name="reportKnownFailures"/> repeats their stored reasons, which only an explicit rescan asks for.
-        /// </summary>
+        // Imports and encodes new images. Sources that failed before are skipped without re-encoding;
+        // reportKnownFailures repeats their stored reasons, which only an explicit rescan asks for.
         public void Rescan(bool reportKnownFailures)
         {
             _reportFailures |= reportKnownFailures;

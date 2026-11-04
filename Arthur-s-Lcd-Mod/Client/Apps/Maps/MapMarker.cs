@@ -31,7 +31,7 @@ namespace LcdMod.Client.Apps.Maps
     internal interface IMapSurface
     {
         void SetCanvasSize(Vector2I size);
-        void Paint(Adk.Gui.Rendering.PixelCanvas canvas);
+        void Paint(Acrux.Rendering.PixelCanvas canvas);
         void Drag(Vector2 delta);
         void MiddleDrag(Vector2 delta);
         void MiddleClick(Vector2 pixel);
@@ -45,7 +45,13 @@ namespace LcdMod.Client.Apps.Maps
     /// <summary>Requests one captured map frame; completion runs on the calling UI thread.</summary>
     internal interface IAsyncMapSurface
     {
-        bool RequestTexture(Adk.Gui.Rendering.PixelCanvas canvas, System.Action<System.Exception> completed);
+        bool RequestTexture(Acrux.Rendering.PixelCanvas canvas, System.Action<System.Exception> completed);
+    }
+
+    // The pointer resting over the map, in canvas pixels; null once it has left.
+    internal interface IMapSurfaceHover
+    {
+        void Hover(Vector2? pixel);
     }
 
     internal interface IMapSurfaceDrag

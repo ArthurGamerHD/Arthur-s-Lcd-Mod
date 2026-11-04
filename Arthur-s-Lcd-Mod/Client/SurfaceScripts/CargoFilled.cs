@@ -40,7 +40,6 @@ namespace LcdMod.Client.SurfaceScripts
         public override IApp App => _app;
 
         CargoFilledApp _app;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public CargoFilledSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size) : base(surface, block, size)
         {
         }
@@ -63,8 +62,6 @@ namespace LcdMod.Client.SurfaceScripts
 
             RenderSprites();
         }
-
-        protected override bool RendersInParallel => true;
 
 
         public override List<MySprite> GetSprites()

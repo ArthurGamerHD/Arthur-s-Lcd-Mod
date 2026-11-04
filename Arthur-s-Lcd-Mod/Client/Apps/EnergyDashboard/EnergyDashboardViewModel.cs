@@ -1,12 +1,131 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
-using Adk.Gui.Styling;
-using LcdMod.Common.Mvvm;
+using Acrux.Core.Input;
+using Acrux.Styling;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.EnergyDashboard
 {
+    [PreviewWith("VisiblePageCount", 1)]
+    [PreviewWith("ViewportFraction", 0.9716599f)]
+    [PreviewWith("Tiers", 6)]
+    [PreviewWith("TierFontSize", 0.58f)]
+    [PreviewWith("TierColumns", 6)]
+    [PreviewWith("ShowNavigation", true)]
+    [PreviewWith("SelectedTierIndex", 4)]
+    [PreviewWith("SelectedTier", 4)]
+    [PreviewWith("SelectedPage", 0)]
+    [PreviewWith("SecondaryContainerColor", "#352937")]
+    [PreviewWith("Production.ValueText", "9.10 MW/15.4 MW")]
+    [PreviewWith("Production.Ratio", 0.59f)]
+    [PreviewWith("Production.Label", "Production")]
+    [PreviewWith("Production.Foreground", "#C5EDFF")]
+    [PreviewWith("Production.FillColor", "#3A203F")]
+    [PreviewWith("ProducerPage.Title", "Production")]
+    [PreviewWith("ProducerPage.Rows", 2)]
+    [PreviewWith("ProducerPage.RowColumns", 2)]
+    [PreviewWith("ProducerPage.RightTime", "now")]
+    [PreviewWith("ProducerPage.MiddleTime", "2m 30s")]
+    [PreviewWith("ProducerPage.LeftTime", "5m")]
+    [PreviewWith("ProducerPage.IsOnScreen", false)]
+    [PreviewWith("ProducerPage.IsEmpty", false)]
+    [PreviewWith("ProducerPage.IsCurrent", false)]
+    [PreviewWith("ProducerPage.HasTimeScale", true)]
+    [PreviewWith("ProducerPage.Foreground", "#C5EDFF")]
+    [PreviewWith("ProducerPage.EmptyText", "No data")]
+    [PreviewWith("ProducerPage.DotTexture", "CircleHollow")]
+    [PreviewWith("ProducerPage.DotInnerColor", "#352937")]
+    [PreviewWith("ProducerPage.DotColor", "#C5EDFF")]
+    [PreviewWith("ProducerPage.AxisLabel3", "15.4 MW")]
+    [PreviewWith("ProducerPage.AxisLabel2", "10.3 MW")]
+    [PreviewWith("ProducerPage.AxisLabel1", "5.1 MW")]
+    [PreviewWith("ProducerPage.AxisLabel0", "0 MW")]
+    [PreviewWith("PanelCornerRadius", "8 8 8 8")]
+    [PreviewWith("PanelBackground", "#40352937")]
+    [PreviewWith("Pages.Title", "Consumption", "Production", "Charge")]
+    [PreviewWith("Pages.Rows", 2)]
+    [PreviewWith("Pages.RowColumns", 2, 2, 1)]
+    [PreviewWith("Pages.RightTime", "now")]
+    [PreviewWith("Pages.MiddleTime", "2m 30s")]
+    [PreviewWith("Pages.LeftTime", "5m")]
+    [PreviewWith("Pages.IsOnScreen", true, false, false)]
+    [PreviewWith("Pages.IsEmpty", false)]
+    [PreviewWith("Pages.IsCurrent", true, false, false)]
+    [PreviewWith("Pages.HasTimeScale", true)]
+    [PreviewWith("Pages.Foreground", "#C5EDFF")]
+    [PreviewWith("Pages.EmptyText", "No data")]
+    [PreviewWith("Pages.DotTexture", "Circle", "CircleHollow", "CircleHollow")]
+    [PreviewWith("Pages.DotInnerColor", "#352937")]
+    [PreviewWith("Pages.DotColor", "#C5EDFF")]
+    [PreviewWith("Pages.AxisLabel3", "12 MW", "15.4 MW", "12 MWh")]
+    [PreviewWith("Pages.AxisLabel2", "8 MW", "10.3 MW", "8 MWh")]
+    [PreviewWith("Pages.AxisLabel1", "4 MW", "5.1 MW", "4 MWh")]
+    [PreviewWith("Pages.AxisLabel0", "0 MW", "0 MW", "0 MWh")]
+    [PreviewWith("Pages", 3)]
+    [PreviewWith("PageWidth", 480f)]
+    [PreviewWith("PageTarget", 0)]
+    [PreviewWith("IndicatorButtonWidth", 136f)]
+    [PreviewWith("HasCharge", true)]
+    [PreviewWith("Foreground", "#C5EDFF")]
+    [PreviewWith("Consumption.ValueText", "8.42 MW/12.0 MW")]
+    [PreviewWith("Consumption.Ratio", 0.7f)]
+    [PreviewWith("Consumption.Label", "Consumption")]
+    [PreviewWith("Consumption.Foreground", "#C5EDFF")]
+    [PreviewWith("Consumption.FillColor", "#E0A010")]
+    [PreviewWith("ConsumerPage.Title", "Consumption")]
+    [PreviewWith("ConsumerPage.Rows", 2)]
+    [PreviewWith("ConsumerPage.RowColumns", 2)]
+    [PreviewWith("ConsumerPage.RightTime", "now")]
+    [PreviewWith("ConsumerPage.MiddleTime", "2m 30s")]
+    [PreviewWith("ConsumerPage.LeftTime", "5m")]
+    [PreviewWith("ConsumerPage.IsOnScreen", true)]
+    [PreviewWith("ConsumerPage.IsEmpty", false)]
+    [PreviewWith("ConsumerPage.IsCurrent", true)]
+    [PreviewWith("ConsumerPage.HasTimeScale", true)]
+    [PreviewWith("ConsumerPage.Foreground", "#C5EDFF")]
+    [PreviewWith("ConsumerPage.EmptyText", "No data")]
+    [PreviewWith("ConsumerPage.DotTexture", "Circle")]
+    [PreviewWith("ConsumerPage.DotInnerColor", "#352937")]
+    [PreviewWith("ConsumerPage.DotColor", "#C5EDFF")]
+    [PreviewWith("ConsumerPage.AxisLabel3", "12 MW")]
+    [PreviewWith("ConsumerPage.AxisLabel2", "8 MW")]
+    [PreviewWith("ConsumerPage.AxisLabel1", "4 MW")]
+    [PreviewWith("ConsumerPage.AxisLabel0", "0 MW")]
+    [PreviewWith("ChargePage.Title", "Charge")]
+    [PreviewWith("ChargePage.Rows", 1)]
+    [PreviewWith("ChargePage.RowColumns", 1)]
+    [PreviewWith("ChargePage.RightTime", "now")]
+    [PreviewWith("ChargePage.MiddleTime", "2m 30s")]
+    [PreviewWith("ChargePage.LeftTime", "5m")]
+    [PreviewWith("ChargePage.IsOnScreen", false)]
+    [PreviewWith("ChargePage.IsEmpty", false)]
+    [PreviewWith("ChargePage.IsCurrent", false)]
+    [PreviewWith("ChargePage.HasTimeScale", true)]
+    [PreviewWith("ChargePage.Foreground", "#C5EDFF")]
+    [PreviewWith("ChargePage.EmptyText", "No data")]
+    [PreviewWith("ChargePage.DotTexture", "CircleHollow")]
+    [PreviewWith("ChargePage.DotInnerColor", "#352937")]
+    [PreviewWith("ChargePage.DotColor", "#C5EDFF")]
+    [PreviewWith("ChargePage.AxisLabel3", "12 MWh")]
+    [PreviewWith("ChargePage.AxisLabel2", "8 MWh")]
+    [PreviewWith("ChargePage.AxisLabel1", "4 MWh")]
+    [PreviewWith("ChargePage.AxisLabel0", "0 MWh")]
+    [PreviewWith("Charge.ValueText", "9.6 MWh/12.0 MWh (80%)")]
+    [PreviewWith("Charge.Ratio", 0.8f)]
+    [PreviewWith("Charge.Label", "Charge")]
+    [PreviewWith("Charge.Foreground", "#C5EDFF")]
+    [PreviewWith("Charge.FillColor", "#6ED282")]
+    [PreviewWith("Bars.ValueText", "8.42 MW/12.0 MW", "9.10 MW/15.4 MW", "9.6 MWh/12.0 MWh (80%)")]
+    [PreviewWith("Bars.Ratio", 0.7f, 0.59f, 0.8f)]
+    [PreviewWith("Bars.Label", "Consumption", "Production", "Charge")]
+    [PreviewWith("Bars.Foreground", "#C5EDFF")]
+    [PreviewWith("Bars.FillColor", "#E0A010", "#3A203F", "#6ED282")]
+    [PreviewWith("Bars", 3)]
+    [PreviewWith("BarCount", 3)]
+    [PreviewWith("ArrowColor", "#B4C5EDFF")]
+    [PreviewWith("ArrowButtonWidth", 42f)]
+    [PreviewWith("AccentColor", "#D1B1D7")]
     internal sealed class EnergyDashboardViewModel : ObservableObject
     {
         public const int TIER_COUNT = 6;
@@ -77,10 +196,8 @@ namespace LcdMod.Client.Apps.EnergyDashboard
         public Color PanelBackground { get; private set; } = new Color(255, 255, 255, PANEL_ALPHA);
         public float TierFontSize { get; private set; } = TIER_FONT_SCALE;
 
-        /// <summary>
-        /// The panel's top corner under the first or last tab is square while that tab is selected, so the tab joins the
-        /// panel without a notch.
-        /// </summary>
+        // The panel's top corner under the first or last tab is square while that tab is selected, so the tab joins the
+        // panel without a notch.
         public Vector4 PanelCornerRadius => new Vector4(
             SelectedTier == 0 ? 0f : PANEL_RADIUS,
             SelectedTier == TIER_COUNT - 1 ? 0f : PANEL_RADIUS,
@@ -263,8 +380,10 @@ namespace LcdMod.Client.Apps.EnergyDashboard
             Owner = owner;
         }
 
+        [PreviewWith("1s", "5s", "30s", "1m", "5m", "All")]
         public string Label { get; }
         public EnergyDashboardViewModel Owner { get; }
+        [PreviewWith(0.58f)]
         public float FontSize => Owner.TierFontSize;
 
         internal void RaiseFontSizeChanged()
@@ -434,12 +553,19 @@ namespace LcdMod.Client.Apps.EnergyDashboard
         }
 
         public string Icon => _icon;
+        [PreviewWith("R", "A")]
         public string Glyph => _glyph;
+        [PreviewWith("4", "6")]
         public string Amount => _amount;
+        [PreviewWith("Refinery", "Assembler")]
         public string Label => _label;
+        [PreviewWith("4.80 MW", "2.10 MW")]
         public string ValueText => _value;
+        [PreviewWith(0.57f, 0.25f)]
         public float Ratio => _ratio;
+        [PreviewWith("#E6785A", "#B482DC")]
         public Color Color => _color;
+        [PreviewWith("#C5EDFF")]
         public Color Foreground => _foreground;
         public bool IsSelected => _isSelected;
         public ICommand Command { get; }

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using VRageMath;
 
 namespace LcdMod.Client.Games

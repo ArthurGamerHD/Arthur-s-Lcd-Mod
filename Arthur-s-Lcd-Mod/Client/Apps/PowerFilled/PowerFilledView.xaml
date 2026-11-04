@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+<UserControl xmlns="https://github.com/ArthurGamerHD/AcruxUI"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:LcdMod.Client.Apps.Controls"
              xmlns:power="using:LcdMod.Client.Apps.PowerFilled"
              x:Class="LcdMod.Client.Apps.PowerFilled.PowerFilledView"
-             x:DataType="LcdMod.Client.Apps.PowerFilled.PowerFilledViewModel">
+             x:DataType="LcdMod.Client.Apps.PowerFilled.PowerFilledViewModel"
+             Design.DataContext="{x:Static power:PowerFilledViewModelPreview.Default}"
+    CardHeight="{Binding CardHeight}">
   <UserControl.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Cards.xaml" />
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/PowerFillGauge.xaml" />

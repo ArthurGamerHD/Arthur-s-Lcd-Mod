@@ -217,12 +217,10 @@ namespace LcdMod.Client.Audio
             return true;
         }
 
-        /// <summary>
-        /// Shares a local video with the players near the screen, the way streaming services do: a small
-        /// manifest (header and chunk table) goes first, then the chunks around the sender's playhead as it
-        /// plays, in pieces through the server. Late joiners get the manifest and the current chunks, so they
-        /// join where the video is, and no limit applies to the length of the file.
-        /// </summary>
+        // Shares a local video with the players near the screen, the way streaming services do: a small manifest
+        // (header and chunk table) goes first, then the chunks around the sender's playhead as it plays, in pieces
+        // through the server. Late joiners get the manifest and the current chunks, so they join where the video is,
+        // and no limit applies to the length of the file.
         public void StartMediaPlayerLocalVideoStream(IMyTerminalBlock block, int surfaceIndex, LocalVideoChunkSource source, string title)
         {
             if (block == null || source == null)
@@ -650,7 +648,7 @@ namespace LcdMod.Client.Audio
             }
         }
 
-        /// <summary>Sends the next video piece when one is due; false once the video stopped playing here.</summary>
+        // Sends the next video piece when one is due; false once the video stopped playing here.
         bool UpdateOutgoingVideoStream(OutgoingMediaStream stream, long frame)
         {
             GridMediaPlayer player = ResolvePlayer(stream.BlockEntityId, stream.SurfaceIndex);
@@ -702,7 +700,7 @@ namespace LcdMod.Client.Audio
             return true;
         }
 
-        /// <summary>The manifest when a listener needs it, otherwise the first unsent chunk around the playhead.</summary>
+        // The manifest when a listener needs it, otherwise the first unsent chunk around the playhead.
         static bool PickNextVideoSegment(OutgoingMediaStream stream, GridMediaPlayer player)
         {
             stream.SendingOffset = 0;

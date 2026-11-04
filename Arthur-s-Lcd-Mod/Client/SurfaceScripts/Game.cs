@@ -128,7 +128,7 @@ namespace LcdMod.Client.SurfaceScripts
 
         static long CurrentFrame => MyAPIGateway.Session.GameplayFrameCounter;
 
-        /// <summary>The area the game view occupies, between the title and footer; the games lay out inside it.</summary>
+        // The area the game view occupies, between the title and footer; the games lay out inside it.
         internal RectangleF GameViewBox => _viewApp != null ? _viewApp.GameBounds : ViewBox;
 
         void SetGame(long entryValue)
@@ -229,9 +229,7 @@ namespace LcdMod.Client.SurfaceScripts
                 LcdModSessionComponent.OnSave += _currentGame.Save;
         }
         
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
-        /// <summary>Asks before replacing the current game with a new one.</summary>
         internal void ConfirmNewGame(Action startNewGame)
         {
             ShowMessageBox(Loc(MOD_PREFIX + "NewGame"), Loc(MOD_PREFIX + "Games_NewGamePrompt"),
@@ -239,7 +237,6 @@ namespace LcdMod.Client.SurfaceScripts
                 new Apps.Dialogs.DialogButton(Loc(MOD_PREFIX + "NewGame"), startNewGame, true));
         }
 
-        /// <summary>Offers a new game once the current one has ended.</summary>
         internal void OfferNewGame(Action startNewGame)
         {
             ShowMessageBox(Loc(MOD_PREFIX + "Games_GameOver"), Loc(MOD_PREFIX + "Games_PlayAgain"),

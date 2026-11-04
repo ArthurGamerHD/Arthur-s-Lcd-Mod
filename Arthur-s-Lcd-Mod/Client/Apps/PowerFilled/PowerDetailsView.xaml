@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+<UserControl xmlns="https://github.com/ArthurGamerHD/AcruxUI"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:power="using:LcdMod.Client.Apps.PowerFilled"
              x:Class="LcdMod.Client.Apps.PowerFilled.PowerDetailsView"
-             x:DataType="power:PowerDisplayEntry">
+             x:DataType="power:PowerDisplayEntry"
+             Design.DataContext="{x:Static power:PowerDisplayEntryPreview.Default}">
   <StackPanel Classes="power-details-body">
     <Grid ColumnDefinitions="Auto,*">
       <Image Classes="power-details-icon" Source="{Binding Icon}" />

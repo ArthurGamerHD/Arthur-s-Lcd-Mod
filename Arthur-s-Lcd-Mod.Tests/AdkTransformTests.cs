@@ -1,4 +1,4 @@
-using Adk.Gui.Styling;
+using Acrux.Styling;
 using VRageMath;
 
 namespace Arthur_s_Lcd_Mod.Tests;

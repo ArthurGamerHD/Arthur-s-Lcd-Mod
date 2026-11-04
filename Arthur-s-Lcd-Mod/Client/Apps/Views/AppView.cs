@@ -1,4 +1,4 @@
-using Adk.Gui.Controls;
+using Acrux.Controls;
 
 namespace LcdMod.Client.Apps.Views
 {
@@ -6,13 +6,7 @@ namespace LcdMod.Client.Apps.Views
     {
         public AppView()
         {
-            var multiplier = new FontSizeMultiplierConverter();
-            Resources.Add("FontSizeMultiplier", multiplier);
-            Resources.Add("Multiply", new MultiplyConverter());
-            Resources.Add("PercentText", new PercentTextConverter());
-            Resources.Add("MinimumContrast", new MinimumContrastConverter());
-            Resources.Add("donutThickness", 17.6f);
-            Resources.Add("donutTextMargin", new VRageMath.Vector4(20f));
+            AppViewResources.AddTo((key, value) => Resources.Add(key, value));
             InitializeComponent();
         }
     }

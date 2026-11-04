@@ -1,6 +1,6 @@
 using System;
-using Adk.Gui.Core.Input;
-using LcdMod.Common.Mvvm;
+using Acrux.Core.Input;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Apps.Dialogs
 {
@@ -38,7 +38,7 @@ namespace LcdMod.Client.Apps.Dialogs
 
         public float SmallFontSize => _fontSize * .85f;
 
-        /// <summary>True while the dialog fills a very short screen, where views lay their actions out beside the content.</summary>
+        // True while the dialog fills a very short screen, where views lay their actions out beside the content.
         public bool IsCompact
         {
             get { return _isCompact; }

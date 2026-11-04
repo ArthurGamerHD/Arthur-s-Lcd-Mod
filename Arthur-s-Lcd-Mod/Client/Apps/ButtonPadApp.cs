@@ -32,7 +32,7 @@ namespace LcdMod.Client.Apps
 {
     [LcdApp(23, Name = "ButtonPanel")]
     [ConfigComponent(Constants.APP, typeof(ButtonPanelConfigComponent), PropertyName = "ButtonPanelComponent")]
-    public sealed partial class ButtonPadApp : App, IApp
+    public sealed partial class ButtonPadApp : App, IApp, ButtonPad.IButtonPadHost
     {
         const string CUSTOM_DATA_KEY = "Buttonpanel";
         const string BOOLEAN_ON = "on";
@@ -141,6 +141,12 @@ namespace LcdMod.Client.Apps
             }
             if (destination.Count > count)
                 destination.RemoveRange(count, destination.Count - count);
+        }
+
+        void ButtonPad.IButtonPadHost.BuildNativeEntries(List<ButtonPad.ActionButtonModel> destination, out float buttonSize,
+            out float cellWidth, out float cellHeight)
+        {
+            BuildNativeEntries(destination, out buttonSize, out cellWidth, out cellHeight);
         }
 
         string GetNativeStyleClass()

@@ -63,10 +63,10 @@ namespace LcdMod.Common.Helpers
             }
         }
 
-        /// <summary>Send: spread the source's matching items across the targets, proportional to each
-        /// target's free volume. Integer items are split in whole units (largest-remainder), so a
-        /// stack of 3 across two equal targets becomes 2 + 1 instead of 1.5 + 1.5 (a fractional
-        /// amount makes SE create an invalid stack that only re-syncs on reload).</summary>
+        // Send: spread the source's matching items across the targets, proportional to each target's free volume.
+        // Integer items are split in whole units (largest-remainder), so a stack of 3 across two equal targets becomes
+        // 2 + 1 instead of 1.5 + 1.5 (a fractional amount makes SE create an invalid stack that only re-syncs on
+        // reload).
         static int DistributeFrom(IMyInventory source, List<IMyInventory> targets, HashSet<string> typeKeys)
         {
             double totalFree = 0;
@@ -120,7 +120,7 @@ namespace LcdMod.Common.Helpers
             return moved;
         }
 
-        /// <summary>Receive: pull the targets' matching items into the source (whole stacks, merged).</summary>
+        // Receive: pull the targets' matching items into the source (whole stacks, merged).
         static int PullInto(IMyInventory destination, List<IMyInventory> sources, HashSet<string> typeKeys)
         {
             int moved = 0;
@@ -145,8 +145,8 @@ namespace LcdMod.Common.Helpers
             return moved;
         }
 
-        /// <summary>Balance: for each chosen type, gather everything into pool[0] then hand each
-        /// container an amount proportional to its capacity (so all end up at a similar fill).</summary>
+        // Balance: for each chosen type, gather everything into pool[0] then hand each container an amount proportional
+        // to its capacity (so all end up at a similar fill).
         static int Balance(List<IMyInventory> pool, HashSet<string> typeKeys)
         {
             if (pool.Count < 2)
@@ -173,7 +173,6 @@ namespace LcdMod.Common.Helpers
             {
                 bool integral = IsIntegralType(typeKey);
 
-                // 1. Gather all of this type into the collector.
                 for (int i = 1; i < pool.Count; i++)
                 {
                     items.Clear();
@@ -188,7 +187,6 @@ namespace LcdMod.Common.Helpers
                     }
                 }
 
-                // 2. Total of this type now in the collector.
                 double total = TotalOfType(collector, typeKey, items);
                 if (total <= 0)
                     continue;
@@ -223,9 +221,8 @@ namespace LcdMod.Common.Helpers
             return moved;
         }
 
-        /// <summary>Move up to <paramref name="amount"/> of one type from <paramref name="source"/>
-        /// into <paramref name="destination"/>. When <paramref name="integral"/> is set the moved
-        /// amount is snapped to whole units, so no fractional sliver is ever created.</summary>
+        // Move up to amount of one type from source into destination. When integral is set the moved amount is snapped
+        // to whole units, so no fractional sliver is ever created.
         static bool TransferAmountOfType(IMyInventory source, IMyInventory destination, string typeKey,
             double amount, bool integral)
         {
@@ -257,8 +254,7 @@ namespace LcdMod.Common.Helpers
             return any;
         }
 
-        /// <summary>Sum of one type currently in <paramref name="inventory"/>. <paramref name="scratch"/>
-        /// is a reusable buffer (no per-call allocation).</summary>
+        // Sum of one type currently in inventory. scratch is a reusable buffer (no per-call allocation).
         static double TotalOfType(IMyInventory inventory, string typeKey, List<MyInventoryItem> scratch)
         {
             double total = 0;
@@ -273,8 +269,8 @@ namespace LcdMod.Common.Helpers
             return total;
         }
 
-        /// <summary>True for item types that only exist in whole units (everything except ore and
-        /// ingot, which SE stores by mass and may legitimately be fractional).</summary>
+        // True for item types that only exist in whole units (everything except ore and ingot, which SE stores by mass
+        // and may legitimately be fractional).
         static bool IsIntegralType(string typeKey)
         {
             if (string.IsNullOrEmpty(typeKey))
@@ -285,10 +281,9 @@ namespace LcdMod.Common.Helpers
             return typeId != "MyObjectBuilder_Ore" && typeId != "MyObjectBuilder_Ingot";
         }
 
-        /// <summary>Splits an integer <paramref name="total"/> across <paramref name="weights"/> with the
-        /// largest-remainder (Hamilton) method: every container gets a whole number, the shares sum back
-        /// to exactly <paramref name="total"/>, and leftover units go to the largest fractional remainders
-        /// (ties broken toward the bigger container). Index 0 is the collector.</summary>
+        // Splits an integer total across weights with the largest-remainder (Hamilton) method: every container gets a
+        // whole number, the shares sum back to exactly total, and leftover units go to the largest fractional
+        // remainders (ties broken toward the bigger container). Index 0 is the collector.
         static long[] IntegerShares(long total, double[] weights)
         {
             int n = weights.Length;

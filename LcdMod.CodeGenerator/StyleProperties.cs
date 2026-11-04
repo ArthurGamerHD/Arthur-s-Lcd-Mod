@@ -19,8 +19,10 @@ public sealed class StyleProperties : IIncrementalGenerator
                 static (syntaxContext, _) => GetCandidateType(syntaxContext))
             .Where(static symbol => !ReferenceEquals(symbol, null));
 
-        context.RegisterSourceOutput(candidateTypes.Collect(), static (spc, symbols) =>
+        context.RegisterSourceOutput(candidateTypes.Collect().Combine(Adk.Analyzer.DesignSources.GetProvider(context)), static (spc, input) =>
         {
+            var symbols = input.Left;
+            var design = input.Right;
             foreach (var symbol in GetDistinctTypes(symbols))
             {
                 if (!IsPartial(symbol))
@@ -30,7 +32,7 @@ public sealed class StyleProperties : IIncrementalGenerator
                 if (properties.Count == 0)
                     continue;
 
-                spc.AddSource(GetHintName(symbol), BuildSource(symbol, properties));
+                spc.AddSource(design.HintName(GetHintName(symbol), symbol), BuildSource(symbol, properties));
             }
         });
     }

@@ -8,7 +8,8 @@ using LcdMod.Client.Market;
 using LcdMod.Client.Ftue;
 using LcdMod.Client.Modules.Power;
 using LcdMod.Client.Modules.Defense;
-using Cartography;
+using Acrux.Cartography;
+using LcdMod.Client.Modules.Cartography;
 using LcdMod.Client.Modules.RoomEnvironment;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Config;
@@ -23,6 +24,7 @@ using LcdMod.Client.Debugging;
 #endif
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
+using LcdMod.Common.Snapshots;
 using ParallelTasks;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -70,7 +72,8 @@ namespace LcdMod.Client
             _terminalManager = new TerminalManager(session);
             RoomEnvironment = new GridRoomEnvironmentClientModule();
             Ftue = new FtueService();
-            Cartography = new CartographyModule();
+            // Owned by Acrux UI and shared with other mods: planet maps are built once per session.
+            Cartography = CartographyModule.Shared;
 #if DEBUG
             _cartographyDebugReport = new CartographyDebugReportService(Cartography);
 #endif
@@ -103,7 +106,7 @@ namespace LcdMod.Client
             _images.Load();
             _imageLibrary.Load();
             Video.LocalVideoLibrary.WriteReadme();
-            Adk.Gui.Controls.WindowPlatforms.CaptionButtons = LocalConfigManager.CaptionButtons;
+            Acrux.Controls.WindowPlatforms.CaptionButtons = LocalConfigManager.CaptionButtons;
             Apps.Markdown.MarkdownImage.BlockSpriteResolver = name =>
             {
                 string registered;
@@ -113,6 +116,7 @@ namespace LcdMod.Client
             PowerData = new PowerDataModule();
             DefenseData = new DefenseDataModule();
             DefenseData.Load();
+            Modules.Wristpad.WristpadLink.Load();
 #if DEBUG
             _visibleTreeDebug = new VisibleTreeDebugService();
 #endif
@@ -145,15 +149,17 @@ namespace LcdMod.Client
                 _visibleTreeDebug.Dispose();
             _visibleTreeDebug = null;
 #if DEBUG
-            Adk.Gui.Core.Control.ChangeTrace = null;
+            Acrux.Core.Control.ChangeTrace = null;
 #endif
 #endif
             _audioPoc.Unload();
             _audioBroadcast.Unload();
+            Modules.Wristpad.WristpadLink.Unload();
             LocalConfigManager.Save();
             _imageLibrary.Unload();
             Video.LocalVideoLibrary.Unload();
             _images.Unload();
+            GridSnapshotStorage.Clear();
             TextureHelper.UnloadColorfulIconsApi();
             TextureHelper.ClearRegistrations();
             Games.Chess.ChessGame.ReleasePieceTextures();
@@ -166,9 +172,7 @@ namespace LcdMod.Client
 #if DEBUG
             _cartographyDebugReport.Unload();
 #endif
-            if (Cartography != null)
-                Cartography.Clear();
-            Cartography = null;
+            Cartography = null; // The toolkit clears its shared cartography when the session unloads.
             _terminalManager.Unload();
             MyAPIGateway.Gui.GuiControlRemoved -= OnGuiControlRemoved;
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
@@ -219,10 +223,13 @@ namespace LcdMod.Client
                     if (PowerData != null)
                         PowerData.Update(MyAPIGateway.Session.GameplayFrameCounter);
 
+                    SurfaceScriptBase.UpdateDisruptedScreens(MyAPIGateway.Session.GameplayFrameCounter);
+
                     if (DefenseData != null)
                         DefenseData.Update(MyAPIGateway.Session.GameplayFrameCounter);
 
                     _session.UpdateModules();
+                    Modules.Wristpad.WristpadLink.Update();
                     _images.Update();
 #if DEBUG
                     if (_visibleTreeDebug != null)
@@ -412,6 +419,16 @@ namespace LcdMod.Client
                                   : "<none>"));
 #endif
             NpcMarketClientCache.HandleSync(packet);
+        }
+
+        [NetworkCallback(typeof(PacketSyncGridSnapshot), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
+        public void HandleSyncGridSnapshot(PacketSyncGridSnapshot packet)
+        {
+            if (packet == null || MyAPIGateway.Session.IsServer)
+                return;
+            var block = MyEntities.GetEntityById(packet.BlockId);
+            if (block != null)
+                GridSnapshotStorage.Set(block, packet.Key, packet.Data);
         }
 
         [NetworkCallback(typeof(PacketSyncBroadcastAudio), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
@@ -671,21 +688,6 @@ namespace LcdMod.Client
 
             MyTexts.LoadTexts(path, cultureName, subcultureName);
             LcdModSessionComponent.RaiseLanguageChanged();
-        }
-
-        public static void SetLocalPlayerUseInputBlocked(bool blocked) =>
-            SetPlayerUseInputBlocked(MyAPIGateway.Session.LocalHumanPlayer.IdentityId, blocked);
-
-        static void SetPlayerUseInputBlocked(long playerId, bool blocked)
-        {
-            bool enabled = !blocked;
-            LcdModSessionComponent.ApplyPlayerUseInputEnabled(playerId, enabled);
-
-            if (MyAPIGateway.Multiplayer.MultiplayerActive &&
-                !MyAPIGateway.Multiplayer.IsServer &&
-                LcdModSessionComponent.NetworkManager != null)
-                LcdModSessionComponent.NetworkManager.TransmitToServer(
-                    new PacketPlayerInputBlacklist(playerId, enabled), false);
         }
     }
 }

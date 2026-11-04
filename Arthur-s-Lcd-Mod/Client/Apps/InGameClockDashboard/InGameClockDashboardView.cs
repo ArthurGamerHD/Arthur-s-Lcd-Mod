@@ -1,4 +1,4 @@
-using Adk.Gui.Controls;
+using Acrux.Controls;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.InGameClockDashboard
@@ -12,7 +12,7 @@ namespace LcdMod.Client.Apps.InGameClockDashboard
 
         protected override Vector2 MeasureOverride(Vector2 availableSize)
         {
-            (DataContext as InGameClockDashboardViewModel)?.SetViewport(availableSize);
+            (DataContext as IClockDashboardViewport)?.SetViewport(availableSize);
             return base.MeasureOverride(availableSize);
         }
     }

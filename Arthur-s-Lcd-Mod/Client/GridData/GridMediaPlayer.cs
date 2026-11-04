@@ -83,7 +83,7 @@ namespace LcdMod.Client.GridData
         public bool IsDecoding => _decodePending;
         public bool IsPaused => _paused;
 
-        /// <summary>The video of the file playing, or null for audio.</summary>
+        // The video of the file playing, or null for audio.
         internal MediaVideoPlayback Video => _video;
 
         public float Volume
@@ -325,12 +325,9 @@ namespace LcdMod.Client.GridData
                 delegate { CompleteGameAudioPlayback(work); });
         }
 
-        /// <summary>
-        /// Plays a chunked Matroska video from <paramref name="source"/>, local or streamed by another player.
-        /// Audio is queued chunk by chunk from the playhead as the chunks are decoded, so pausing, seeking and
-        /// remote commands work as for other audio while only a few seconds are in memory; the picture follows
-        /// the same clock.
-        /// </summary>
+        // Plays a chunked Matroska video from source, local or streamed by another player. Audio is queued chunk by
+        // chunk from the playhead as the chunks are decoded, so pausing, seeking and remote commands work as for other
+        // audio while only a few seconds are in memory; the picture follows the same clock.
         internal void PlayVideo(IMyTerminalBlock sourceBlock, string title, VideoChunkSource source,
             bool startPaused = false, double startPositionSeconds = 0.0)
         {
@@ -379,7 +376,7 @@ namespace LcdMod.Client.GridData
             get { return _video != null && !_paused && _videoCursorSeconds < CurrentDurationSeconds - 0.01; }
         }
 
-        /// <summary>Queues decoded video audio from the cursor until enough is waiting or the next chunk is not ready.</summary>
+        // Queues decoded video audio from the cursor until enough is waiting or the next chunk is not ready.
         void QueueVideoAudio()
         {
             double queued = 0;

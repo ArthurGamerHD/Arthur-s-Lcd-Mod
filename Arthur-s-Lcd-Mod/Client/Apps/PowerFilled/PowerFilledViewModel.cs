@@ -3,17 +3,42 @@ using System.Collections.Generic;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.UserControls.Power;
 using LcdMod.Client.Helpers;
-using Adk.Gui.Core.Input;
-using LcdMod.Common.Mvvm;
+using Acrux.Core.Input;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.PowerFilled
 {
+    /// <summary>What the power view model reads from and tells its app (<see cref="PowerFilledApp"/>; a design-time host in the preview).</summary>
+    internal interface IPowerFilledHost
+    {
+        bool IsGridDisplay { get; }
+        float SurfaceFontSize { get; }
+        Color NativeForeground { get; }
+        Color NativeBackground { get; }
+        IReadOnlyList<PowerEntry> NativeEntries { get; }
+        IReadOnlyList<PowerCollector> NativeCollectors { get; }
+        void NotifyEntryDetailsOpened();
+    }
+
+    [PreviewWith("CompactEntries.Percentage", 0.76f, 0.31f, 0.95f, 0.04f)]
+    [PreviewWith("CompactEntries.PercentText", "76%", "31%", "95%", "4%")]
+    [PreviewWith("CompactEntries.Label", "Battery 1", "Battery 2", "Jump Drive", "Battery 3")]
+    [PreviewWith("CompactEntries.Key", 1L, 2L, 3L, 4L)]
+    [PreviewWith("CompactEntries.Icon", "MyObjectBuilder_BatteryBlock/LargeBlockBatteryBlock", "MyObjectBuilder_BatteryBlock/LargeBlockBatteryBlock", "MyObjectBuilder_JumpDrive/LargeJumpDrive", "MyObjectBuilder_BatteryBlock/LargeBlockBatteryBlock")]
+    [PreviewWith("CompactEntries.HasDetails", false)]
+    [PreviewWith("CompactEntries.Foreground", "#C5EDFF")]
+    [PreviewWith("CompactEntries.FillColor", "#81C784", "#E0A010", "#D1B1D7", "#602020")]
+    [PreviewWith("CompactEntries.FillClass", "Battery", "Battery", "JumpDrive", "Battery")]
+    [PreviewWith("CompactEntries.DrawCenterIcon", true)]
+    [PreviewWith("CompactEntries.CenterIconRotation", 0f)]
+    [PreviewWith("Columns", 4)]
+    [PreviewWith("CardHeight", 100f)]
     internal sealed class PowerFilledViewModel : Views.CardGridViewModel
     {
         const float FOOTER_ROW_HEIGHT = 40f;
 
-        readonly PowerFilledApp _app;
+        readonly IPowerFilledHost _app;
         readonly List<PowerDisplayEntry> _compactEntries = new List<PowerDisplayEntry>();
         readonly List<PowerDisplayEntry> _cardEntries = new List<PowerDisplayEntry>();
         readonly List<PowerFooterRow> _footerRows = new List<PowerFooterRow>();
@@ -24,17 +49,20 @@ namespace LcdMod.Client.Apps.PowerFilled
         Color _footerBackground;
         int _entryCount;
 
-        public PowerFilledViewModel(PowerFilledApp app)
+        public PowerFilledViewModel(IPowerFilledHost app)
         {
             _app = app;
         }
 
+        [PreviewWith(4)]
         public IReadOnlyList<PowerDisplayEntry> CompactEntries => _compactEntries;
         public IReadOnlyList<PowerDisplayEntry> CardEntries => _cardEntries;
         public IReadOnlyList<PowerFooterRow> FooterRows => _footerRows;
+        [PreviewWith(true)]
         public bool IsCompact => _isCompact;
         public bool IsCard => !_isCompact;
         public bool HasFooter => _hasFooter;
+        [PreviewWith("#80004679")]
         public Color FooterBackground => _footerBackground;
 
         protected override float MinimumColumnWidth => _isCompact ? 100f : 220f;
@@ -95,6 +123,17 @@ namespace LcdMod.Client.Apps.PowerFilled
         }
     }
 
+    [PreviewWith("Percentage", 0.76f)]
+    [PreviewWith("PercentText", "76%")]
+    [PreviewWith("Label", "Battery 1")]
+    [PreviewWith("Key", 1L)]
+    [PreviewWith("Icon", "MyObjectBuilder_BatteryBlock/LargeBlockBatteryBlock")]
+    [PreviewWith("HasDetails", true)]
+    [PreviewWith("Foreground", "#C5EDFF")]
+    [PreviewWith("FillColor", "#81C784")]
+    [PreviewWith("FillClass", "Battery")]
+    [PreviewWith("DrawCenterIcon", true)]
+    [PreviewWith("CenterIconRotation", 0f)]
     internal sealed class PowerDisplayEntry : ObservableObject
     {
         string _icon;
@@ -118,6 +157,7 @@ namespace LcdMod.Client.Apps.PowerFilled
         }
 
         public bool HasDetails => _hasDetails;
+        [PreviewWith(3)]
         public IReadOnlyList<PowerDetailModel> Details => _details;
 
         internal void NotifyDetailsOpened()
@@ -139,7 +179,7 @@ namespace LcdMod.Client.Apps.PowerFilled
         public void Update(PowerEntry power, Color foreground)
         {
             Set(ref _icon, string.IsNullOrEmpty(power.Icon) ? "MissingIcon" : power.Icon, nameof(Icon));
-            Set(ref _label, power.Entity == null ? string.Empty : power.Entity.CustomName ?? string.Empty, nameof(Label));
+            Set(ref _label, power.Entity != null ? power.Entity.CustomName ?? string.Empty : power.Name, nameof(Label));
             RaiseAndSetIfChanged(ref _percentage, power.Ratio, nameof(Percentage));
             Set(ref _percentText, power.PercentText ?? string.Empty, nameof(PercentText));
             Set(ref _fillClass, power.FillClass, nameof(FillClass));
@@ -244,8 +284,10 @@ namespace LcdMod.Client.Apps.PowerFilled
             });
         }
 
+        [PreviewWith("Stored: 2.28 MWh / 3.00 MWh", "Input: 0.42 MW", "Output: 1.10 MW")]
         public string Text => _text;
         public bool IsAction => _isAction;
+        [PreviewWith(true)]
         public bool IsText => !_isAction;
         public bool CanClick => _canClick;
         public ICommand Command { get; }

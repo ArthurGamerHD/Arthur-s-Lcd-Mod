@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:radar="using:LcdMod.Client.Apps.Radar"
     x:Class="LcdMod.Client.Apps.Radar.RadarView"
-    x:DataType="radar:RadarViewModel">
+    x:DataType="radar:RadarViewModel"
+    Design.DataContext="{x:Static radar:RadarViewModelPreview.Default}">
   <Grid>
     <TextBlock Text="{Binding DebugText}" Foreground="{Binding DebugColor}" IsVisible="{Binding HasDebug}"
                FontFamily="{DynamicResource textFont}" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0 8" />

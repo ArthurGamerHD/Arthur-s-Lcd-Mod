@@ -27,6 +27,8 @@ using VRage.ModAPI;
 using VRage.Utils;
 using static LcdMod.Common.Helpers.Constants;
 
+using LcdMod.Client.Terminal.Controls.Snapshots;
+
 namespace LcdMod.Client.Terminal
 {
     public class TerminalManager
@@ -121,6 +123,7 @@ namespace LcdMod.Client.Terminal
             AddRegistration(registrations, 3800, new ComboboxLinkType());
             AddRegistration(registrations, 3810, new ComboboxPowerLinkType());
             AddRegistration(registrations, 3900, new ListboxProjectorSelection());
+            AddRegistration(registrations, 3925, new ListboxCameraSelection());
             AddRegistration(registrations, 3950, new SliderButtonCount());
             AddRegistration(registrations, 3975, new ComboboxButtonStyle());
             AddRegistration(registrations, 4000, new CheckboxHideEmpty());
@@ -156,6 +159,9 @@ namespace LcdMod.Client.Terminal
             AddRegistration(registrations, 5470, new ButtonGpsAddToAlwaysDisplay(source, target));
             AddRegistration(registrations, 5480, target);
             AddRegistration(registrations, 5490, new ButtonGpsRemoveFromAlwaysDisplay(source, target));
+
+            AddRegistration(registrations, 5499, new ButtonTakeGridSnapshot());
+            AddRegistration(registrations, 5501, new ButtonClearGridSnapshot());
 
             AddRegistration(registrations, 5600, new ComboboxSorting());
             AddRegistration(registrations, 6000, new ButtonProxyAuto());

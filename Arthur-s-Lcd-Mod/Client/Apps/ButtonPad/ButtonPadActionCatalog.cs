@@ -111,7 +111,7 @@ namespace LcdMod.Client.Apps.ButtonPad
             return actions;
         }
 
-        /// <summary>The parameter an action needs, read from a block it applies to; null when it needs none.</summary>
+        // The parameter an action needs, read from a block it applies to; null when it needs none.
         public ActionParameterInfo Parameter(ButtonPanelTargetSettings target, ButtonPanelActionSettings action)
         {
             ICustomAction custom;

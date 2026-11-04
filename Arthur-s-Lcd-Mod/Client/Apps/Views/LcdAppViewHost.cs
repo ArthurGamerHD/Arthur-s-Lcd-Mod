@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Animation;
-using Adk.Gui.Extensions;
-using Adk.Gui.Lcd;
+using Acrux.Animation;
+using Acrux.Extensions;
+using Acrux.Lcd;
 using LcdMod.Client.Apps.Abstract;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;

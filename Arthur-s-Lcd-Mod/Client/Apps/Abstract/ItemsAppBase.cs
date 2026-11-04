@@ -1,6 +1,6 @@
 using LcdMod.Common.Config.Components;
 using System;
-using Adk.Gui.Collections.Reactive;
+using Adk.Mvvm;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +12,6 @@ using LcdMod.Client.Gui.Styling;
 using LcdMod.Client.Gui.Styling.DataTemplates;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Terminal.Controls;
-using LcdMod.Common.Mvvm;
 using LcdMod.Common.Helpers;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;

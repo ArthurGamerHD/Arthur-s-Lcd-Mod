@@ -1,8 +1,7 @@
 using System;
-using Adk.Gui.Collections.Reactive;
+using Adk.Mvvm;
 using System.Collections.Generic;
 using LcdMod.Common.Helpers;
-using LcdMod.Common.Mvvm;
 using VRage.Game.ModAPI;
 using GridLinkTypeEnum = VRage.Game.ModAPI.GridLinkTypeEnum;
 

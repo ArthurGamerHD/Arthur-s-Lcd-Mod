@@ -1,7 +1,7 @@
 using System;
-using Adk.Gui.Controls;
+using Acrux.Controls;
 using LcdMod.Client.Market;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.NpcMarket

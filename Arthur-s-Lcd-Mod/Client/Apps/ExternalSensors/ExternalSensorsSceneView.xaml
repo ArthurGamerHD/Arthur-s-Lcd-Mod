@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:maps="using:LcdMod.Client.Apps.Maps"
+    xmlns:star="using:LcdMod.Client.Apps.StarMap"
+    xmlns:sensors="using:LcdMod.Client.Apps.ExternalSensors"
+    x:Class="LcdMod.Client.Apps.ExternalSensors.ExternalSensorsSceneView"
+    x:DataType="sensors:ExternalSensorsViewModel"
+    Design.DataContext="{x:Static sensors:ExternalSensorsViewModelPreview.Default}">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Maps.xaml" />
+  </UserControl.Styles>
+  <Grid>
+    <maps:CartographyMapView Surface="{Binding Surface}" Version="{Binding Version}" Markers="{Binding Markers}"
+                             MarkersVersion="{Binding MarkersVersion}" FontFamily="{DynamicResource textFont}" />
+    <star:StarMapHudView Hud="{Binding Hud}" Version="{Binding HudVersion}" />
+  </Grid>
+</UserControl>

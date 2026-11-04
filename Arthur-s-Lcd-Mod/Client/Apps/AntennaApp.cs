@@ -14,7 +14,7 @@ namespace LcdMod.Client.Apps
 {
     [LcdApp(1)]
     [ConfigComponent(Constants.BLOCKS, typeof(BlockSelectionConfigComponent), PropertyName = "BlockSelectionComponent")]
-    public sealed partial class AntennaApp : App, IApp
+    public sealed partial class AntennaApp : App, IApp, IAntennaHost
     {
         readonly List<AntennaEntry> _entries = new List<AntennaEntry>();
         readonly Dictionary<long, AntennaEntry> _entryModels = new Dictionary<long, AntennaEntry>();
@@ -25,6 +25,8 @@ namespace LcdMod.Client.Apps
         readonly AntennaViewModel _viewModel;
         internal IReadOnlyList<AntennaEntry> Antennas => _entries;
         internal bool IsGridMode => GeneralComponent.DisplayMode == (int)DisplayMode.Grid;
+        IReadOnlyList<AntennaEntry> IAntennaHost.Antennas => Antennas;
+        bool IAntennaHost.IsGridMode => IsGridMode;
         internal override float WindowRenderScaling => GeneralComponent.GetScale() > 0f ? GeneralComponent.GetScale() : 1f;
         public bool HasEntries => _entries.Count > 0;
         public AntennaApp(IAppHost script) : base(script)

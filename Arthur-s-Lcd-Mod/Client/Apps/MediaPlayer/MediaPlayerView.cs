@@ -1,9 +1,9 @@
 using System;
-using Adk.Gui.Animation;
-using Adk.Gui.Controls;
-using Adk.Gui.Controls.Documents;
-using Adk.Gui.Core;
-using Adk.Gui.Styling;
+using Acrux.Animation;
+using Acrux.Controls;
+using Acrux.Controls.Documents;
+using Acrux.Core;
+using Acrux.Styling;
 using LcdMod.Client.Video;
 using VRageMath;
 
@@ -55,7 +55,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
             (DataContext as MediaPlayerViewModel)?.NotifyPointer(point);
         }
 
-        void OnViewModelChanged(Common.Mvvm.ObservableObject sender, string property)
+        void OnViewModelChanged(Adk.Mvvm.ObservableObject sender, string property)
         {
             if (property.Length == 0 || property == nameof(MediaPlayerViewModel.Subtitle))
                 UpdateCaption();
@@ -116,7 +116,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
             Caption.Inlines = inlines;
         }
 
-        /// <summary>Slides <paramref name="host"/> by <paramref name="distance"/> while <paramref name="part"/> hides, or back as it shows.</summary>
+        // Slides host by distance while part hides, or back as it shows.
         void Slide(VisualElement host, VisualElement part, float distance, bool shown)
         {
             var hidden = new TranslateTransform(0f, distance);

@@ -1,11 +1,10 @@
 using System;
-using Adk.Gui.Collections.Reactive;
+using Adk.Mvvm;
 using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.GridData;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
-using LcdMod.Common.Mvvm;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game.Entity;

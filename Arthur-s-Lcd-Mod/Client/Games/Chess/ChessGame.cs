@@ -13,7 +13,7 @@ using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
 using Sandbox.Game.Entities;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
@@ -738,7 +738,7 @@ namespace LcdMod.Client.Games.Chess
         {
         }
 
-        public PointerCursor CursorAt(Vector2 position) => PointerCursor.Default;
+        public PointerCursor CursorAt(Vector2 position) => PointerCursor.Arrow;
 
         bool IsBoardCellInteractive(int index)
         {
@@ -774,7 +774,7 @@ namespace LcdMod.Client.Games.Chess
                 return PointerCursor.Wait;
 
             if (_gridCells == null || index < 0 || index >= _gridCells.Length)
-                return PointerCursor.Default;
+                return PointerCursor.Arrow;
 
             if (IsGameOver)
                 return PointerCursor.Cross;
@@ -798,7 +798,7 @@ namespace LcdMod.Client.Games.Chess
             }
 
             if (cell == 0)
-                return PointerCursor.Default;
+                return PointerCursor.Arrow;
 
             return GetColor(cell) == currentColor ? PointerCursor.DragMove : PointerCursor.No;
         }

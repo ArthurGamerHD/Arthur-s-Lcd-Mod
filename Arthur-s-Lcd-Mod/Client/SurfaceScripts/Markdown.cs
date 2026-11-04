@@ -17,7 +17,7 @@ namespace LcdMod.Client.SurfaceScripts
     [LcdSurface(typeof(MarkdownApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public partial class MarkdownSurfaceScript : SurfaceScriptBase,
-        IUsesTerminalControl<ButtonEditMarkdown>, IInputBlock
+        IUsesTerminalControl<ButtonEditMarkdown>
     {
         List<MySprite> _sprites = new List<MySprite>();
         public override IApp App => _app;

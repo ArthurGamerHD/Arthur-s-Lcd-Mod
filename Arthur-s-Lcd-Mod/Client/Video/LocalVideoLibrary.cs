@@ -16,10 +16,10 @@ namespace LcdMod.Client.Video
         public long Length;
         public MediaProbeResult Probe;
 
-        /// <summary>Chunk layout of a playable file; null for files that cannot play.</summary>
+        // Chunk layout of a playable file; null for files that cannot play.
         public MatroskaChunkIndex Index;
 
-        /// <summary>Captions from a subtitle file next to a video that carries none of its own.</summary>
+        // Captions from a subtitle file next to a video that carries none of its own.
         public SubtitleTrack Subtitles;
         public string SubtitleFile;
 
@@ -42,7 +42,7 @@ namespace LcdMod.Client.Video
         static readonly object Lock = new object();
         static readonly Dictionary<string, LocalVideo> Cache = new Dictionary<string, LocalVideo>(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>Lists and probes the local videos. Reads whole files, so call it off the game thread.</summary>
+        // Lists and probes the local videos. Reads whole files, so call it off the game thread.
         public static List<LocalVideo> Scan()
         {
             var videos = new List<LocalVideo>();
@@ -189,10 +189,8 @@ namespace LcdMod.Client.Video
             }
         }
 
-        /// <summary>
-        /// Picks "Name.srt" for "Name.mkv", else a tagged one such as "Name.en.srt", and reads it. Clears the captions
-        /// when no such file is left.
-        /// </summary>
+        // Picks "Name.srt" for "Name.mkv", else a tagged one such as "Name.en.srt", and reads it. Clears the captions
+        // when no such file is left.
         static void LoadSidecarSubtitles(LocalVideo video, List<string> subtitleFiles)
         {
             string name = video.Name;

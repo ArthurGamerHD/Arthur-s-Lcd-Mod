@@ -53,24 +53,13 @@ namespace LcdMod.Client.ChatCommands
         }
 
         /// <summary>
-        /// Switches between rendering eligible screens on worker threads and one after another, to compare them.
-        /// </summary>
-        [ChatCommand("ParallelRender")]
-        public static void ParallelRender(bool? enabled)
-        {
-            bool enable = enabled ?? !SurfaceScripts.Abstract.SurfaceScriptBase.ParallelRendering;
-            SurfaceScripts.Abstract.SurfaceScriptBase.ParallelRendering = enable;
-            MyAPIGateway.Utilities.ShowNotification("Parallel screen rendering " + (enable ? "on" : "off"));
-        }
-
-        /// <summary>
         /// Counts UI property and pseudo-class changes into the frame profile log. Allocates per change, so it skews timings.
         /// </summary>
         [ChatCommand("TraceUiChanges")]
         public static void TraceUiChanges(bool? enabled)
         {
-            bool enable = enabled ?? Adk.Gui.Core.Control.ChangeTrace == null;
-            Adk.Gui.Core.Control.ChangeTrace = enable ? Debugging.FrameProfiler.TraceChange : (System.Action<Adk.Gui.Core.Control, string>)null;
+            bool enable = enabled ?? Acrux.Core.Control.ChangeTrace == null;
+            Acrux.Core.Control.ChangeTrace = enable ? Debugging.FrameProfiler.TraceChange : (System.Action<Acrux.Core.Control, string>)null;
             MyAPIGateway.Utilities.ShowNotification("UI change tracing " + (enable ? "on" : "off"));
         }
 
@@ -80,8 +69,8 @@ namespace LcdMod.Client.ChatCommands
         [ChatCommand("VerifyFrameCache")]
         public static void VerifyFrameCache(bool? enabled)
         {
-            bool enable = enabled ?? Adk.Gui.Lcd.LcdGuiHost.FrameCacheMismatch == null;
-            Adk.Gui.Lcd.LcdGuiHost.FrameCacheMismatch = enable ? ReportStaleFrame : (System.Action<string>)null;
+            bool enable = enabled ?? Acrux.Lcd.LcdGuiHost.FrameCacheMismatch == null;
+            Acrux.Lcd.LcdGuiHost.FrameCacheMismatch = enable ? ReportStaleFrame : (System.Action<string>)null;
             MyAPIGateway.Utilities.ShowMessage(
                 "lcdMod",
                 enable
@@ -95,8 +84,8 @@ namespace LcdMod.Client.ChatCommands
         [ChatCommand("StyleCache")]
         public static void StyleCache(bool? enabled)
         {
-            bool enable = enabled ?? !Adk.Gui.Styling.StyleSheet.CacheSources;
-            Adk.Gui.Styling.StyleSheet.CacheSources = enable;
+            bool enable = enabled ?? !Acrux.Styling.StyleSheet.CacheSources;
+            Acrux.Styling.StyleSheet.CacheSources = enable;
             MyAPIGateway.Utilities.ShowMessage(
                 "lcdMod",
                 enable
@@ -110,22 +99,63 @@ namespace LcdMod.Client.ChatCommands
         [ChatCommand("HotReload")]
         public static void HotReloadViews(bool? enabled)
         {
-            bool enable = enabled ?? !Adk.Gui.Markup.HotReload.Enabled;
-            Adk.Gui.Markup.HotReload.Enabled = enable;
-            if (!enable)
-            {
-                MyAPIGateway.Utilities.ShowMessage(
-                    "lcdMod",
-                    LocHelper.GetLoc("LcdMod_ChatCommand_HotReload_Disabled_Message"));
-                return;
-            }
-            int reloaded = Adk.Gui.Markup.HotReload.ReloadAll();
+            // Views are built by Acrux UI now; view hot reload is not bridged to client mods yet.
             MyAPIGateway.Utilities.ShowMessage(
                 "lcdMod",
-                string.Format(
-                    LocHelper.GetLoc("LcdMod_ChatCommand_HotReload_Enabled_Message"),
-                    reloaded,
-                    Adk.Gui.Markup.HotReload.TrackedViewCount));
+                LocHelper.GetLoc("LcdMod_ChatCommand_HotReload_Disabled_Message"));
+        }
+
+        /// <summary>
+        /// Lists the missiles within <paramref name="radius"/> metres of the camera (default 5 km): which index found each
+        /// (the game's missile index, the general entity index, or both), its ammo, distance and launcher.
+        /// </summary>
+        [ChatCommand("Missiles")]
+        public static void Missiles(float? radius)
+        {
+            var camera = MyAPIGateway.Session.Camera;
+            if (camera == null)
+                return;
+            var sphere = new VRageMath.BoundingSphereD(camera.Position, radius ?? 5000f);
+            var indexed = new System.Collections.Generic.List<VRage.Game.Entity.MyEntity>();
+            if (MyAPIGateway.Missiles != null)
+                MyAPIGateway.Missiles.GetAllMissilesInSphere(ref sphere, indexed);
+            var inIndex = new System.Collections.Generic.HashSet<long>();
+            var all = new System.Collections.Generic.Dictionary<long, IMyMissile>();
+            foreach (var entity in indexed)
+            {
+                var missile = entity as IMyMissile;
+                if (missile == null)
+                    continue;
+                inIndex.Add(missile.EntityId);
+                all[missile.EntityId] = missile;
+            }
+            var inEntities = new System.Collections.Generic.HashSet<long>();
+            var entities = MyAPIGateway.Entities.GetEntitiesInSphere(ref sphere);
+            foreach (var entity in entities)
+            {
+                var missile = entity as IMyMissile;
+                if (missile == null)
+                    continue;
+                inEntities.Add(missile.EntityId);
+                all[missile.EntityId] = missile;
+            }
+            var text = new System.Text.StringBuilder();
+            text.Append("Missile index: ").Append(inIndex.Count).Append("  entity index: ").Append(inEntities.Count)
+                .Append("  (").Append(indexed.Count).Append(" from the missile index in all)\n\n");
+            foreach (var pair in all)
+            {
+                IMyMissile missile = pair.Value;
+                var launcher = MyAPIGateway.Entities.GetEntityById(missile.LauncherId) as VRage.Game.ModAPI.IMyCubeBlock;
+                text.Append(missile.AmmoDefinition == null ? "?" : missile.AmmoDefinition.Id.SubtypeName)
+                    .Append(inIndex.Contains(pair.Key) ? " [missile index]" : string.Empty)
+                    .Append(inEntities.Contains(pair.Key) ? " [entity index]" : string.Empty)
+                    .Append("  ").Append((int)VRageMath.Vector3D.Distance(missile.GetPosition(), camera.Position)).Append(" m")
+                    .Append("  ").Append((int)missile.LinearVelocity.Length()).Append(" m/s")
+                    .Append("  launcher ").Append(launcher == null ? "not found (" + missile.LauncherId + ")" : launcher.DisplayNameText)
+                    .Append('\n');
+            }
+            LogHelper.LogInfo("[Missiles] " + text);
+            MyAPIGateway.Utilities.ShowMissionScreen("Missiles", null, null, text.ToString());
         }
 
         static void ReportStaleFrame(string message)

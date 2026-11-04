@@ -1,3 +1,4 @@
+using Acrux.Dialogs;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;

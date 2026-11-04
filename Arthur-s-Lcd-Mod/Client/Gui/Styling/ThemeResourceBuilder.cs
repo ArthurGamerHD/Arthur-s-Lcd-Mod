@@ -8,6 +8,36 @@ namespace LcdMod.Client.Gui.Styling
 {
     public static class ThemeResourceBuilder
     {
+        /// <summary>
+        /// A surface's theme: generated from its header colour, with the surface's own text colour, font and scales.
+        /// Apps build it from their block's settings; the IDE preview's design-time theme (DesignThemeResources, a *.AcruxDesign.cs file)
+        /// from the IDE preview's.
+        /// </summary>
+        public static ResourceTree ForSurface(Color headerColor, Color foregroundColor, Color warningColor, Color errorColor,
+            bool dark, float layoutScale, float fontScale, float autoScrollSecondsPerStep, string textFont)
+        {
+            ResourceTree resources = FromThemeDictionary(headerColor.ToTheme(dark));
+            resources.Set(ThemeResources.FontColor, foregroundColor);
+            resources.Set(ThemeResources.HeaderColor, headerColor);
+            resources.Set(ThemeResources.CardShadowColor, headerColor.MulValue(.2f));
+            Color accent;
+            if (resources.TryGet(ThemeResources.AccentColor, out accent))
+                resources.Set(ThemeResources.CardFillColor, accent.EnsureMinimalContrast(headerColor));
+            resources.Set(ThemeResources.WarningColor, warningColor);
+            resources.Set(ThemeResources.ErrorColor, errorColor);
+            resources.Set(ThemeResources.LayoutScale, layoutScale);
+            resources.Set(ThemeResources.FontScale, fontScale);
+            resources.Set(ThemeResources.AutoScrollSecondsPerStep, autoScrollSecondsPerStep);
+            resources.Set(ThemeResources.TextFont, textFont);
+            return resources;
+        }
+
+        /// <summary>Light text asks for the dark theme.</summary>
+        public static bool UsesDarkTheme(Color foregroundColor)
+        {
+            return foregroundColor.ContrastRatio(Color.Black) >= foregroundColor.ContrastRatio(Color.White);
+        }
+
         public static ResourceTree FromThemeDictionary(IReadOnlyDictionary<string, Color> theme)
         {
             ResourceTree resources = new ResourceTree();

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<views:SpriteAppView xmlns="https://github.com/ArthurGamerHD/Adk"
+<views:SpriteAppView xmlns="https://github.com/ArthurGamerHD/AcruxUI"
                      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:apps="using:LcdMod.Client.Apps.Games"
                      xmlns:views="using:LcdMod.Client.Apps.Views"
                      x:Class="LcdMod.Client.Apps.Games.GamesView"
-                     x:DataType="LcdMod.Client.Apps.Games.GamesViewModel" />
+                     x:DataType="LcdMod.Client.Apps.Games.GamesViewModel"
+                     Design.DataContext="{x:Static apps:GamesViewModelPreview.Default}" />

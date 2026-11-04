@@ -1,7 +1,7 @@
-using Adk.Gui.Core;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Styling;
+using Acrux.Core;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Styling;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.PowerFilled
@@ -28,7 +28,7 @@ namespace LcdMod.Client.Apps.PowerFilled
             StyledProperty.Register<PowerFillGauge, bool>(nameof(ShowCenterIcon), true, UiInvalidation.Render);
         public bool ShowCenterIcon { get { return GetValue(ShowCenterIconProperty); } set { SetValue(ShowCenterIconProperty, value); } }
 
-        /// <summary>Center icon rotation in radians.</summary>
+        // Center icon rotation in radians.
         public static readonly StyledProperty<float> CenterIconRotationProperty =
             StyledProperty.Register<PowerFillGauge, float>(nameof(CenterIconRotation), 0f, UiInvalidation.Render);
         public float CenterIconRotation { get { return GetValue(CenterIconRotationProperty); } set { SetValue(CenterIconRotationProperty, value); } }

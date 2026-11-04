@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+<Window xmlns="https://github.com/ArthurGamerHD/AcruxUI"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:market="using:LcdMod.Client.Apps.NpcMarket"
         x:Class="LcdMod.Client.Apps.NpcMarket.MarketItemDialogView"
         x:DataType="market:MarketItemDialogViewModel"
+        Design.DataContext="{x:Static market:MarketItemDialogViewModelPreview.Default}"
         Title="{Binding Title}" Width="640" Height="460" MinWidth="360" MinHeight="280"
         Padding="14 4 14 14">
   <Window.Styles>
-    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Toolkit/Dialogs.xaml" />
   </Window.Styles>
   <Grid RowDefinitions="Auto,Auto,*">
     <Grid ColumnDefinitions="Auto,*,160" Margin="0 0 0 10">

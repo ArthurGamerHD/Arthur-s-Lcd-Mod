@@ -1,6 +1,6 @@
-using Adk.Gui.Controls;
-using Adk.Gui.Core;
-using Adk.Gui.Layout;
+using Acrux.Controls;
+using Acrux.Core;
+using Acrux.Layout;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.EnergyDashboard
@@ -9,11 +9,16 @@ namespace LcdMod.Client.Apps.EnergyDashboard
     {
         const string PANEL_COLOR_RESOURCE = "energyPanelColor";
 
-        public EnergyDashboardView(EnergyDashboardViewModel model)
+        public EnergyDashboardView()
         {
             Resources.Add("FontSizeMultiplier", new Views.FontSizeMultiplierConverter());
-            Resources.Add(PANEL_COLOR_RESOURCE, model.PanelBackground);
             InitializeComponent();
+        }
+
+        // The panel colour comes from the app's model; without it (a preview clone) the theme's own colour shows.
+        public EnergyDashboardView(EnergyDashboardViewModel model) : this()
+        {
+            Resources.Add(PANEL_COLOR_RESOURCE, model.PanelBackground);
             DataContext = model;
         }
 

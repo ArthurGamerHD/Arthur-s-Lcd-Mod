@@ -1,6 +1,6 @@
-using Adk.Gui.Controls;
-using Adk.Gui.Core.Input;
-using Adk.Gui.ScreenSpace;
+using Acrux.Controls;
+using Acrux.Core.Input;
+using Acrux.ScreenSpace;
 
 namespace LcdMod.Client.Debugging
 {
@@ -10,7 +10,7 @@ namespace LcdMod.Client.Debugging
         {
             InitializeComponent();
             Platform = ScreenSpaceWindowPlatform.Instance;
-            BindOpen(Key.F11);
+            BindOpen(Key.OemPeriod);
         }
     }
 }

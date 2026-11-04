@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+<Window xmlns="https://github.com/ArthurGamerHD/AcruxUI"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:pad="using:LcdMod.Client.Apps.ButtonPad"
         xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
         x:Class="LcdMod.Client.Apps.ButtonPad.TargetPickerView"
         x:DataType="pad:TargetPickerViewModel"
+        Design.DataContext="{x:Static pad:TargetPickerViewModelPreview.Default}"
         Title="{ext:loc LcdMod_ButtonPad_TargetDialog_Title}" Width="440" Height="440" MinWidth="330" MinHeight="275"
         Padding="14 4 14 14">
   <Window.Styles>
-    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Toolkit/Dialogs.xaml" />
   </Window.Styles>
   <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,*">
     <Grid Grid.Column="1" ColumnDefinitions="*,150" Height="36" Margin="0 0 0 8" IsVisible="{Binding IsRegular}">

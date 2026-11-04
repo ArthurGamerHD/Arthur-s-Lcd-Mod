@@ -1,6 +1,6 @@
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using System;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.CargoFilled
@@ -22,13 +22,20 @@ namespace LcdMod.Client.Apps.CargoFilled
             Key = key;
         }
 
+        [PreviewWith(1L, 2L, 3L, 4L)]
         public long Key { get; private set; }
+        [PreviewWith("MyObjectBuilder_CargoContainer/LargeBlockLargeContainer", "MyObjectBuilder_CargoContainer/LargeBlockLargeContainer", "MyObjectBuilder_CargoContainer/LargeBlockSmallContainer", "MyObjectBuilder_ShipConnector/Connector")]
         public string Icon => _icon;
+        [PreviewWith("Large Cargo Container 1", "Large Cargo Container 2", "Ore Buffer", "Connector (Dock A)")]
         public string Name => _name;
+        [PreviewWith(0.8059259f, 0.28444445f, 0.9728f, 0f)]
         public float Percentage => _percentage;
+        [PreviewWith("81%", "28%", "97%", "0%")]
         public string PercentageText => _percentageText;
         public Action Clicked => _clicked;
+        [PreviewWith("card")]
         public string Classes => _classes;
+        [PreviewWith("#E0A010", "#D1B1D7", "#602020", "#D1B1D7")]
         public Color Fill => _fill;
 
         public void UpdateAppearance(string classes, Color fill)

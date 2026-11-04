@@ -1,6 +1,7 @@
+using Adk.Mvvm;
 using System;
 using System.Globalization;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using LcdMod.Client.Apps.Dialogs;
 using LcdMod.Client.Extensions;
 using HexColors = LcdMod.Client.Extensions.ColorExtensions;
@@ -20,6 +21,11 @@ namespace LcdMod.Client.Apps.ButtonPad
     }
 
     /// <summary>Edits a draft of one button pad entry; Apply hands back the draft and Delete hands back null.</summary>
+    [PreviewWith("Title", "Button 3")]
+    [PreviewWith("SmallFontSize", 0.5525f)]
+    [PreviewWith("IsRegular", true)]
+    [PreviewWith("IsCompact", false)]
+    [PreviewWith("FontSize", 0.65f)]
     internal sealed class ButtonPadEntryViewModel : DialogViewModel
     {
         readonly ButtonPanelEntrySettings _draft;
@@ -81,6 +87,7 @@ namespace LcdMod.Client.Apps.ButtonPad
         public ICommand DeleteCommand { get; }
         public ButtonPanelEntrySettings Draft => _draft;
 
+        [PreviewWith("Hangar")]
         public string EntryTitle
         {
             get { return _draft.Title ?? string.Empty; }
@@ -134,8 +141,10 @@ namespace LcdMod.Client.Apps.ButtonPad
         }
 
         public bool HasSprite => !string.IsNullOrEmpty(_draft.SpriteName);
+        [PreviewWith("Plus")]
         public string PreviewIcon => HasSprite ? _draft.SpriteName : "Plus";
 
+        [PreviewWith("Hangar Doors")]
         public string TargetText => _draft.Target == null || string.IsNullOrEmpty(_draft.Target.DisplayName)
             ? Loc("LcdMod_ButtonPad_SelectTarget")
             : _draft.Target.DisplayName;
@@ -143,9 +152,12 @@ namespace LcdMod.Client.Apps.ButtonPad
         public string TargetIcon => _draft.Target == null ? null : _draft.Target.SpriteName;
         public bool HasTargetIcon => !string.IsNullOrEmpty(TargetIcon);
 
+        [PreviewWith(true)]
         public bool HasTarget => _draft.Target != null;
+        [PreviewWith(true)]
         public bool HasAction => _draft.Action != null;
 
+        [PreviewWith("Toggle block On/Off")]
         public string ActionText
         {
             get
@@ -159,7 +171,9 @@ namespace LcdMod.Client.Apps.ButtonPad
             }
         }
 
+        [PreviewWith("BooleanInput")]
         public string ActionIcon => _draft.Target == null || _draft.Action == null ? null : _draft.Action.SpriteName;
+        [PreviewWith(true)]
         public bool HasActionIcon => !string.IsNullOrEmpty(ActionIcon);
 
         void OnTargetPicked(PickActionTargetResult target)

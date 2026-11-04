@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using VRageMath;
 using LcdMod.Client.Apps.Abstract;
 using Sandbox.ModAPI;
 using SpaceEngineers.Game.ModAPI;
@@ -7,8 +9,20 @@ namespace LcdMod.Client.Apps
 {
     [LcdApp(6)]
     // ReSharper disable once PartialTypeWithSinglePart
-    internal sealed partial class GeneratorsApp : PowerApp
+    internal sealed partial class GeneratorsApp : PowerApp, Generators.IGeneratorsHost
     {
+        bool Generators.IGeneratorsHost.IsGridDisplay => IsGridDisplay;
+        IReadOnlyList<PowerEntry> Generators.IGeneratorsHost.NativeEntries => NativeEntries;
+        string Generators.IGeneratorsHost.NativeMaxLabel => NativeMaxLabel;
+        string Generators.IGeneratorsHost.NativeCurrentLabel => NativeCurrentLabel;
+        Color Generators.IGeneratorsHost.NativeAccentFill => NativeAccentFill;
+        Color Generators.IGeneratorsHost.NativeHeaderColor => NativeHeaderColor;
+        Color Generators.IGeneratorsHost.NativeErrorColor => NativeErrorColor;
+        Color Generators.IGeneratorsHost.NativeForeground => NativeForeground;
+        bool Generators.IGeneratorsHost.NativeDrawLines => NativeDrawLines;
+        int Generators.IGeneratorsHost.RangeTier => RangeTier;
+        void Generators.IGeneratorsHost.SetRangeTier(int tier) { SetRangeTier(tier); }
+
         readonly Generators.GeneratorsViewModel _viewModel;
         static readonly PowerEntryDefinition[] Definitions =
         {

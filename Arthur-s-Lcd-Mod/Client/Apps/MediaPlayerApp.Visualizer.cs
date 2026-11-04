@@ -1,5 +1,5 @@
 using System;
-using Adk.Gui.Lcd;
+using Acrux.Lcd;
 using Sandbox.ModAPI;
 using SeAudioVisualizer.Core;
 using SeAudioVisualizer.SpaceEngineers;
@@ -148,7 +148,7 @@ namespace LcdMod.Client.Apps
                 ? MediaPlayerComponent.VisualizerInstances
                 : null;
 
-        /// <summary>Replaces the visualizer settings; <paramref name="persist"/> also saves and syncs the block config.</summary>
+        // Replaces the visualizer settings; persist also saves and syncs the block config.
         internal void SetVisualizerInstances(Common.Config.Components.MediaVisualizerInstanceSettings[] instances, bool persist)
         {
             MediaPlayerComponent.VisualizerInstances =
@@ -210,10 +210,12 @@ namespace LcdMod.Client.Apps
             _visualizerSilentTicks = 0;
         }
 
-        internal void SuspendVisualizer()
+        // The screen was disposed: forget it so background updates never call into it; RebindHost attaches the next.
+        internal void DetachHost()
         {
             _visualizerDetached = true;
             ReleaseVisualizerTexture();
+            _interactiveHost = null;
         }
 
         public override void Close()

@@ -2,9 +2,9 @@ using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Adk.Gui.Controls;
-using Adk.Gui.Layout;
-using Adk.Gui.Styling;
+using Acrux.Controls;
+using Acrux.Layout;
+using Acrux.Styling;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts;
@@ -104,8 +104,8 @@ namespace LcdMod.Client.Apps
             {
                 FontFamily = DEBUG_FONT,
                 FontSize = TextScale,
-                TextAlignment = Adk.Gui.Core.HorizontalAlignment.Left,
-                VerticalTextAlignment = Adk.Gui.Core.VerticalAlignment.Top
+                TextAlignment = Acrux.Core.HorizontalAlignment.Left,
+                VerticalTextAlignment = Acrux.Core.VerticalAlignment.Top
             };
             text.TextProvider = delegate
             {

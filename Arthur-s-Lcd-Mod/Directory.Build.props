@@ -4,7 +4,7 @@
     <MdkSourceRoot Condition="'$(MdkSourceRoot)' == ''">/home/arthur/RiderProjects/mdk2/Source/</MdkSourceRoot>
     <MdkLocalConfiguration Condition="'$(MdkLocalConfiguration)' == ''">Debug</MdkLocalConfiguration>
     <MdkLocalPlatform Condition="'$(MdkLocalPlatform)' == ''">x64</MdkLocalPlatform>
-    <Mdk-IgnorePaths Condition="'$(Mdk-IgnorePaths)' == ''">**\*.debug.cs;obj\**\*</Mdk-IgnorePaths>
+    <Mdk-IgnorePaths Condition="'$(Mdk-IgnorePaths)' == ''">**\*.AcruxDesign.cs;**\*.AcruxDesign.g.cs;obj\**\*</Mdk-IgnorePaths>
   </PropertyGroup>
   <ItemGroup>
     <CompilerVisibleProperty Include="Version" />

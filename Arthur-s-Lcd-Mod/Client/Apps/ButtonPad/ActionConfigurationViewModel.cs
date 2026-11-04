@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using LcdMod.Client.Apps.Dialogs;
 using LcdMod.Client.Extensions;
 using HexColors = LcdMod.Client.Extensions.ColorExtensions;
 using LcdMod.Client.Gui.ControlsTemplates.Interactive;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.ButtonPad
@@ -31,6 +31,20 @@ namespace LcdMod.Client.Apps.ButtonPad
     }
 
     /// <summary>Edits one action's parameter: a number, text, color, on/off mode or increase/decrease, plus scrolling.</summary>
+    [PreviewWith("Title", "")]
+    [PreviewWith("SmallFontSize", 0.5525f)]
+    [PreviewWith("ScrollModes.Label", "None", "Normal", "Reversed")]
+    [PreviewWith("ScrollModes.FontSize", 0.65f)]
+    [PreviewWith("ScrollModes.Classes", "dialog-choice selected", "dialog-choice", "dialog-choice")]
+    [PreviewWith("IsRegular", true)]
+    [PreviewWith("IsCompact", false)]
+    [PreviewWith("FontSize", 0.65f)]
+    [PreviewWith("ClickActions.Label", "Increase", "Decrease")]
+    [PreviewWith("ClickActions.FontSize", 0.65f)]
+    [PreviewWith("ClickActions.Classes", "dialog-choice selected", "dialog-choice")]
+    [PreviewWith("BooleanModes.Label", "On", "Off", "Toggle")]
+    [PreviewWith("BooleanModes.FontSize", 0.65f)]
+    [PreviewWith("BooleanModes.Classes", "dialog-choice", "dialog-choice", "dialog-choice selected")]
     internal sealed class ActionConfigurationViewModel : DialogViewModel
     {
         const string ON = "on";
@@ -97,27 +111,38 @@ namespace LcdMod.Client.Apps.ButtonPad
             RefreshChoices();
         }
 
+        [PreviewWith("Set velocity")]
         public string ActionName { get; }
         public ICommand ApplyCommand { get; }
         public ICommand IncreaseCommand { get; }
         public ICommand DecreaseCommand { get; }
+        [PreviewWith(3)]
         public IReadOnlyList<ChoiceButton> BooleanModes { get; }
+        [PreviewWith(2)]
         public IReadOnlyList<ChoiceButton> ClickActions { get; }
+        [PreviewWith(3)]
         public IReadOnlyList<ChoiceButton> ScrollModes { get; }
+        [PreviewWith(true)]
         public bool HasParameter => _type != null;
         public bool HasNoParameter => _type == null;
+        [PreviewWith(true)]
         public bool IsNumber => _type == ActionParameterInfo.INT64 || _type == ActionParameterInfo.SINGLE;
         public bool IsText => _type == ActionParameterInfo.STRING || _type == ActionParameterInfo.STRING_BUILDER;
         public bool IsColor => _type == ActionParameterInfo.COLOR;
         public bool IsBoolean => _type == ActionParameterInfo.BOOLEAN;
         public bool IsIncreaseDecrease => _type == ActionParameterInfo.INCREASE_DECREASE;
+        [PreviewWith(true)]
         public bool HasScroll => IsNumber || IsIncreaseDecrease;
 
         // Compact (pre-migration layout): only the controls, with Apply in a column on the right.
+        [PreviewWith(true)]
         public bool ShowCaption => HasParameter && !IsCompact;
+        [PreviewWith(true)]
         public bool ShowScrollLabel => HasScroll && !IsCompact;
+        [PreviewWith(1)]
         public int ApplyRow => IsCompact ? 0 : 1;
         public int ApplyColumn => IsCompact ? 1 : 0;
+        [PreviewWith(8f)]
         public float Spacing => IsCompact ? 4f : 8f;
 
         protected override void OnCompactChanged()
@@ -129,6 +154,7 @@ namespace LcdMod.Client.Apps.ButtonPad
             RaisePropertyChanged<float>(nameof(Spacing));
         }
 
+        [PreviewWith("Number value")]
         public string ParameterCaption => Loc(IsNumber ? "LcdMod_ButtonPad_ConfigureAction_NumberValue"
             : IsText ? "LcdMod_ButtonPad_ConfigureAction_TextValue"
             : IsColor ? "LcdMod_ButtonPad_ConfigureAction_ColorValue"
@@ -136,6 +162,7 @@ namespace LcdMod.Client.Apps.ButtonPad
             : IsIncreaseDecrease ? "LcdMod_ButtonPad_ConfigureAction_ClickAction"
             : "LcdMod_ButtonPad_ConfigureAction_Parameter");
 
+        [PreviewWith("0.5")]
         public string Number
         {
             get { return _number; }
@@ -148,6 +175,7 @@ namespace LcdMod.Client.Apps.ButtonPad
             set { RaiseAndSetIfChanged(ref _text, value ?? string.Empty, nameof(Text)); }
         }
 
+        [PreviewWith("#FFFFFF")]
         public string ColorText
         {
             get { return _color; }
@@ -160,6 +188,7 @@ namespace LcdMod.Client.Apps.ButtonPad
             }
         }
 
+        [PreviewWith(true)]
         public bool IsColorValid
         {
             get
@@ -169,6 +198,7 @@ namespace LcdMod.Client.Apps.ButtonPad
             }
         }
 
+        [PreviewWith("#FFFFFF")]
         public Color ColorPreview
         {
             get

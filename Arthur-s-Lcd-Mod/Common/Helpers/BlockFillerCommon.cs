@@ -33,11 +33,9 @@ namespace LcdMod.Common.Helpers
             }
         }
 
-        /// <summary>
-        ///     Top each weapon up to the magazine count configured for its weapon TYPE (the override
-        ///     for the weapon's block SubtypeId, else the global default), pulling whatever ammo type the
-        ///     weapon accepts out of the source containers.
-        /// </summary>
+        // Top each weapon up to the magazine count configured for its weapon TYPE (the override for the weapon's block
+        // SubtypeId, else the global default), pulling whatever ammo type the weapon accepts out of the source
+        // containers.
         private static int FillWeapons(List<IMyTerminalBlock> sources, List<IMyTerminalBlock> weapons,
             FillSettings settings)
         {
@@ -93,10 +91,8 @@ namespace LcdMod.Common.Helpers
             return moved;
         }
 
-        /// <summary>
-        ///     Top each reactor up to its uranium target (which depends on grid size and reactor
-        ///     size), pulling uranium ingots from the source containers.
-        /// </summary>
+        // Top each reactor up to its uranium target (which depends on grid size and reactor size), pulling uranium
+        // ingots from the source containers.
         private static int FillReactors(List<IMyTerminalBlock> sources, List<IMyTerminalBlock> reactors,
             FillSettings settings)
         {

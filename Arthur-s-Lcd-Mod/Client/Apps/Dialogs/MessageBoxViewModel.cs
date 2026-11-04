@@ -1,23 +1,25 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
-using LcdMod.Common.Mvvm;
+using Acrux.Core.Input;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Apps.Dialogs
 {
     /// <summary>One button of a message box: its text, what it does, and whether it is the primary choice.</summary>
     internal sealed class DialogButton
     {
-        public DialogButton(string text, Action clicked = null, bool isPrimary = false)
+        public DialogButton(string text, Action clicked = null, bool isPrimary = false, bool isDangerous = false)
         {
             Text = text ?? string.Empty;
             Clicked = clicked;
             IsPrimary = isPrimary;
+            IsDangerous = isDangerous;
         }
 
         public string Text { get; }
         public Action Clicked { get; }
         public bool IsPrimary { get; }
+        public bool IsDangerous { get; }
     }
 
     internal sealed class DialogButtonModel : ObservableObject
@@ -27,15 +29,18 @@ namespace LcdMod.Client.Apps.Dialogs
         public DialogButtonModel(DialogButton button, ICommand command, float fontSize)
         {
             Text = button.Text;
-            Classes = button.IsPrimary ? "dialog-button primary" : "dialog-button";
+            Classes = $"dialog-button {(button.IsDangerous ? "danger" : button.IsPrimary ? "primary" : "")}".TrimEnd();
             Command = command;
             _fontSize = fontSize;
         }
 
+        [PreviewWith("Cancel", "Delete")]
         public string Text { get; }
+        [PreviewWith("dialog-button", "dialog-button danger")]
         public string Classes { get; }
         public ICommand Command { get; }
 
+        [PreviewWith(0.65f)]
         public float FontSize
         {
             get { return _fontSize; }
@@ -44,6 +49,11 @@ namespace LcdMod.Client.Apps.Dialogs
     }
 
     /// <summary>A message with one to three buttons; any button closes the box before running its action.</summary>
+    [PreviewWith("Title", "Delete playlist")]
+    [PreviewWith("SmallFontSize", 0.5525f)]
+    [PreviewWith("IsRegular", true)]
+    [PreviewWith("IsCompact", false)]
+    [PreviewWith("FontSize", 0.65f)]
     internal sealed class MessageBoxViewModel : DialogViewModel
     {
         readonly List<DialogButtonModel> _buttons = new List<DialogButtonModel>();
@@ -70,9 +80,13 @@ namespace LcdMod.Client.Apps.Dialogs
         {
         }
 
+        [PreviewWith("Delete the playlist \"Space Music Vol 1\"? This cannot be undone.")]
         public string Message { get; }
+        [PreviewWith("Warning")]
         public string Icon { get; }
+        [PreviewWith(true)]
         public bool HasIcon => !string.IsNullOrWhiteSpace(Icon);
+        [PreviewWith(2)]
         public IReadOnlyList<DialogButtonModel> Buttons => _buttons;
 
         protected override void OnFontSizeChanged()

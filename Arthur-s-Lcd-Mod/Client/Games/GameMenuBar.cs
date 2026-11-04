@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using Adk.Gui.Controls;
-using Adk.Gui.Core.Input;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
+using Acrux.Controls;
+using Acrux.Core.Input;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
 
 namespace LcdMod.Client.Games
 {

@@ -1,15 +1,19 @@
 using System;
-using Adk.Gui.Controls;
-using Adk.Gui.Core;
+using Acrux.Controls;
+using Acrux.Core;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.DockingAlignment
 {
     internal sealed partial class DockingAlignmentView : UserControl
     {
-        public DockingAlignmentView(DockingAlignmentViewModel viewModel)
+        public DockingAlignmentView()
         {
             InitializeComponent();
+        }
+
+        public DockingAlignmentView(DockingAlignmentViewModel viewModel) : this()
+        {
             DataContext = viewModel;
         }
 

@@ -711,13 +711,25 @@ namespace LcdMod.Common.Config.Components
         [ProtoMember(16), DefaultValue(true)]
         [TerminalControlSwitch(5466, "StarMapRenderSkybox", MOD_PREFIX + "PlanetaryMap_RenderSkybox", Slot = APP)]
         public bool RenderSkybox { get; set; } = true;
+        [ProtoMember(17), DefaultValue(true)]
+        [TerminalControlSwitch(5468, "StarMapRenderAtmosphere", MOD_PREFIX + "PlanetaryMap_RenderAtmosphere", Slot = APP)]
+        public bool RenderAtmosphere { get; set; } = true;
+        // External Sensors' third-person camera, in the ship's axes: turned from behind, raised, and how far in the
+        // ship's radii.
+        [ProtoMember(18)] public float SensorsYaw { get; set; }
+        [ProtoMember(19), DefaultValue(0.35f)] public float SensorsPitch { get; set; } = 0.35f;
+        [ProtoMember(20), DefaultValue(3f)] public float SensorsDistance { get; set; } = 3f;
 
         public override ConfigComponent Clone()
         {
             return new StarMapConfigComponent
             {
+                SensorsYaw = SensorsYaw,
+                SensorsPitch = SensorsPitch,
+                SensorsDistance = SensorsDistance,
                 FoV = FoV,
                 RenderSkybox = RenderSkybox,
+                RenderAtmosphere = RenderAtmosphere,
                 DisplayMyGps = DisplayMyGps,
                 IncludeRadioSignals = IncludeRadioSignals,
                 StaticOrbitYawRadians = StaticOrbitYawRadians,
@@ -758,6 +770,10 @@ namespace LcdMod.Common.Config.Components
         [ProtoMember(16), DefaultValue(true)]
         [TerminalControlSwitch(5465, "RenderSkybox", MOD_PREFIX + "PlanetaryMap_RenderSkybox", Slot = APP)]
         public bool RenderSkybox { get; set; } = true;
+        [ProtoMember(17)] public bool View3D { get; set; }
+        [ProtoMember(18), DefaultValue(true)]
+        [TerminalControlSwitch(5467, "RenderAtmosphere", MOD_PREFIX + "PlanetaryMap_RenderAtmosphere", Slot = APP)]
+        public bool RenderAtmosphere { get; set; } = true;
 
         public override ConfigComponent Clone()
         {
@@ -765,6 +781,8 @@ namespace LcdMod.Common.Config.Components
             {
                 NorthUp = NorthUp,
                 RenderSkybox = RenderSkybox,
+                RenderAtmosphere = RenderAtmosphere,
+                View3D = View3D,
                 FollowCamera = FollowCamera,
                 OrbitYawRadians = OrbitYawRadians,
                 OrbitPitchRadians = OrbitPitchRadians,
@@ -787,7 +805,72 @@ namespace LcdMod.Common.Config.Components
     public sealed class DiagnosticConfigComponent : ConfigComponent
     {
         [ProtoMember(1)] public float Rotation { get; set; }
-        public override ConfigComponent Clone() => new DiagnosticConfigComponent { Rotation = Rotation };
+        [ProtoMember(2)]
+        [TerminalControlSlider(5491, "IntegrityCutMinX", MOD_PREFIX + "Integrity_CutMinX", 0f, 100f, "0", Slot = APP, OnlyApps = "PreviewGrid")]
+        public float CutMinX { get; set; }
+        [ProtoMember(3), DefaultValue(100f)]
+        [TerminalControlSlider(5492, "IntegrityCutMaxX", MOD_PREFIX + "Integrity_CutMaxX", 0f, 100f, "0", Slot = APP, OnlyApps = "PreviewGrid")]
+        public float CutMaxX { get; set; } = 100f;
+        [ProtoMember(4)]
+        [TerminalControlSlider(5493, "IntegrityCutMinY", MOD_PREFIX + "Integrity_CutMinY", 0f, 100f, "0", Slot = APP, OnlyApps = "PreviewGrid")]
+        public float CutMinY { get; set; }
+        [ProtoMember(5), DefaultValue(100f)]
+        [TerminalControlSlider(5494, "IntegrityCutMaxY", MOD_PREFIX + "Integrity_CutMaxY", 0f, 100f, "0", Slot = APP, OnlyApps = "PreviewGrid")]
+        public float CutMaxY { get; set; } = 100f;
+        [ProtoMember(6)]
+        [TerminalControlSlider(5495, "IntegrityCutMinZ", MOD_PREFIX + "Integrity_CutMinZ", 0f, 100f, "0", Slot = APP, OnlyApps = "PreviewGrid")]
+        public float CutMinZ { get; set; }
+        [ProtoMember(7), DefaultValue(100f)]
+        [TerminalControlSlider(5496, "IntegrityCutMaxZ", MOD_PREFIX + "Integrity_CutMaxZ", 0f, 100f, "0", Slot = APP, OnlyApps = "PreviewGrid")]
+        public float CutMaxZ { get; set; } = 100f;
+        [ProtoMember(8), DefaultValue(true)]
+        [TerminalControlSwitch(5497, "IntegrityHighlightMissing", MOD_PREFIX + "Integrity_HighlightMissing", Slot = APP)]
+        public bool HighlightMissing { get; set; } = true;
+        [ProtoMember(9), DefaultValue(true)]
+        [TerminalControlSwitch(5498, "IntegrityHighlightDamaged", MOD_PREFIX + "Integrity_HighlightDamaged", Slot = APP)]
+        public bool HighlightDamaged { get; set; } = true;
+        [ProtoMember(10)] public bool View3D { get; set; }
+        // GridSceneState.XRayCategories: one bit per GridBlockCategory.
+        [ProtoMember(11)] public int XRay { get; set; }
+        // The 3D camera as the user left it; false follows the configured axis, rotation and scale.
+        [ProtoMember(12)] public bool CameraFree { get; set; }
+        [ProtoMember(13)] public float CameraYaw { get; set; }
+        [ProtoMember(14)] public float CameraPitch { get; set; }
+        [ProtoMember(15), DefaultValue(1f)] public float CameraZoom { get; set; } = 1f;
+        [ProtoMember(16)] public float CameraPanX { get; set; }
+        [ProtoMember(17)] public float CameraPanY { get; set; }
+        [ProtoMember(18)] public float CameraPanZ { get; set; }
+        // Apps that start in 3D keep the flat map choice here instead of View3D, so both default to false.
+        [ProtoMember(19)] public bool View2D { get; set; }
+        // A camera the app points itself (Target Info) keeps its last aim in CameraYaw, CameraPitch and this.
+        [ProtoMember(20)] public float CameraRoll { get; set; }
+
+        public override ConfigComponent Clone()
+        {
+            return new DiagnosticConfigComponent
+            {
+                View3D = View3D,
+                View2D = View2D,
+                CameraRoll = CameraRoll,
+                XRay = XRay,
+                CameraFree = CameraFree,
+                CameraYaw = CameraYaw,
+                CameraPitch = CameraPitch,
+                CameraZoom = CameraZoom,
+                CameraPanX = CameraPanX,
+                CameraPanY = CameraPanY,
+                CameraPanZ = CameraPanZ,
+                Rotation = Rotation,
+                CutMinX = CutMinX,
+                CutMaxX = CutMaxX,
+                CutMinY = CutMinY,
+                CutMaxY = CutMaxY,
+                CutMinZ = CutMinZ,
+                CutMaxZ = CutMaxZ,
+                HighlightMissing = HighlightMissing,
+                HighlightDamaged = HighlightDamaged
+            };
+        }
     }
 
     [ProtoContract]

@@ -1,6 +1,6 @@
-using Adk.Gui.Controls;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
+using Acrux.Controls;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
 using LcdMod.Client.Apps.ViewModel;
 using LcdMod.Common.Config.Components;
 

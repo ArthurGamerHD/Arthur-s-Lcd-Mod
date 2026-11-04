@@ -23,7 +23,7 @@ namespace LcdMod.Client.Apps
 {
     [LcdApp(2)]
     [ConfigComponent(Constants.BLOCKS, typeof(BlockSelectionConfigComponent), PropertyName = "BlockSelectionComponent")]
-    public sealed partial class CargoFilledApp : App, IApp
+    public sealed partial class CargoFilledApp : App, IApp, ICargoFilledHost
     {
         private const int STATUS_MESSAGE_FRAMES = 240;
         private readonly HashSet<long> _activeEntryIds = new HashSet<long>();
@@ -65,6 +65,11 @@ namespace LcdMod.Client.Apps
         internal bool NativeGridMode => GeneralComponent.DisplayMode == (int)DisplayMode.Grid;
         internal override float WindowRenderScaling => CardScale;
         internal string NativeEntryClasses => (NativeGridMode ? "card" : "row") + (GeneralComponent.DrawLines ? " lines" : string.Empty);
+
+        IReadOnlyList<CargoEntry> ICargoFilledHost.NativeEntries => NativeEntries;
+        bool ICargoFilledHost.NativeGridMode => NativeGridMode;
+        string ICargoFilledHost.NativeEntryClasses => NativeEntryClasses;
+        Color ICargoFilledHost.NativeFill(float percentage) => NativeFill(percentage);
 
         // The usage color while the entry is critical, otherwise the card fill; readable against what is behind it.
         internal Color NativeFill(float percentage)

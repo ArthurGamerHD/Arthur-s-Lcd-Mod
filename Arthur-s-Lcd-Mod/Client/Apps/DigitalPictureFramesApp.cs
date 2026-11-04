@@ -1,7 +1,7 @@
 using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Styling;
+using Acrux.Styling;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Config;
 using LcdMod.Client.Helpers;
@@ -18,7 +18,7 @@ namespace LcdMod.Client.Apps
 {
     [LcdApp(16)]
     [ConfigComponent(APP, typeof(DigitalPictureFramesConfigComponent), PropertyName = "DigitalPictureFramesComponent")]
-    internal sealed partial class DigitalPictureFramesApp : App, IApp
+    internal sealed partial class DigitalPictureFramesApp : App, IApp, DigitalPictureFrames.IDigitalPictureFramesHost
     {
         readonly List<MySprite> _sprites = new List<MySprite>();
         readonly List<string> _displayable = new List<string>();
@@ -49,7 +49,7 @@ namespace LcdMod.Client.Apps
             base.Close();
         }
 
-        /// <summary>The texture to draw for <paramref name="sprite"/>: an animated image's current frame, or the sprite itself.</summary>
+        // The texture to draw for sprite: an animated image's current frame, or the sprite itself.
         internal string NativeTextureFor(string sprite)
         {
             GridImageAnimation animation = GridImageClientService.Instance?.GetAnimation(sprite);
@@ -139,6 +139,16 @@ namespace LcdMod.Client.Apps
         }
 
         internal override float WindowRenderScaling => CardScale;
+
+        IReadOnlyList<string> DigitalPictureFrames.IDigitalPictureFramesHost.NativeSprites => NativeSprites;
+        int DigitalPictureFrames.IDigitalPictureFramesHost.NativeDisplayMode => NativeDisplayMode;
+        bool DigitalPictureFrames.IDigitalPictureFramesHost.NativeCanEdit => NativeCanEdit;
+        string DigitalPictureFrames.IDigitalPictureFramesHost.NativePickText => NativePickText;
+        bool DigitalPictureFrames.IDigitalPictureFramesHost.NativeIsLoading(string sprite) => NativeIsLoading(sprite);
+        int DigitalPictureFrames.IDigitalPictureFramesHost.NativeSelectedIndex(int count) => NativeSelectedIndex(count);
+        string DigitalPictureFrames.IDigitalPictureFramesHost.NativeTextureFor(string sprite) => NativeTextureFor(sprite);
+        BackgroundBrush DigitalPictureFrames.IDigitalPictureFramesHost.CreateNativeBrush(string sprite, string texture) => CreateNativeBrush(sprite, texture);
+        void DigitalPictureFrames.IDigitalPictureFramesHost.OpenNativePicker() { OpenNativePicker(); }
 
         internal BackgroundBrush CreateNativeBrush(string sprite, string texture)
         {

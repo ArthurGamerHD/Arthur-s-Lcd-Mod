@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
-using Adk.Gui.Lcd;
+using Acrux.Core.Input;
+using Acrux.Lcd;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Utility;
@@ -21,7 +21,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         public event Action<InteractiveSurfaceScript, List<MySprite>> OnRenderOverlay;
 
         // Overlay handlers (FTUE tips) keep shared state, so screens showing one render on the main thread.
-        internal override bool CanRenderInParallel => base.CanRenderInParallel && OnRenderOverlay == null;
         public event Action<InteractiveSurfaceScript, Vector2> OnVisualContact;
 
         const long CURSOR_VISUAL_CONTACT_TIMEOUT_FRAMES = 6;
@@ -53,7 +52,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 Surface.SurfaceSize.Y - padding.Y));
         }
 
-        public abstract CursorType CursorType { get; protected set; }
+        /// <summary>
+        /// The cursor style to force on this surface. Inherit (the default) lets Acrux pick the one the control
+        /// under the pointer asks for; None hides the cursor.
+        /// </summary>
+        protected virtual PointerCursor CursorOverride => PointerCursor.Inherit;
 
         protected virtual LcdGuiHost RetainedGuiHost => RetainedAppGuiHost;
 
@@ -213,50 +216,40 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return callback == null ? (Action)null : delegate { callback(null, null); };
         }
 
+        LcdGuiHost _layersHost;
+        PointerCursor _cursorOverride = PointerCursor.Inherit;
+        PointerCursor _cursor = PointerCursor.Arrow;
+        float _cursorScale = 1f;
+
+        // Tells Acrux which retained UI and cursor override this surface has now; returns whether the cursor style it
+        // will draw changed.
         bool UpdateCursor()
         {
-            CursorType next = ResolveRetainedCursorType();
-            bool changed = CursorType != next;
-            CursorType = next;
+            LcdSurfaceLayers layers = Layers;
+            LcdGuiHost host = RetainedGuiHost;
+            if (!ReferenceEquals(_layersHost, host))
+            {
+                _layersHost = host;
+                layers.Host = host;
+            }
+
+            PointerCursor cursorOverride = CursorOverride;
+            if (_cursorOverride != cursorOverride)
+            {
+                _cursorOverride = cursorOverride;
+                layers.Cursor = cursorOverride;
+            }
+
+            PointerCursor next = layers.EffectiveCursor;
+            bool changed = _cursor != next;
+            _cursor = next;
             return changed;
         }
 
-        protected virtual CursorType ResolveRetainedCursorType()
-        {
-            LcdGuiHost host = RetainedGuiHost;
-            if (host == null)
-                return CursorType.Default;
-            switch (host.PointerCursor)
-            {
-                case PointerCursor.Hand:
-                    return CursorType.Hand;
-                case PointerCursor.DragMove:
-                    return CursorType.Grab;
-                case PointerCursor.Wait:
-                    return CursorType.WaitCursor;
-                case PointerCursor.Cross:
-                    return CursorType.Cross;
-                case PointerCursor.No:
-                    return CursorType.No;
-                case PointerCursor.None:
-                    return CursorType.None;
-                default:
-                    return CursorType.Default;
-            }
-        }
+        readonly List<MySprite> _overlay = new List<MySprite>();
 
-        /// <summary>
-        /// The last composed frame without the cursor. While the screen is only being looked at,
-        /// the cursor is drawn over it instead of rebuilding unchanged content every frame.
-        /// </summary>
-        readonly List<MySprite> _contentFrame = new List<MySprite>();
-        readonly List<MySprite> _cursorFrame = new List<MySprite>();
-        bool _hasContentFrame;
-
-        /// <summary>
-        /// Logs, at most every few seconds, why a looked-at screen redraws its whole content instead of only the cursor.
-        /// A steady stream of these means something invalidates the UI every frame.
-        /// </summary>
+        // Logs, at most every few seconds, why a looked-at screen redraws its whole content instead of only the cursor.
+        // A steady stream of these means something invalidates the UI every frame.
         void LogFullRenderReason(bool newContact, bool cursorChanged, bool appDirty)
         {
             long frame = MyAPIGateway.Session.GameplayFrameCounter;
@@ -273,42 +266,40 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         bool CanReuseContentFrame()
         {
-            LcdGuiHost host = RetainedGuiHost;
-            return _hasContentFrame && host != null && !host.NeedsRender;
+            return Layers.CanReuseContent;
         }
 
-        protected override void LayoutChanged()
-        {
-            _hasContentFrame = false;
-            base.LayoutChanged();
-        }
-
+        /// <summary>
+        /// Hands the frame's layers to Acrux, which draws them: this script's content, the overlay (FTUE tips)
+        /// and the cursor. While the screen is only being looked at, Acrux keeps the content and overlay and
+        /// moves the cursor over them instead of rebuilding unchanged content every frame.
+        /// </summary>
         protected override List<MySprite> RenderFrame(Func<List<MySprite>> sprites)
         {
             UpdateCursor();
+            LcdSurfaceLayers layers = Layers;
 
             // Rechecked here: the render may run later in the frame, after something else changed the content.
-            if (RenderingCursorOnly && CanReuseContentFrame())
+            if (!RenderingCursorOnly || !layers.CanReuseContent)
             {
-                _cursorFrame.Clear();
-                _cursorFrame.AddRange(_contentFrame);
-                AddCursorSprites(_cursorFrame);
-                return _cursorFrame;
+                layers.SetContent(base.RenderFrame(sprites));
+                _overlay.Clear();
+                RaiseRenderOverlay(_overlay);
+                layers.SetOverlay(_overlay);
             }
 
-            var spriteList = ComposeContentFrame(sprites);
-            _contentFrame.Clear();
-            _contentFrame.AddRange(spriteList);
-            _hasContentFrame = true;
-            AddCursorSprites(spriteList);
-            return spriteList;
-        }
+            float cursorScale = InteractionComponent.CursorScale;
+            if (_cursorScale != cursorScale)
+            {
+                _cursorScale = cursorScale;
+                layers.CursorScale = cursorScale;
+            }
+            layers.CursorPosition = CursorPosition;
+            layers.CursorVisible = HasRecentVisualContact;
 
-        List<MySprite> ComposeContentFrame(Func<List<MySprite>> sprites)
-        {
-            var spriteList = base.RenderFrame(sprites);
-            RaiseRenderOverlay(spriteList);
-            return spriteList;
+            List<MySprite> frame = layers.Compose();
+            _cursorDrawn = layers.CursorDrawn;
+            return frame;
         }
 
         bool _cursorDrawn;
@@ -318,25 +309,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             base.Run();
             if (_cursorDrawn && !HasRecentVisualContact)
                 RenderSprites();
-        }
-
-        void AddCursorSprites(List<MySprite> spriteList)
-        {
-            _cursorDrawn = false;
-            if (InteractionComponent.CursorScale == 0 || CursorType == CursorType.None)
-                return;
-
-            var cursor = CursorType;
-            var position = CursorPosition;
-            if (float.IsNaN(position.X) || float.IsNaN(position.Y) || !HasRecentVisualContact)
-                cursor = CursorType.None;
-            _cursorDrawn = cursor != CursorType.None;
-
-            Cursor.AddCursor(spriteList,
-                cursor,
-                position,
-                new Vector2(32), // hardcoded size
-                InteractionComponent.CursorScale);
         }
 
         void RaiseVisualContact(Vector2 onScreenCoordinates)
@@ -392,8 +364,6 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     CustomMaxDistance = 30
                 };
                 SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.CanHear].ClearImmediate();
-                //SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.ShouldPlay2D].ClearImmediate();
-                //SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.CueType].ClearImmediate();
                 SoundEmitter.EmitterMethods[(int)MyEntity3DSoundEmitter.MethodsEnum.ImplicitEffect].ClearImmediate();
             }
 

@@ -73,11 +73,9 @@ namespace LcdMod.Client.Modules.Power
             snapshot.MaxAvailableW = snapshot.Producers.KnownMaxOutputW;
         }
 
-        /// <summary>
-        /// Everything produced in scope is consumed somewhere, so a gap between the two is power that left or entered the
-        /// scope (connectors outside a mechanical scope) or went to sinks that belong to no block, such as a character
-        /// recharging its suit.
-        /// </summary>
+        // Everything produced in scope is consumed somewhere, so a gap between the two is power that left or entered
+        // the scope (connectors outside a mechanical scope) or went to sinks that belong to no block, such as a
+        // character recharging its suit.
         void AddUnknownBalance(ref PowerSnapshot snapshot)
         {
             double produced = snapshot.Producers.KnownCurrentOutputW;
@@ -261,10 +259,8 @@ namespace LcdMod.Client.Modules.Power
             }
         }
 
-        /// <summary>
-        /// Gyros have no sink of their own; <c>MyGridGyroSystem</c> draws for all of them through one grid-level sink that
-        /// a block scan cannot see.
-        /// </summary>
+        // Gyros have no sink of their own; MyGridGyroSystem draws for all of them through one grid-level sink that a
+        // block scan cannot see.
         void CollectGyros(IReadOnlyList<IMyCubeGrid> grids, ref PowerSnapshot snapshot)
         {
             string name = LocHelper.GetLoc("DisplayName_BlockGroup_Gyroscopes");
@@ -295,10 +291,8 @@ namespace LcdMod.Client.Modules.Power
             }
         }
 
-        /// <summary>
-        /// A grid's electric thrusters share one sink, attached to a single thruster, so the thruster row counts the
-        /// electric thrusters themselves instead of the sinks found.
-        /// </summary>
+        // A grid's electric thrusters share one sink, attached to a single thruster, so the thruster row counts the
+        // electric thrusters themselves instead of the sinks found.
         void CountElectricThrusters(IReadOnlyList<IMyCubeGrid> grids, List<PowerSubtypeSnapshot> consumers)
         {
             var entry = FindSubtypeEntry(consumers, ELECTRIC_THRUSTER_SUBTYPE_KEY);

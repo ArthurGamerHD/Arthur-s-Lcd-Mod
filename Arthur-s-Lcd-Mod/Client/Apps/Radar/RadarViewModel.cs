@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Rendering;
-using Adk.Gui.Styling;
+using Acrux.Rendering;
+using Acrux.Styling;
 using LcdMod.Client.Apps.Maps;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Radar
@@ -47,18 +47,29 @@ namespace LcdMod.Client.Apps.Radar
         public Color DebugColor => _debugColor;
         public bool HasDebug => _hasDebug;
         public BackgroundBrush WarningIcon { get; }
+        [PreviewWith(3)]
         public IReadOnlyList<RadarContactRow> Contacts => _contacts;
+        [PreviewWith(true)]
         public bool HasContacts => _contacts.Count > 0;
+        [PreviewWith(true)]
         public bool ShowFooter => _showFooter;
+        [PreviewWith("#80004678")]
         public Color FooterBackground => _footerBackground;
         public bool ShowWarning => _showWarning;
         public string WarningText => _warningText;
+        [PreviewWith("#E6E0A010")]
         public Color WarningColor => _warningColor;
+        [PreviewWith("Detected entities")]
         public string HeaderTitle => _headerTitle;
+        [PreviewWith("Range: 2.0 km")]
         public string RangeText => _rangeText;
+        [PreviewWith("#BFC5EDFF")]
         public Color HeaderColor => _headerColor;
+        [PreviewWith("#C5EDFF")]
         public Color TextColor => _textColor;
+        [PreviewWith(0.55f)]
         public float HeaderFontSize => _headerFontSize;
+        [PreviewWith(0.46f)]
         public float WarningFontSize => _warningFontSize;
 
         public void InvalidateScene()
@@ -116,8 +127,14 @@ namespace LcdMod.Client.Apps.Radar
         {
         }
 
+        // A click on a contact's icon, with its entity id.
+        public event Action<long> ContactClicked;
+
         void IMapSurface.Click(Vector2 pixel)
         {
+            long hit = RadarRenderer.HitTest(Scene, _canvas, pixel);
+            if (hit != 0)
+                ContactClicked?.Invoke(hit);
         }
 
         void IMapSurface.DoubleClick(Vector2 pixel)
@@ -196,8 +213,11 @@ namespace LcdMod.Client.Apps.Radar
         float _fontSize = .5f;
 
         public BackgroundBrush IconMask => _iconMask;
+        [PreviewWith("#3A203F", "#E0A010", "#602020")]
         public Color IconColor => _iconColor;
+        [PreviewWith("Mining Drone Mk II  320 m", "Unknown signal  1.2 km", "Pirate Interceptor  1.8 km")]
         public string Text => _text;
+        [PreviewWith(0.5f)]
         public float FontSize => _fontSize;
 
         public void Update(string icon, string text, Color iconColor, float fontSize)

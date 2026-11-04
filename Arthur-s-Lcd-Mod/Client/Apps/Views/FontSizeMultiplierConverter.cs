@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
-using Adk.Gui.Data;
-using Adk.Gui.Data.Converters;
+using Acrux.Data;
+using Acrux.Data.Converters;
 
 namespace LcdMod.Client.Apps.Views
 {

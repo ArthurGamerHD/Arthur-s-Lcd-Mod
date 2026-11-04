@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using Adk.Gui.Controls;
-using Adk.Gui.Core;
-using Adk.Gui.Layout;
-using Adk.Gui.Lcd;
+using Acrux.Controls;
+using Acrux.Core;
+using Acrux.Layout;
+using Acrux.Lcd;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
 

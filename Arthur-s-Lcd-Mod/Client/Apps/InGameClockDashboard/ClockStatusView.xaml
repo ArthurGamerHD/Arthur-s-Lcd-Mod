@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+<UserControl xmlns="https://github.com/ArthurGamerHD/AcruxUI"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:clock="using:LcdMod.Client.Apps.InGameClockDashboard"
              xmlns:controls="using:LcdMod.Client.Apps.Controls"

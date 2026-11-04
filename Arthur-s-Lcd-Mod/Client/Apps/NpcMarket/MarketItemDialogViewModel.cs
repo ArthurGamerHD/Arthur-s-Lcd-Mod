@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
-using Adk.Gui.Styling;
+using Acrux.Core.Input;
+using Acrux.Styling;
 using LcdMod.Client.Apps.Dialogs;
 using LcdMod.Client.Market;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Apps.NpcMarket
 {
@@ -30,6 +30,11 @@ namespace LcdMod.Client.Apps.NpcMarket
     }
 
     /// <summary>Stations quoting one market item, sortable by column; clicking a station marks it with a GPS.</summary>
+    [PreviewWith("Title", "Platinum Ingot")]
+    [PreviewWith("SmallFontSize", 0.5525f)]
+    [PreviewWith("IsRegular", true)]
+    [PreviewWith("IsCompact", false)]
+    [PreviewWith("FontSize", 0.65f)]
     internal sealed class MarketItemDialogViewModel : DialogViewModel
     {
         static readonly RotateTransform Flipped = new RotateTransform(180f);
@@ -66,14 +71,22 @@ namespace LcdMod.Client.Apps.NpcMarket
             Refresh();
         }
 
+        [PreviewWith("MyObjectBuilder_Ingot/Platinum")]
         public string Icon { get; }
+        [PreviewWith("No results")]
         public string EmptyText { get; }
         public Func<NpcMarketMode, string> ModeLabel { get; set; } = mode => mode.ToString();
+        [PreviewWith("Buy")]
         public NpcMarketMode Mode => _mode;
+        [PreviewWith(3)]
         public IReadOnlyList<MarketQuoteRow> Rows => _rows;
+        [PreviewWith("Distance")]
         public string DistanceLabel => _headerLabels[0];
+        [PreviewWith("Name")]
         public string StationLabel => _headerLabels[1];
+        [PreviewWith("Price per unit")]
         public string PriceLabel => _headerLabels[2];
+        [PreviewWith("Trend")]
         public string TrendLabel => _headerLabels[3];
         public ICommand SortDistanceCommand { get; }
         public ICommand SortStationCommand { get; }
@@ -81,6 +94,7 @@ namespace LcdMod.Client.Apps.NpcMarket
         public ICommand SortTrendCommand { get; }
         public bool IsDistanceSorted => _sortColumn == MarketQuoteColumn.Distance;
         public bool IsStationSorted => _sortColumn == MarketQuoteColumn.Station;
+        [PreviewWith(true)]
         public bool IsPriceSorted => _sortColumn == MarketQuoteColumn.Price;
         public bool IsTrendSorted => _sortColumn == MarketQuoteColumn.Trend;
         public Transform SortDirection => _descending ? Flipped : Upright;
@@ -233,12 +247,18 @@ namespace LcdMod.Client.Apps.NpcMarket
         }
 
         public ICommand Command { get; }
+        [PreviewWith("210 km", "48.0 km", "12.4 km")]
         public string Distance => _distance;
+        [PreviewWith("Trade Hub Sigma", "Mining Station Kappa", "Outpost Theta")]
         public string Station => _station;
+        [PreviewWith("2,875 SC", "2,980 SC", "3,120 SC")]
         public string Price => _price;
+        [PreviewWith("0%")]
         public string Trend => _trend;
+        [PreviewWith("Steady1")]
         public string TrendIcon => _trendIcon;
         public Transform TrendRotation => _trendRotation;
+        [PreviewWith(0.5525f)]
         public float FontSize => _owner.SmallFontSize;
 
         internal void Update(MarketQuote quote, NpcMarketMode mode)

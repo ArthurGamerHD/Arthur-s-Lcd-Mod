@@ -7,8 +7,10 @@ using LcdMod.Client.Config;
 using LcdMod.Client.Extensions;
 using LcdMod.Client.Apps.Radar;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;
 using Sandbox.ModAPI;
+using VRage.Game.Entity;
 using VRage;
 using VRage.Game;
 using VRage.Game.GUI.TextPanel;
@@ -32,6 +34,7 @@ namespace LcdMod.Client.Apps
         public Vector3D WorldPosition;
         public bool IsTargeted;
         public float TargetLockPercent;
+        public bool IsLockCandidate;
         public int MissedFrames;
     }
 
@@ -54,10 +57,14 @@ namespace LcdMod.Client.Apps
         const float DEFAULT_RANGE = 3000f;
         const string LONG_RANGE_WARNING_KEY = MOD_PREFIX + "Radar_AntennaRangeWarning";
 
-        // Timing intervals (Run() calls; each call ≈ 166 ms at Update10)
+        // Timing intervals (Run() calls; each call ~= 166 ms at Update10)
         const int CONTACT_TIMEOUT = 36;
 
         const int MAX_CONTACTS = 32;
+        const int MAX_MISSILES = 64;
+        // A missile's trail, in updates (about 2.5 s), and how far ahead its line reaches.
+        const int MISSILE_TRAIL_POINTS = 15;
+        const float MISSILE_AHEAD_SECONDS = 5f;
 
         const float CAMERA_PAN_CONFIG_EPSILON_METERS = 0.001f;
         const float CAMERA_ZOOM_CONFIG_EPSILON = 0.0001f;
@@ -80,6 +87,22 @@ namespace LcdMod.Client.Apps
         readonly List<IMyEntity> _tempEntities = new List<IMyEntity>();
         readonly RadarViewModel _viewModel = new RadarViewModel();
 
+        sealed class MissileTrack
+        {
+            public readonly List<Vector3D> Trail = new List<Vector3D>();
+            public Vector3D Position;
+            public Vector3D Velocity;
+            // How much farther it flies before it runs out of range; infinite when it has no range.
+            public double RemainingMeters;
+            public Color Color;
+            public bool Seen;
+        }
+
+        readonly Dictionary<long, MissileTrack> _missileTracks = new Dictionary<long, MissileTrack>();
+        readonly List<IMyMissile> _missileBuffer = new List<IMyMissile>();
+        readonly List<long> _missileGone = new List<long>();
+        readonly List<RadarMissile> _missilePool = new List<RadarMissile>();
+
         float _maxRange = DEFAULT_RANGE;
         Vector2 _cameraPanMeters;
         float _cameraZoomScale = CAMERA_DEFAULT_ZOOM_SCALE;
@@ -89,8 +112,8 @@ namespace LcdMod.Client.Apps
         long _debugLockedTargetEntityId;
         float _debugLockedTargetPercent;
         string _debugLockedTargetName = string.Empty;
-        long _cachedCharacterId;
-        Sandbox.Game.EntityComponents.MyTargetLockingComponent _cachedCharacterTargetLocking;
+        readonly TargetLockReader _targetLock = new TargetLockReader();
+        long _lockCandidateId;
 
         readonly IAppHost _host;
         IMyCubeBlock Block => _host.Block;
@@ -105,6 +128,7 @@ namespace LcdMod.Client.Apps
             _host = host;
             _viewModel.Scene.Camera = this;
             _viewModel.Scene.RingDistances = new[] { RING_1_M, RING_2_M, RING_3_M };
+            _viewModel.ContactClicked += OnContactClicked;
             SetBackgroundContent(new RadarSceneView { DataContext = _viewModel });
             SetContent(new RadarView { DataContext = _viewModel });
         }
@@ -114,7 +138,9 @@ namespace LcdMod.Client.Apps
             _maxRange = GetConfiguredRange();
             ApplyRadarConfig();
             SyncConfigIfNeeded();
+            _targetLock.Update();
             CollectContacts();
+            CollectMissiles();
             PurgeStaleContacts();
             BuildSortedContacts();
             UpdateScene();
@@ -161,6 +187,8 @@ namespace LcdMod.Client.Apps
                 _debugLockedTargetEntityId = lockedTargetEntityId;
                 _debugLockedTargetPercent = normalizedLockPercent;
                 _debugLockedTargetName = ResolveGridName(lockedTargetGridId);
+                IMyCubeGrid candidate = lockedTargetGridId == 0 ? _targetLock.GetLockCandidate() : null;
+                _lockCandidateId = candidate == null ? 0 : candidate.EntityId;
 
                 _tempEntities.Clear();
                 var sphere = new BoundingSphereD(shipPos, range);
@@ -204,12 +232,15 @@ namespace LcdMod.Client.Apps
                     double selectedScore = double.MinValue;
                     bool ownGroup = false;
                     bool groupHasLockedTarget = false;
+                    bool groupHasCandidate = false;
 
                     foreach (var groupGrid in _tempGroupGrids)
                     {
                         _processedGroupGridIds.Add(groupGrid.EntityId);
                         if (lockedTargetGridId != 0 && groupGrid.EntityId == lockedTargetGridId)
                             groupHasLockedTarget = true;
+                        if (_lockCandidateId != 0 && groupGrid.EntityId == _lockCandidateId)
+                            groupHasCandidate = true;
 
                         if (groupGrid.EntityId == ownGridId)
                         {
@@ -254,6 +285,7 @@ namespace LcdMod.Client.Apps
                     rec.WorldPosition = pos;
                     rec.IsTargeted = groupHasLockedTarget;
                     rec.TargetLockPercent = groupHasLockedTarget ? normalizedLockPercent : 0f;
+                    rec.IsLockCandidate = groupHasCandidate;
                     rec.MissedFrames = 0;
                 }
             }
@@ -311,6 +343,7 @@ namespace LcdMod.Client.Apps
             rec.IsTargeted = entity.EntityId == lockedTargetEntityId ||
                              (signalGrid != null && signalGrid.EntityId == lockedTargetGridId);
             rec.TargetLockPercent = rec.IsTargeted ? normalizedLockPercent : 0f;
+            rec.IsLockCandidate = signalGrid != null && signalGrid.EntityId == _lockCandidateId;
             rec.MissedFrames = 0;
             return true;
         }
@@ -542,161 +575,7 @@ namespace LcdMod.Client.Apps
 
         long GetLockedTargetGridId(out long targetEntityId, out float targetLockPercent)
         {
-            targetEntityId = 0;
-            targetLockPercent = 0f;
-
-            long lockedEntityId;
-            float lockedPercent;
-
-            var player = MyAPIGateway.Session.LocalHumanPlayer;
-            RefreshCachedCharacterTargetLocking(player);
-
-            var lockedGridId = GetLockedTargetGridIdFromTargetLockingComponent(_cachedCharacterTargetLocking,
-                out lockedEntityId,
-                out lockedPercent);
-            if (lockedEntityId != 0)
-            {
-                targetEntityId = lockedEntityId;
-                targetLockPercent = lockedPercent;
-            }
-
-            if (lockedGridId != 0)
-                return lockedGridId;
-
-            var playerCharacter = player?.Character;
-            lockedGridId = GetLockedTargetGridIdFromEntity(playerCharacter, out lockedEntityId, out lockedPercent);
-            if (lockedEntityId != 0)
-            {
-                targetEntityId = lockedEntityId;
-                targetLockPercent = lockedPercent;
-            }
-
-            if (lockedGridId != 0)
-                return lockedGridId;
-
-            var controlledEntity = player?.Controller?.ControlledEntity?.Entity;
-            lockedGridId = GetLockedTargetGridIdFromEntity(controlledEntity, out lockedEntityId, out lockedPercent);
-            if (lockedEntityId != 0)
-            {
-                targetEntityId = lockedEntityId;
-                targetLockPercent = lockedPercent;
-            }
-
-            if (lockedGridId != 0)
-                return lockedGridId;
-
-            var cameraEntity = MyAPIGateway.Session.CameraController?.Entity;
-            lockedGridId = GetLockedTargetGridIdFromEntity(cameraEntity, out lockedEntityId, out lockedPercent);
-            if (lockedEntityId != 0 && targetEntityId == 0)
-            {
-                targetEntityId = lockedEntityId;
-                targetLockPercent = lockedPercent;
-            }
-
-            if (lockedGridId != 0)
-                return lockedGridId;
-
-            var cockpit = Block as IMyCockpit;
-            lockedGridId = GetLockedTargetGridIdFromEntity(cockpit, out lockedEntityId, out lockedPercent);
-            if (lockedEntityId != 0)
-            {
-                targetEntityId = lockedEntityId;
-                targetLockPercent = lockedPercent;
-            }
-
-            if (lockedGridId != 0)
-                return lockedGridId;
-
-            var myGrid = Block.CubeGrid as Sandbox.Game.Entities.MyCubeGrid;
-            var mainCockpit = myGrid?.MainCockpit as IMyCockpit;
-            lockedGridId = GetLockedTargetGridIdFromEntity(mainCockpit, out lockedEntityId, out lockedPercent);
-            if (lockedEntityId != 0 && targetEntityId == 0)
-            {
-                targetEntityId = lockedEntityId;
-                targetLockPercent = lockedPercent;
-            }
-
-            if (lockedGridId != 0)
-                return lockedGridId;
-
-            lockedGridId = GetLockedTargetGridIdFromEntity(myGrid, out lockedEntityId, out lockedPercent);
-            if (lockedEntityId != 0 && targetEntityId == 0)
-            {
-                targetEntityId = lockedEntityId;
-                targetLockPercent = lockedPercent;
-            }
-
-            return lockedGridId;
-        }
-
-        void RefreshCachedCharacterTargetLocking(IMyPlayer player)
-        {
-            var characterEntity = player?.Character as IMyEntity;
-            var currentCharacterId = characterEntity?.EntityId ?? 0;
-            if (currentCharacterId == _cachedCharacterId)
-                return;
-
-            _cachedCharacterId = currentCharacterId;
-            _cachedCharacterTargetLocking = characterEntity?.Components?
-                .Get<Sandbox.Game.EntityComponents.MyTargetLockingComponent>();
-        }
-
-        static long GetLockedTargetGridIdFromEntity(IMyEntity entity, out long targetEntityId,
-            out float targetLockPercent)
-        {
-            targetEntityId = 0;
-            targetLockPercent = 0f;
-            if (entity == null || entity.Components == null)
-                return 0;
-
-            var targetLockingBlock =
-                entity.Components.Get<Sandbox.Game.EntityComponents.MyTargetLockingBlockComponent>();
-            if (targetLockingBlock != null)
-            {
-                var blockTargetEntity = targetLockingBlock.TargetEntity;
-                if (blockTargetEntity != null)
-                {
-                    targetEntityId = blockTargetEntity.EntityId;
-                    targetLockPercent = targetLockingBlock.LockingProgressPercent;
-                    var blockTargetGrid = blockTargetEntity as IMyCubeGrid;
-                    if (blockTargetGrid != null)
-                        return blockTargetGrid.EntityId;
-                }
-            }
-
-            var targetLocking = entity.Components.Get<Sandbox.Game.EntityComponents.MyTargetLockingComponent>();
-            if (targetLocking == null)
-                return 0;
-
-
-            var targetEntity = targetLocking.TargetEntity;
-            if (targetEntity == null)
-                return 0;
-
-            targetEntityId = targetEntity.EntityId;
-            targetLockPercent = targetLocking.LockingProgressPercent;
-            var targetGrid = targetEntity as IMyCubeGrid;
-            return targetGrid?.EntityId ?? 0;
-        }
-
-        static long GetLockedTargetGridIdFromTargetLockingComponent(
-            Sandbox.Game.EntityComponents.MyTargetLockingComponent targetLocking,
-            out long targetEntityId,
-            out float targetLockPercent)
-        {
-            targetEntityId = 0;
-            targetLockPercent = 0f;
-            if (targetLocking == null)
-                return 0;
-
-            var targetEntity = targetLocking.TargetEntity;
-            if (targetEntity == null)
-                return 0;
-
-            targetEntityId = targetEntity.EntityId;
-            targetLockPercent = targetLocking.LockingProgressPercent;
-            var targetGrid = targetEntity as IMyCubeGrid;
-            return targetGrid?.EntityId ?? 0;
+            return _targetLock.GetLockedGridId(Block, out targetEntityId, out targetLockPercent);
         }
 
         static float NormalizeLockPercent(float rawPercent)
@@ -826,6 +705,132 @@ namespace LcdMod.Client.Apps
 
             if (hasLockedTarget)
                 Dim(scene.Targets, 1 - 0.5f * _debugLockedTargetPercent);
+            BuildMissiles(scene, gridMatrix);
+        }
+
+        // A click on a contact locks on it, as the lock key would on its candidate (the candidate itself when it is
+        // part of that ship); refused out of lock range or outside the seat's lock cone.
+        void OnContactClicked(long entityId)
+        {
+            IMyEntity entity = MyAPIGateway.Entities.GetEntityById(entityId);
+            IMyCubeGrid grid = entity as IMyCubeGrid ?? (entity as IMyCubeBlock)?.CubeGrid;
+            if (grid == null)
+                return;
+            IMyCubeGrid candidate = _targetLock.GetLockCandidate();
+            if (candidate != null && (candidate == grid ||
+                                      MyAPIGateway.GridGroups.HasConnection(candidate, grid, GridLinkTypeEnum.Logical)))
+                grid = candidate;
+            if (!_targetLock.RequestLock(grid))
+                return;
+            var interactive = Host as InteractiveSurfaceScript;
+            if (interactive != null)
+                interactive.PlaySounds(AudioHelper.HudClick, true);
+        }
+
+        // Missiles inside the radar's own (antenna-less) range, each with a short trail of where it was.
+        void CollectMissiles()
+        {
+            foreach (var pair in _missileTracks)
+                pair.Value.Seen = false;
+            IMyCubeGrid ownGrid = Block == null ? null : Block.CubeGrid;
+            if (ownGrid != null)
+            {
+                Vector3D shipPos = Block.WorldMatrix.Translation;
+                MissileScanner.Collect(new BoundingSphereD(shipPos, Math.Min(_maxRange, DEFAULT_RANGE)), _missileBuffer);
+                for (int i = 0; i < _missileBuffer.Count && i < MAX_MISSILES; i++)
+                {
+                    IMyMissile missile = _missileBuffer[i];
+                    var entity = (IMyEntity)missile;
+                    MissileTrack track;
+                    if (!_missileTracks.TryGetValue(entity.EntityId, out track))
+                    {
+                        track = new MissileTrack { Color = MissileColor(missile) };
+                        _missileTracks[entity.EntityId] = track;
+                    }
+                    else
+                    {
+                        track.Trail.Add(track.Position);
+                        if (track.Trail.Count > MISSILE_TRAIL_POINTS)
+                            track.Trail.RemoveAt(0);
+                    }
+                    track.Position = entity.GetPosition();
+                    track.Velocity = missile.LinearVelocity;
+                    track.RemainingMeters = RemainingRange(missile, track.Position);
+                    track.Seen = true;
+                }
+                _missileBuffer.Clear();
+            }
+            _missileGone.Clear();
+            foreach (var pair in _missileTracks)
+                if (!pair.Value.Seen)
+                    _missileGone.Add(pair.Key);
+            for (int i = 0; i < _missileGone.Count; i++)
+                _missileTracks.Remove(_missileGone[i]);
+        }
+
+        // As every view colors missiles, by who launched them: friendly ones all in the one allied color.
+        static Color MissileColor(IMyMissile missile)
+        {
+            var launcher = MyAPIGateway.Entities.GetEntityById(missile.LauncherId) as IMyCubeBlock;
+            return Acrux.Render3D.RelationPalette.ForMissile(launcher == null ? 0 : launcher.OwnerId);
+        }
+
+        static double RemainingRange(IMyMissile missile, Vector3D position)
+        {
+            if (missile.MaxTrajectory <= 0f)
+                return double.PositiveInfinity;
+            return Math.Max(0d, missile.MaxTrajectory - Vector3D.Distance(position, missile.Origin));
+        }
+
+        void BuildMissiles(RadarScene scene, MatrixD gridMatrix)
+        {
+            scene.Missiles.Clear();
+            float range = scene.WorldRange;
+            if (range <= 0f)
+                return;
+            MatrixD toRadar = MatrixD.Transpose(gridMatrix);
+            foreach (var pair in _missileTracks)
+            {
+                MissileTrack track = pair.Value;
+                Vector3 position = ToRadar(track.Position - gridMatrix.Translation, toRadar) / range;
+                if (position.X * position.X + position.Y * position.Y > 1f)
+                    continue;
+                if (_missilePool.Count <= scene.Missiles.Count)
+                    _missilePool.Add(new RadarMissile());
+                RadarMissile missile = _missilePool[scene.Missiles.Count];
+                Vector3 velocity = ToRadar(track.Velocity, toRadar);
+                float speed = velocity.Length();
+                missile.Position = position;
+                missile.Heading = speed > 1e-6f ? velocity / speed : new Vector3(0f, -1f, 0f);
+                float aheadMeters = (float)Math.Min(speed * MISSILE_AHEAD_SECONDS, track.RemainingMeters);
+                missile.Ahead = ClipToRange(position, position + missile.Heading * (aheadMeters / range));
+                missile.Trail.Clear();
+                for (int i = 0; i < track.Trail.Count; i++)
+                    missile.Trail.Add(ToRadar(track.Trail[i] - gridMatrix.Translation, toRadar) / range);
+                missile.Color = track.Color;
+                scene.Missiles.Add(missile);
+            }
+        }
+
+        // Radar space: X right, Y backward, Z up, from the reference's axes.
+        static Vector3 ToRadar(Vector3D offset, MatrixD toRadar)
+        {
+            Vector3D local = Vector3D.TransformNormal(offset, toRadar);
+            return new Vector3((float)local.X, (float)local.Z, (float)local.Y);
+        }
+
+        // The point where a line leaving from inside the radar disc crosses its edge, or the end when it stays inside.
+        static Vector3 ClipToRange(Vector3 from, Vector3 to)
+        {
+            Vector2 a = new Vector2(from.X, from.Y);
+            Vector2 d = new Vector2(to.X - from.X, to.Y - from.Y);
+            float qa = d.LengthSquared();
+            if (qa <= 1e-12f || (to.X * to.X + to.Y * to.Y) <= 1f)
+                return to;
+            float qb = 2f * Vector2.Dot(a, d);
+            float qc = a.LengthSquared() - 1f;
+            float t = (-qb + (float)Math.Sqrt(Math.Max(0f, qb * qb - 4f * qa * qc))) / (2f * qa);
+            return Vector3.Lerp(from, to, MathHelper.Clamp(t, 0f, 1f));
         }
 
         static void Dim(List<RadarTarget> targets, float multiplier)
@@ -994,6 +999,8 @@ namespace LcdMod.Client.Apps
             Color iconColor = ContactColor(contact, errColor, warnColor, allyColor);
             targetInfo = new RadarTarget
             {
+                EntityId = contact.EntityId,
+                LockCandidate = contact.IsLockCandidate,
                 Position = position,
                 IconColor = iconColor,
                 IconTexture = contact.IconTexture,
@@ -1103,7 +1110,6 @@ namespace LcdMod.Client.Apps
             _sortedContacts.Clear();
             var shipPos = Block.WorldMatrix.Translation;
 
-            // Entity contacts: only those within detection range
             foreach (var kv in _contacts)
             {
                 var c = kv.Value;
@@ -1126,7 +1132,13 @@ namespace LcdMod.Client.Apps
 
         static Color ContactColor(ContactRecord c, Color errColor, Color warnColor, Color frdColor)
         {
-            switch (c.Relationship)
+            return RelationColor(c.Relationship, errColor, warnColor, frdColor);
+        }
+
+        static Color RelationColor(MyRelationsBetweenPlayerAndBlock relationship, Color errColor, Color warnColor,
+            Color frdColor)
+        {
+            switch (relationship)
             {
                 case MyRelationsBetweenPlayerAndBlock.Enemies:
                     return errColor;

@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Layout;
-using Adk.Gui.Rendering;
+using Acrux.Core;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Layout;
+using Acrux.Rendering;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Controls
@@ -27,7 +27,7 @@ namespace LcdMod.Client.Apps.Controls
             set { SetValue(PreferredTileAspectRatioProperty, value); }
         }
 
-        /// <summary>Places the first complete row at the bottom and grows upward.</summary>
+        // Places the first complete row at the bottom and grows upward.
         public static readonly StyledProperty<bool> FillFromBottomProperty =
             StyledProperty.Register<TilingPanel, bool>(nameof(FillFromBottom), false, UiInvalidation.Measure);
         public bool FillFromBottom { get { return GetValue(FillFromBottomProperty); } set { SetValue(FillFromBottomProperty, value); } }

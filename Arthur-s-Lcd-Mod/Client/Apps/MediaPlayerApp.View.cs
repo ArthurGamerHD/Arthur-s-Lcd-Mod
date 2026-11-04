@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using LcdMod.Common.Config.Components;
+using LcdMod.Client.Apps.MediaPlayer;
 using LcdMod.Client.Gui.Styling;
 using VRageMath;
 
 namespace LcdMod.Client.Apps
 {
-    public sealed partial class MediaPlayerApp
+    public sealed partial class MediaPlayerApp : IMediaPlayerHost
     {
         internal struct MediaQueueRow
         {
@@ -18,16 +19,16 @@ namespace LcdMod.Client.Apps
         Dictionary<string, string> _surfaceFonts;
 
         internal override float WindowRenderScaling => CardScale;
-        internal float MediaFontScale => Host.Surface.FontSize > 0f ? Host.Surface.FontSize : 1f;
-        internal string MediaTextFont => TextFont;
-        internal Color MediaForeground => Host.ForegroundColor;
-        internal Color MediaActiveColor => Opaque(GetMediaActiveColor());
-        internal Color MediaInactiveSurfaceColor => Opaque(GetMediaInactiveSurfaceColor());
-        internal Color MediaInactiveForegroundColor => GetMediaInactiveForegroundColor();
-        internal Color MediaErrorColor => Opaque(ColorComponent.ResolveErrorColor());
+        float IMediaPlayerHost.MediaFontScale => Host.Surface.FontSize > 0f ? Host.Surface.FontSize : 1f;
+        string IMediaPlayerHost.MediaTextFont => TextFont;
+        Color IMediaPlayerHost.MediaForeground => Host.ForegroundColor;
+        Color IMediaPlayerHost.MediaActiveColor => Opaque(GetMediaActiveColor());
+        Color IMediaPlayerHost.MediaInactiveSurfaceColor => Opaque(GetMediaInactiveSurfaceColor());
+        Color IMediaPlayerHost.MediaInactiveForegroundColor => GetMediaInactiveForegroundColor();
+        Color IMediaPlayerHost.MediaErrorColor => Opaque(ColorComponent.ResolveErrorColor());
         internal Color MediaResource(ResourceKey<Color> key, Color fallback) => ResolveResource(key, fallback);
 
-        internal string MediaSongPath
+        string IMediaPlayerHost.MediaSongPath
         {
             get
             {
@@ -36,17 +37,17 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        internal bool MediaPlaylistVisible => IsPlaylistVisible();
-        internal bool MediaShuffleEnabled => IsShuffleEnabled();
-        internal bool MediaRepeatActive => GetRepeatMode() != MediaRepeatMode.Disabled;
-        internal string MediaRepeatSuffix => GetRepeatButtonText();
-        internal bool MediaPlaying => IsPlayToggleActive();
-        internal bool MediaShiftStop => IsShiftPressed();
-        internal bool MediaCanReset => CanResetPlayer();
-        internal bool MediaPickEnabled => _interactiveHost != null;
-        internal bool MediaLibraryEnabled => _pickedAudio != null || HasLibrarySelection() || _queue.Count > 0;
+        bool IMediaPlayerHost.MediaPlaylistVisible => IsPlaylistVisible();
+        bool IMediaPlayerHost.MediaShuffleEnabled => IsShuffleEnabled();
+        bool IMediaPlayerHost.MediaRepeatActive => GetRepeatMode() != MediaRepeatMode.Disabled;
+        string IMediaPlayerHost.MediaRepeatSuffix => GetRepeatButtonText();
+        bool IMediaPlayerHost.MediaPlaying => IsPlayToggleActive();
+        bool IMediaPlayerHost.MediaShiftStop => IsShiftPressed();
+        bool IMediaPlayerHost.MediaCanReset => CanResetPlayer();
+        bool IMediaPlayerHost.MediaPickEnabled => _interactiveHost != null;
+        bool IMediaPlayerHost.MediaLibraryEnabled => _pickedAudio != null || HasLibrarySelection() || _queue.Count > 0;
 
-        internal bool MediaCanTogglePlay
+        bool IMediaPlayerHost.MediaCanTogglePlay
         {
             get
             {
@@ -57,14 +58,14 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        internal double MediaPositionSeconds => _player == null ? 0d : _player.CurrentPositionSeconds;
-        internal double MediaDurationSeconds => _player == null ? 0d : _player.CurrentDurationSeconds;
-        internal bool MediaCanSeek => _player != null && _player.CanSeek;
-        internal float MediaVolume => _volume;
-        internal bool MediaVisualizerEnabled => MediaPlayerComponent.VisualizerEnabled;
-        internal bool MediaHasVideo => _player != null && _player.Video != null;
+        double IMediaPlayerHost.MediaPositionSeconds => _player == null ? 0d : _player.CurrentPositionSeconds;
+        double IMediaPlayerHost.MediaDurationSeconds => _player == null ? 0d : _player.CurrentDurationSeconds;
+        bool IMediaPlayerHost.MediaCanSeek => _player != null && _player.CanSeek;
+        float IMediaPlayerHost.MediaVolume => _volume;
+        bool IMediaPlayerHost.MediaVisualizerEnabled => MediaPlayerComponent.VisualizerEnabled;
+        bool IMediaPlayerHost.MediaHasVideo => _player != null && _player.Video != null;
 
-        internal float MediaVisualizerAspectRatio
+        float IMediaPlayerHost.MediaVisualizerAspectRatio
         {
             get
             {
@@ -73,11 +74,11 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        internal object MediaVideoKey => _player?.Video;
-        internal bool MediaHasSubtitles => _player?.Video != null && _player.Video.HasSubtitles;
+        object IMediaPlayerHost.MediaVideoKey => _player?.Video;
+        bool IMediaPlayerHost.MediaHasSubtitles => _player?.Video != null && _player.Video.HasSubtitles;
 
-        /// <summary>The surface's own name for <paramref name="face"/>, or null when the surface has no such font.</summary>
-        internal string MediaResolveFont(string face)
+        // The surface's own name for face, or null when the surface has no such font.
+        string IMediaPlayerHost.MediaResolveFont(string face)
         {
             if (string.IsNullOrEmpty(face))
                 return null;
@@ -93,7 +94,7 @@ namespace LcdMod.Client.Apps
             return _surfaceFonts.TryGetValue(face, out resolved) ? resolved : null;
         }
 
-        internal string MediaSubtitle
+        string IMediaPlayerHost.MediaSubtitle
         {
             get
             {
@@ -101,22 +102,22 @@ namespace LcdMod.Client.Apps
                 return video == null ? null : video.SubtitleAt(_player.CurrentPositionSeconds);
             }
         }
-        internal float[] MediaVisualizerLevels => _visualizerLevels;
-        internal string MediaFileIcon => GetCurrentAudioFileIcon();
-        internal int MediaQueueIndex => _queueIndex;
-        internal int MediaQueueCount => _queue.Count;
-        internal string MediaClearQueueText => ResolveLoc(LOC_CLEAR_QUEUE);
-        internal string MediaSaveQueueText => ResolveLoc(LOC_SAVE_QUEUE);
-        internal string MediaQueueEmptyText => ResolveLoc(LOC_QUEUE_EMPTY);
-        internal string MediaPickText => ResolveLoc(LOC_PICK);
-        internal string MediaPreviousText => ResolveLoc(LOC_PREVIOUS);
-        internal string MediaNextText => ResolveLoc(LOC_NEXT);
-        internal string MediaShuffleText => ResolveLoc(LOC_SHUFFLE);
-        internal string MediaRepeatText => ResolveLoc(LOC_REPEAT);
-        internal string MediaPlaylistText => ResolveLoc(LOC_PLAYLIST);
-        internal string MediaStopText => ResolveLoc(LOC_STOP);
+        float[] IMediaPlayerHost.MediaVisualizerLevels => _visualizerLevels;
+        string IMediaPlayerHost.MediaFileIcon => GetCurrentAudioFileIcon();
+        int IMediaPlayerHost.MediaQueueIndex => _queueIndex;
+        int IMediaPlayerHost.MediaQueueCount => _queue.Count;
+        string IMediaPlayerHost.MediaClearQueueText => ResolveLoc(LOC_CLEAR_QUEUE);
+        string IMediaPlayerHost.MediaSaveQueueText => ResolveLoc(LOC_SAVE_QUEUE);
+        string IMediaPlayerHost.MediaQueueEmptyText => ResolveLoc(LOC_QUEUE_EMPTY);
+        string IMediaPlayerHost.MediaPickText => ResolveLoc(LOC_PICK);
+        string IMediaPlayerHost.MediaPreviousText => ResolveLoc(LOC_PREVIOUS);
+        string IMediaPlayerHost.MediaNextText => ResolveLoc(LOC_NEXT);
+        string IMediaPlayerHost.MediaShuffleText => ResolveLoc(LOC_SHUFFLE);
+        string IMediaPlayerHost.MediaRepeatText => ResolveLoc(LOC_REPEAT);
+        string IMediaPlayerHost.MediaPlaylistText => ResolveLoc(LOC_PLAYLIST);
+        string IMediaPlayerHost.MediaStopText => ResolveLoc(LOC_STOP);
 
-        internal void FillQueueRows(List<MediaQueueRow> rows)
+        void IMediaPlayerHost.FillQueueRows(List<MediaQueueRow> rows)
         {
             rows.Clear();
             for (int i = 0; i < _queue.Count; i++)
@@ -131,7 +132,7 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        internal string MediaTitleText
+        string IMediaPlayerHost.MediaTitleText
         {
             get
             {
@@ -140,33 +141,38 @@ namespace LcdMod.Client.Apps
             }
         }
 
-        /// <summary>Video draws its own sliding title, so the app chrome's title gives way to it.</summary>
+        string IMediaPlayerHost.MediaVisualizerTexture => MediaVisualizerTexture;
+        string IMediaPlayerHost.ConfigureVisualizerText => ConfigureVisualizerText;
+        void IMediaPlayerHost.OpenVisualizerSettings() { OpenVisualizerSettings(); }
+        void IMediaPlayerHost.MediaSetVideoChrome(bool video) { MediaSetVideoChrome(video); }
+
+        // Video draws its own sliding title, so the app chrome's title gives way to it.
         internal void MediaSetVideoChrome(bool video)
         {
             _videoChrome = video;
             SetContentLayout(video || !Host.TitleVisible);
         }
 
-        internal void MediaPick() { PickAudio(); }
-        internal void MediaShuffle() { ToggleShuffle(); }
-        internal void MediaPrevious() { Previous(); }
-        internal void MediaTogglePlay() { TogglePlay(); }
-        internal void MediaNext() { Next(); }
-        internal void MediaRepeat() { CycleRepeatMode(); }
-        internal void MediaTogglePlaylist() { TogglePlaylist(); }
-        internal void MediaStop() { StopClicked(); }
-        internal void MediaClearQueue() { ClearQueue(); }
-        internal void MediaSaveQueue() { SaveQueue(); }
-        internal void MediaSeek(double seconds) { SeekToPosition(seconds); }
-        internal void MediaSetVolume(float value) { SetPlaybackVolume(value); }
+        void IMediaPlayerHost.MediaPick() { PickAudio(); }
+        void IMediaPlayerHost.MediaShuffle() { ToggleShuffle(); }
+        void IMediaPlayerHost.MediaPrevious() { Previous(); }
+        void IMediaPlayerHost.MediaTogglePlay() { TogglePlay(); }
+        void IMediaPlayerHost.MediaNext() { Next(); }
+        void IMediaPlayerHost.MediaRepeat() { CycleRepeatMode(); }
+        void IMediaPlayerHost.MediaTogglePlaylist() { TogglePlaylist(); }
+        void IMediaPlayerHost.MediaStop() { StopClicked(); }
+        void IMediaPlayerHost.MediaClearQueue() { ClearQueue(); }
+        void IMediaPlayerHost.MediaSaveQueue() { SaveQueue(); }
+        void IMediaPlayerHost.MediaSeek(double seconds) { SeekToPosition(seconds); }
+        void IMediaPlayerHost.MediaSetVolume(float value) { SetPlaybackVolume(value); }
 
-        internal void MediaPlayQueueEntry(int index)
+        void IMediaPlayerHost.MediaPlayQueueEntry(int index)
         {
             if (index >= 0 && index < _queue.Count)
                 OnPlaylistEntryClicked(_queue[index]);
         }
 
-        internal void MediaMoveQueueEntry(int source, int target)
+        void IMediaPlayerHost.MediaMoveQueueEntry(int source, int target)
         {
             if (source < 0 || source >= _queue.Count)
                 return;

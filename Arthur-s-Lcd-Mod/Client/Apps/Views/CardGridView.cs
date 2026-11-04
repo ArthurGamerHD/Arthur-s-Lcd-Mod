@@ -1,5 +1,5 @@
-using Adk.Gui.Controls;
-using LcdMod.Common.Mvvm;
+using Acrux.Controls;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Views
@@ -38,16 +38,27 @@ namespace LcdMod.Client.Apps.Views
     {
         const string CARD_HEIGHT_RESOURCE = "cardHeight";
 
+        float _cardHeight = float.NaN;
+
+        // The height of the view's cards (the cardHeight resource their styles read). A view binds it to its view model
+        // (CardHeight="{Binding CardHeight}"), so it follows any view model with that member, a preview clone too.
+        public float CardHeight
+        {
+            get { return _cardHeight; }
+            set
+            {
+                if (_cardHeight == value)
+                    return;
+                _cardHeight = value;
+                Resources.Add(CARD_HEIGHT_RESOURCE, value);
+            }
+        }
+
+        // The app's model also sizes its grid to the view (columns and card height follow); another view model keeps
+        // its own values.
         protected override Vector2 MeasureOverride(Vector2 availableSize)
         {
-            var viewModel = DataContext as CardGridViewModel;
-            if (viewModel != null)
-            {
-                viewModel.SetViewportWidth(availableSize.X);
-                float current;
-                if (!Resources.TryGetValue(CARD_HEIGHT_RESOURCE, out current) || current != viewModel.CardHeight)
-                    Resources.Add(CARD_HEIGHT_RESOURCE, viewModel.CardHeight);
-            }
+            (DataContext as CardGridViewModel)?.SetViewportWidth(availableSize.X);
             return base.MeasureOverride(availableSize);
         }
     }

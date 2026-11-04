@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+<UserControl xmlns="https://github.com/ArthurGamerHD/AcruxUI"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:market="using:LcdMod.Client.Apps.NpcMarket"
              x:Class="LcdMod.Client.Apps.NpcMarket.NpcMarketView"
-             x:DataType="LcdMod.Client.Apps.NpcMarket.NpcMarketViewModel">
+             x:DataType="LcdMod.Client.Apps.NpcMarket.NpcMarketViewModel"
+             Design.DataContext="{x:Static market:NpcMarketViewModelPreview.Default}">
   <UserControl.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/NpcMarket.xaml" />
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/CarouselNavigation.xaml" />

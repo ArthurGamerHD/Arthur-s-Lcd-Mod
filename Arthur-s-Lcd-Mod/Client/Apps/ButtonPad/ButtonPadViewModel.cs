@@ -1,24 +1,35 @@
 using System.Collections.Generic;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Apps.ButtonPad
 {
+    /// <summary>What the button pad view model asks its app for (<see cref="ButtonPadApp"/>; a design-time host in the preview).</summary>
+    internal interface IButtonPadHost
+    {
+        // Fills destination with the buttons to show (reusing its models) and gives their size.
+        void BuildNativeEntries(List<ActionButtonModel> destination, out float buttonSize, out float cellWidth, out float cellHeight);
+    }
+
     internal sealed class ButtonPadViewModel : ObservableObject
     {
-        readonly ButtonPadApp _app;
+        readonly IButtonPadHost _app;
         readonly List<ActionButtonModel> _entries = new List<ActionButtonModel>();
         float _buttonSize = 92f;
         float _cellWidth = 96f;
         float _cellHeight = 96f;
 
-        public ButtonPadViewModel(ButtonPadApp app)
+        public ButtonPadViewModel(IButtonPadHost app)
         {
             _app = app;
         }
 
+        [PreviewWith(6)]
         public IReadOnlyList<ActionButtonModel> Entries => _entries;
+        [PreviewWith(140f)]
         public float ButtonSize => _buttonSize;
+        [PreviewWith(166f)]
         public float CellWidth => _cellWidth;
+        [PreviewWith(160f)]
         public float CellHeight => _cellHeight;
 
         public void Refresh()

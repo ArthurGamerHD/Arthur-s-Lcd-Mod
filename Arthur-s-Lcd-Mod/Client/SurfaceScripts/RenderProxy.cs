@@ -41,7 +41,6 @@ namespace LcdMod.Client.SurfaceScripts
         protected override bool ClipToBounds => true;
 
         protected override string DefaultTitle => TITLE;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
 
         static readonly List<IMySlimBlock> AutoCascadeBlocks = new List<IMySlimBlock>();

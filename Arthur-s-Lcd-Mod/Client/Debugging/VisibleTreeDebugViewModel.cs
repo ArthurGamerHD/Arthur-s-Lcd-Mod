@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Debugging

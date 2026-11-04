@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Rendering;
-using Adk.Gui.Styling;
+using Acrux.Core;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Rendering;
+using Acrux.Styling;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.EnergyDashboard

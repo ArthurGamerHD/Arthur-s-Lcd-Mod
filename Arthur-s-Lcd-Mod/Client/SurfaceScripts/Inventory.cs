@@ -39,7 +39,6 @@ namespace LcdMod.Client.SurfaceScripts
         InventoryApp _app;
 
         public override IApp App => _app;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public override string Title => _app != null ? _app.Title : base.Title;
         protected override string DefaultTitle => NAME;
 
@@ -75,8 +74,6 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app.IsDirty || InteractiveVisualsDirty)
                 RenderSprites();
         }
-
-        protected override bool RendersInParallel => true;
 
 
         public override List<MySprite> GetSprites()

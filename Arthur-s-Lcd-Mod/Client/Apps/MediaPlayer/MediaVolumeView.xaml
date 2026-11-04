@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+<UserControl xmlns="https://github.com/ArthurGamerHD/AcruxUI"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:media="using:LcdMod.Client.Apps.MediaPlayer"
              xmlns:controls="using:LcdMod.Client.Apps.Controls"
              x:Class="LcdMod.Client.Apps.MediaPlayer.MediaVolumeView"
-             x:DataType="media:MediaPlayerViewModel">
+             x:DataType="media:MediaPlayerViewModel"
+             Design.DataContext="{x:Static media:MediaPlayerViewModelPreview.Default}">
   <Grid ColumnDefinitions="Auto * Auto">
     <controls:SpriteIcon Source="SoundLow" SizeRatio="1" Tint="{Binding InactiveForegroundColor}"
                          Width="{Binding VolumeIconSize}" Height="{Binding VolumeIconSize}" />

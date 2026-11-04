@@ -11,7 +11,7 @@ namespace LcdMod.Client.Apps
 {
     [LcdApp(14)]
     [ConfigComponent(Constants.APP, typeof(MarkdownConfigComponent), PropertyName = "MarkdownComponent")]
-    public sealed partial class MarkdownApp : App
+    public sealed partial class MarkdownApp : App, Markdown.IMarkdownHost
     {
         readonly MarkdownParser _parser = new MarkdownParser();
         readonly List<MySprite> _noSprites = new List<MySprite>();

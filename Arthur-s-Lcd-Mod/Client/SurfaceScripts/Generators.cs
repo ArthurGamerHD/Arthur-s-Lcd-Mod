@@ -28,7 +28,6 @@ namespace LcdMod.Client.SurfaceScripts
         GeneratorsApp _app;
 
         public override IApp App => _app;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         protected override string DefaultTitle => TITLE;
 
         public GeneratorsSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
@@ -52,8 +51,6 @@ namespace LcdMod.Client.SurfaceScripts
             _app.Update();
             RenderSprites();
         }
-
-        protected override bool RendersInParallel => true;
 
 
         public override List<MySprite> GetSprites()

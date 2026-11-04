@@ -217,15 +217,15 @@ public sealed class TypedBlockCollectionGenerator : IIncrementalGenerator
         builder.AppendLine("{");
         builder.AppendLine("    public sealed class TypedBlockCollection");
         builder.AppendLine("    {");
-        builder.AppendLine("        public readonly global::LcdMod.Common.Mvvm.ObservableList<global::VRage.Game.ModAPI.IMyCubeBlock> All = new global::LcdMod.Common.Mvvm.ObservableList<global::VRage.Game.ModAPI.IMyCubeBlock>();");
+        builder.AppendLine("        public readonly global::Adk.Mvvm.ObservableList<global::VRage.Game.ModAPI.IMyCubeBlock> All = new global::Adk.Mvvm.ObservableList<global::VRage.Game.ModAPI.IMyCubeBlock>();");
 
         foreach (var blockType in blockTypes)
         {
-            builder.Append("        public readonly global::LcdMod.Common.Mvvm.ObservableList<");
+            builder.Append("        public readonly global::Adk.Mvvm.ObservableList<");
             builder.Append(blockType.TypeName);
             builder.Append("> ");
             builder.Append(blockType.CollectionName);
-            builder.Append(" = new global::LcdMod.Common.Mvvm.ObservableList<");
+            builder.Append(" = new global::Adk.Mvvm.ObservableList<");
             builder.Append(blockType.TypeName);
             builder.AppendLine(">();");
         }

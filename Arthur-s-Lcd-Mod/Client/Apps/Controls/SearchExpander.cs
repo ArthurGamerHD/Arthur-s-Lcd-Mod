@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Animation;
-using Adk.Gui.Controls;
-using Adk.Gui.Core;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Layout;
-using Adk.Gui.Rendering;
+using Acrux.Animation;
+using Acrux.Controls;
+using Acrux.Core;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Layout;
+using Acrux.Rendering;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Controls
@@ -44,7 +44,7 @@ namespace LcdMod.Client.Apps.Controls
             set { SetValue(IsOpenProperty, value); }
         }
 
-        /// <summary>0 closed, 1 open; animated between the two.</summary>
+        // 0 closed, 1 open; animated between the two.
         public float Expansion
         {
             get { return GetValue(ExpansionProperty); }
@@ -63,7 +63,7 @@ namespace LcdMod.Client.Apps.Controls
             set { SetValue(LineHeightProperty, value); }
         }
 
-        /// <summary>Share of the line the open text box takes.</summary>
+        // Share of the line the open text box takes.
         public float OpenFraction
         {
             get { return GetValue(OpenFractionProperty); }

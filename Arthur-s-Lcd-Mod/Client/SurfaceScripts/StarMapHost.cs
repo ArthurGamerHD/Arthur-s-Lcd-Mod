@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.SurfaceScripts.Abstract;
+using Acrux.Core.Input;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Client.Terminal.Controls.Generic;
@@ -23,8 +24,6 @@ namespace LcdMod.Client.SurfaceScripts
     [LcdSurface(typeof(StarMapApp))]
     [MyTextSurfaceScript(ID, TITLE)]
     public sealed partial class StarMapSurfaceScript : InteractiveSurfaceScript,
-        IUsesTerminalControl<SliderFov>,
-        IMultiDisplayMode,
         IUsesTerminalControl<ComboboxReferenceMode>,
         IUsesTerminalControl<SwitchDisplayMyGps>,
         IUsesTerminalControl<SwitchIncludeRadioSignals>,
@@ -33,7 +32,6 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = MOD_PREFIX + "StarMapSurface";
         public const string TITLE = MOD_PREFIX + "StarMapSurface";
         protected override string DefaultTitle => TITLE;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public override IApp App => _app;
         public override bool AsyncRender => false;
         StarMapApp _app;
@@ -42,18 +40,12 @@ namespace LcdMod.Client.SurfaceScripts
         {
         }
 
-        public List<MyTerminalControlComboBoxItem> GetDisplayModes()
-        {
-            return _app != null ? _app.GetDisplayModes() : StarMapApp.StarMapDisplayModes;
-        }
-
         protected override void LayoutChanged()
         {
             base.LayoutChanged();
             if (_app != null)
             {
                 _app.LayoutChanged();
-                CursorType = ResolveRetainedCursorType();
             }
         }
 
@@ -67,7 +59,6 @@ namespace LcdMod.Client.SurfaceScripts
 
             EnsureRetainedAppView(_app);
             _app.Update();
-            CursorType = ResolveRetainedCursorType();
             RenderSprites();
         }
 
@@ -79,15 +70,7 @@ namespace LcdMod.Client.SurfaceScripts
             {
                 DrawRetainedAppView(sprites);
             }
-            CursorType = ResolveRetainedCursorType();
             return sprites;
-        }
-
-        protected override CursorType ResolveRetainedCursorType()
-        {
-            return _app != null && _app.RequestedCursorType == CursorType.None
-                ? CursorType.None
-                : base.ResolveRetainedCursorType();
         }
 
     }

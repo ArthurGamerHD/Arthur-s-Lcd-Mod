@@ -1,12 +1,28 @@
 using System;
-using Adk.Gui.Styling;
-using LcdMod.Common.Mvvm;
+using Acrux.Styling;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Thrust
 {
     // Layout and localized labels are refreshed explicitly. Telemetry keeps the
     // same models and only notifies bindings whose values actually changed.
+    [PreviewWith("Up.Value", "2.88 MN")]
+    [PreviewWith("Up.Label", "Up:")]
+    [PreviewWith("StopTime.Value", "5.6 s")]
+    [PreviewWith("StopForce.Value", "1.9 g")]
+    [PreviewWith("StopDistance.Value", "118 m")]
+    [PreviewWith("Speed.Value", "42")]
+    [PreviewWith("Right.Value", "1.44 MN")]
+    [PreviewWith("Right.Label", "Right:")]
+    [PreviewWith("Left.Value", "1.44 MN")]
+    [PreviewWith("Left.Label", "Left:")]
+    [PreviewWith("Forward.Value", "4.32 MN")]
+    [PreviewWith("Forward.Label", "Forward:")]
+    [PreviewWith("Down.Value", "1.44 MN")]
+    [PreviewWith("Down.Label", "Down:")]
+    [PreviewWith("Backward.Value", "1.44 MN")]
+    [PreviewWith("Backward.Label", "Back:")]
     internal sealed class ThrustViewModel : ObservableObject
     {
         Vector2 _viewport;
@@ -26,24 +42,41 @@ namespace LcdMod.Client.Apps.Thrust
         public ThrustTelemetryEntry StopTime { get; } = new ThrustTelemetryEntry();
         public ThrustTelemetryEntry StopForce { get; } = new ThrustTelemetryEntry();
 
+        [PreviewWith(1f)]
         public float Scale => _scale;
+        [PreviewWith(56f)]
         public float LegendHeight => 56f * _layoutScale;
+        [PreviewWith(122f)]
         public float PanelWidth => Math.Min(122f * _layoutScale, _viewport.X * 0.25f);
+        [PreviewWith("8 0 8 0")]
         public Vector4 PanelMargin => new Vector4(8f * _scale, 0f, 8f * _scale, 0f);
+        [PreviewWith("130 0 130 0")]
         public Vector4 AxesMargin => new Vector4(PanelWidth + PanelMargin.X, 0f, PanelWidth + PanelMargin.Z, 0f);
+        [PreviewWith(52f)]
         public float CellHeight => Math.Min(52f * _layoutScale,
             Math.Max(30f * _scale, (Math.Max(0f, _viewport.Y - LegendHeight) - PanelGap) * 0.36f));
+        [PreviewWith(8f)]
         public float PanelGap => 8f * _layoutScale;
+        [PreviewWith(112f)]
         public float PanelHeight => CellHeight * 2f + PanelGap;
+        [PreviewWith(1f)]
         public float TelemetryOpacity => _telemetryOpacity;
+        [PreviewWith("0.2 0.55 0.7")]
         public Vector3 PositiveFill => _positiveFill;
+        [PreviewWith("0 0 0.1")]
         public Vector3 NegativeFill => _negativeFill;
+        [PreviewWith("0 -0.8 0.2")]
         public Vector3 Gravity => _gravity;
+        [PreviewWith("#C5EDFF")]
         public Color GravityColor => _gravityColor;
         public string Warning => _warning;
+        [PreviewWith("#C5EDFF")]
         public Color WarningColor => _warningColor;
+        [PreviewWith(0.7f)]
         public float WarningFontSize => 0.7f * _layoutScale;
+        [PreviewWith(1f)]
         public float FontScale => _layoutScale;
+        [PreviewWith("White")]
         public string FontFamily { get; private set; }
         public BackgroundBrush LegendBackground { get; private set; }
 
@@ -100,12 +133,19 @@ namespace LcdMod.Client.Apps.Thrust
         public BackgroundBrush Marker { get; }
         public string Label { get; private set; }
         public string Value => _value;
+        [PreviewWith("White")]
         public string FontFamily { get; private set; }
+        [PreviewWith("#C5EDFF")]
         public Color Foreground { get; private set; }
+        [PreviewWith(0.46f)]
         public float FontSize { get; private set; }
+        [PreviewWith(8f)]
         public float MarkerSize { get; private set; }
+        [PreviewWith("6 14 0 0")]
         public Vector4 MarkerMargin { get; private set; }
+        [PreviewWith("18 10.78 0 0")]
         public Vector4 LabelMargin { get; private set; }
+        [PreviewWith("0 10.78 6 0")]
         public Vector4 ValueMargin { get; private set; }
 
         public void RefreshLayout(float scale, float layoutScale, string font, Color foreground, string label)
@@ -134,12 +174,18 @@ namespace LcdMod.Client.Apps.Thrust
         Color _baseForeground;
         float _opacity;
         public string Value => _value;
+        [PreviewWith(89f)]
         public float Width { get; private set; }
+        [PreviewWith(32f)]
         public float Height { get; private set; }
+        [PreviewWith(1f)]
         public float FontSize { get; private set; }
+        [PreviewWith("White")]
         public string FontFamily { get; private set; }
+        [PreviewWith("#C5EDFF")]
         public Color Foreground { get; private set; }
         public BackgroundBrush Background { get; private set; }
+        [PreviewWith("4 0 5 0")]
         public Vector4 TextMargin { get; private set; }
 
         public void RefreshLayout(float scale, string font, Color foreground)

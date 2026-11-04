@@ -27,9 +27,12 @@ public class SceneLayerTests
             .Select(File.ReadAllText)
             .Where(x => x.Contains("CartographyMapView"))
             .Select(x => Regex.Match(x, @"x:Class=""[\w.]*\.(\w+)""").Groups[1].Value)
+            // A grid screen's 3D view sits in its own layout, beside the legend and buttons.
+            .Where(name => name.EndsWith("SceneView", StringComparison.Ordinal))
             .ToList();
 
-        Assert.Equal(new[] { "PlanetaryMapSceneView", "RadarSceneView", "StarMapSceneView" }, scenes.OrderBy(s => s));
+        Assert.Equal(new[] { "ExternalSensorsSceneView", "PlanetaryMapSceneView", "RadarSceneView", "StarMapSceneView" },
+            scenes.OrderBy(s => s));
         foreach (string scene in scenes)
         {
             Assert.Matches(new Regex(@"SetBackgroundContent\(new (\w+\.)*" + scene + @"\b"), sources);

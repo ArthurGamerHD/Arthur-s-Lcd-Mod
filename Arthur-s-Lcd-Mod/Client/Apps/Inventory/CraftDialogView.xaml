@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+<Window xmlns="https://github.com/ArthurGamerHD/AcruxUI"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:inventory="using:LcdMod.Client.Apps.Inventory"
         xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
         x:Class="LcdMod.Client.Apps.Inventory.CraftDialogView"
         x:DataType="inventory:CraftDialogViewModel"
+        Design.DataContext="{x:Static inventory:CraftDialogViewModelPreview.Default}"
         Title="{Binding Title}" Width="440" Height="440" MinWidth="300" MinHeight="260"
         Padding="14 4 14 14">
   <Window.Styles>
-    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Dialogs.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Toolkit/Dialogs.xaml" />
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/CraftDialog.xaml" />
   </Window.Styles>
   <Grid RowDefinitions="*,Auto">
@@ -40,7 +41,7 @@
         <ItemsControl ItemsSource="{Binding AssemblerItems}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="inventory:CraftAssemblerModel">
-              <CheckBox Classes="craft-assembler" IsChecked="{Binding IsSelected, Mode=TwoWay}">
+              <CheckBox Classes="craft-assembler" Padding="20 0" IsChecked="{Binding IsSelected, Mode=TwoWay}">
                 <TextBlock Classes="dialog-text" Text="{Binding Label}" FontSize="{Binding FontSize}" />
               </CheckBox>
             </DataTemplate>

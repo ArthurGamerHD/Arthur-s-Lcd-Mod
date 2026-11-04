@@ -22,8 +22,6 @@ namespace LcdMod.Client.Games.ManagedDoom
         Vector2 _pointer;
         bool _cursorVisible;
 
-        const float SurfaceHeightsPerMouseCount = 1f / 1000f;
-
         DoomInputScreen(GameSurfaceScript surface, DoomGame game, SEDoomUserInput input)
             : base("LcdDoomInput")
         {
@@ -101,14 +99,7 @@ namespace LcdMod.Client.Games.ManagedDoom
 
         void MovePointer(VRage.ModAPI.IMyInput input)
         {
-            var surface = _surface.Surface;
-            Vector2 min = (surface.TextureSize - surface.SurfaceSize) * .5f;
-            Vector2 max = min + surface.SurfaceSize;
-            if (float.IsNaN(_pointer.X) || float.IsNaN(_pointer.Y))
-                _pointer = (min + max) * .5f;
-            float scale = surface.SurfaceSize.Y * SurfaceHeightsPerMouseCount;
-            _pointer = Vector2.Clamp(_pointer + new Vector2(input.GetMouseX(), input.GetMouseY()) * scale, min, max);
-            _surface.LookAt(_pointer);
+            SurfacePointer.Move(_surface, ref _pointer, input);
         }
 
         protected override void OnClosed(bool isUnloading)

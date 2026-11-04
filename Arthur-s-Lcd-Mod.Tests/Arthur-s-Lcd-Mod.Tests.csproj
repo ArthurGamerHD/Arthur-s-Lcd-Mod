@@ -8,6 +8,9 @@
     <IsPackable>false</IsPackable>
     <Configurations>Release;Debug;Experimental</Configurations>
   </PropertyGroup>
+  <PropertyGroup>
+    <AcruxUiToolkitRoot Condition="'$(AcruxUiToolkitRoot)' == ''">$(MSBuildProjectDirectory)\..\External\AcruxUI</AcruxUiToolkitRoot>
+  </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Experimental'">
     <DefineConstants>$(DefineConstants);EXPERIMENTAL</DefineConstants>
@@ -29,8 +32,6 @@
   <ItemGroup>
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Markdown\**\*.cs" LinkBase="MarkdownSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\OptionalValue.cs" LinkBase="ConfigSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Mvvm\ObservableObject.cs" LinkBase="MvvmSource" />
-    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Mvvm\ObservablePropertyAttribute.cs" LinkBase="MvvmSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Generation\ConfigMetadataAttributes.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\ConfigComponentModels.cs" LinkBase="ConfigSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Config\Components\MediaVisualizerSettings.cs" LinkBase="ConfigSource" />
@@ -47,6 +48,8 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Images\ImageSha256.cs" LinkBase="ImageSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Layout\ButtonPanelLayout.cs" LinkBase="LayoutSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Common\Physics\DampenerStop.cs" LinkBase="PhysicsSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Ships\ShipClassTable.cs" LinkBase="ShipsSource" />
+    <Compile Include="..\Arthur-s-Lcd-Mod\Common\Ships\ShipIdCode.cs" LinkBase="ShipsSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\Providers\Deflector\DeflectorShieldCustomInfoParser.cs" LinkBase="DefenseSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\Providers\DefenseShields\DefenseShieldValueConverter.cs" LinkBase="DefenseSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Modules\Defense\ShieldValueFormatter.cs" LinkBase="DefenseSource" />
@@ -57,7 +60,7 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Video\SubtitleMarkup.cs" LinkBase="VideoSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Video\SubtitleTrack.cs" LinkBase="VideoSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\GridData\InventoryEventTracker.cs" LinkBase="GridDataSource" />
-    <Compile Include="..\External\Adk\Adk.Gui\Styling\Transform.cs" LinkBase="AdkGuiSource" />
+    <Compile Include="$(AcruxUiToolkitRoot)\Framework\Acrux\Styling\Transform.cs" LinkBase="AcruxSource" />
   </ItemGroup>
 
   <ItemGroup>
@@ -73,7 +76,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\External\Adk\Adk.Analyzer\Adk.Analyzer.csproj"
+    <ProjectReference Include="..\External\AcruxUI\External\Adk\Adk.Analyzer\Adk.Analyzer.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false">
       <SetPlatform>Platform=AnyCPU</SetPlatform>
@@ -85,9 +88,10 @@
     </ProjectReference>
   </ItemGroup>
 
-  <Import Project="..\External\Adk\Adk.Audio\Adk.Audio.projitems" Label="Shared" />
-  <Import Project="..\External\Adk\Adk.Compression\Adk.Compression.projitems" Label="Shared" />
-  <Import Project="..\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
-  <Import Project="..\External\Adk\Adk.Video\Adk.Video.projitems" Label="Shared" />
+  <Import Project="..\External\AcruxUI\External\Adk\Adk.Mvvm\Adk.Mvvm.projitems" Label="Shared" />
+  <Import Project="..\External\AcruxUI\External\Adk\Adk.Audio\Adk.Audio.projitems" Label="Shared" />
+  <Import Project="..\External\AcruxUI\External\Adk\Adk.Compression\Adk.Compression.projitems" Label="Shared" />
+  <Import Project="..\External\AcruxUI\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
+  <Import Project="..\External\AcruxUI\External\Adk\Adk.Video\Adk.Video.projitems" Label="Shared" />
 
 </Project>

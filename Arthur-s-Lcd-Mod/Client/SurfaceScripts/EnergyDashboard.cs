@@ -32,7 +32,6 @@ namespace LcdMod.Client.SurfaceScripts
         {
         }
 
-        public override CursorType CursorType { get; protected set; }
 
         protected override void LayoutChanged()
         {
@@ -54,8 +53,6 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app.IsDirty || InteractiveVisualsDirty)
                 RenderSprites();
         }
-
-        protected override bool RendersInParallel => true;
 
 
         public override List<MySprite> GetSprites()

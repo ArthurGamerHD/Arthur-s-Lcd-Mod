@@ -1,5 +1,5 @@
 using System;
-using Adk.Gui.Lcd;
+using Acrux.Lcd;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
 using VRageMath;
@@ -50,10 +50,8 @@ namespace LcdMod.Client.Images
             _texture = null;
         }
 
-        /// <summary>
-        /// Bilinear resize of RGBA8 <paramref name="source"/> into <paramref name="target"/>, premultiplying
-        /// straight alpha when <paramref name="premultiply"/> is set, as generated textures expect.
-        /// </summary>
+        // Bilinear resize of RGBA8 source into target, premultiplying straight alpha when premultiply is set, as
+        // generated textures expect.
         public static void Scale(byte[] source, int sourceWidth, int sourceHeight,
             byte[] target, int targetWidth, int targetHeight, bool premultiply)
         {

@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+<UserControl xmlns="https://github.com/ArthurGamerHD/AcruxUI"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:media="using:LcdMod.Client.Apps.MediaPlayer"
              x:Class="LcdMod.Client.Apps.MediaPlayer.MediaVisualizerView"
-             x:DataType="media:MediaPlayerViewModel">
+             x:DataType="media:MediaPlayerViewModel"
+             Design.DataContext="{x:Static media:MediaPlayerViewModelPreview.Default}">
   <Grid>
     <media:MediaVisualizer Source="{Binding VisualizerTexture}"
                            Version="{Binding VisualizerVersion}"
                            AspectRatio="{Binding VisualizerAspectRatio}"
+                           Margin="{Binding VisualizerMargin}"
                            IsVisible="{Binding ShowVisualizer}">
       <media:MediaVisualizer.ContextMenu>
         <ContextMenu>

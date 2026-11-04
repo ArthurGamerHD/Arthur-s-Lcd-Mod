@@ -1,8 +1,8 @@
 using System;
-using Adk.Gui.Controls;
-using Adk.Gui.Core;
-using Adk.Gui.Rendering;
-using LcdMod.Common.Mvvm;
+using Acrux.Controls;
+using Acrux.Core;
+using Acrux.Rendering;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Projector

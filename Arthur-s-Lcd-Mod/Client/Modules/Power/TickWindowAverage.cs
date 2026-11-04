@@ -6,10 +6,8 @@ namespace LcdMod.Client.Modules.Power
     /// <summary>Mean of the values sampled over a window of recent gameplay ticks, or over every sample.</summary>
     internal sealed class TickWindowAverage
     {
-        /// <summary>
-        /// One full cycle of vanilla Auto batteries: a full battery drops its charge request on one 100-tick update and
-        /// requests again on the next, so demand is a 200-tick square wave. A shorter window turns it into a ramp.
-        /// </summary>
+        // One full cycle of vanilla Auto batteries: a full battery drops its charge request on one 100-tick update and
+        // requests again on the next, so demand is a 200-tick square wave. A shorter window turns it into a ramp.
         public const int BATTERY_CYCLE_TICKS = 200;
 
         readonly Queue<KeyValuePair<long, double>> _samples = new Queue<KeyValuePair<long, double>>();
@@ -24,10 +22,8 @@ namespace LcdMod.Client.Modules.Power
 
         public static long CurrentTick => MyAPIGateway.Session.GameplayFrameCounter;
 
-        /// <summary>
-        /// Adds a sample and returns the mean over the last <paramref name="windowTicks"/> ticks (capped at the maximum
-        /// window), or over every sample since the last <see cref="Clear"/> when it is 0 or less.
-        /// </summary>
+        // Adds a sample and returns the mean over the last windowTicks ticks (capped at the maximum window), or over
+        // every sample since the last Clear when it is 0 or less.
         public double Add(double value, int windowTicks)
         {
             long tick = CurrentTick;

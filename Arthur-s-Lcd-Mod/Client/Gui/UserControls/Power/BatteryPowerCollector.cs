@@ -251,10 +251,9 @@ namespace LcdMod.Client.Gui.UserControls.Power
             return HeaderColor;
         }
 
-        /// <summary>
-        /// Stored-energy rate shown for the battery, averaged over one vanilla battery cycle: a full battery in Auto stops
-        /// and resumes charging on alternating 100-tick updates, so the instantaneous rate flips between charge and drain.
-        /// </summary>
+        // Stored-energy rate shown for the battery, averaged over one vanilla battery cycle: a full battery in Auto
+        // stops and resumes charging on alternating 100-tick updates, so the instantaneous rate flips between charge
+        // and drain.
         float SampleStoredRate(IMyBatteryBlock battery)
         {
             float rate = PowerBlockMath.BatteryStoredPowerRate(battery);

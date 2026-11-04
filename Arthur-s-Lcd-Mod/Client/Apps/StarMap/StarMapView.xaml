@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:maps="using:LcdMod.Client.Apps.Maps"
     xmlns:views="using:LcdMod.Client.Apps.Views"
     xmlns:star="using:LcdMod.Client.Apps.StarMap"
     xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
     x:Class="LcdMod.Client.Apps.StarMap.StarMapView"
-    x:DataType="star:StarMapViewModel">
+    x:DataType="star:StarMapViewModel"
+    Design.DataContext="{x:Static star:StarMapViewModelPreview.Default}">
   <UserControl.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Maps.xaml" />
   </UserControl.Styles>
   <Grid>
     <views:StatusMessageView DataContext="{Binding Message}" />
-    <star:StarMapPlanetFlyout Classes="map-button" Info="{Binding SelectedPlanet}" Version="{Binding HudVersion}"
+    <star:StarMapPlanetFlyout Classes="map-button" Info="{Binding SelectedPlanet}" Version="{Binding InfoVersion}"
                               HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12"
                               ToolTip.Tip="{ext:loc LcdMod_StarMap_PlanetInfo}" ToolTip.Placement="Left">
       <Border Classes="map-icon">
@@ -25,8 +26,7 @@
     <TextBlock Text="{Binding Status}" Foreground="{Binding StatusColor}" IsVisible="{Binding HasStatus}"
                FontFamily="{DynamicResource textFont}" HorizontalAlignment="Center" VerticalAlignment="Bottom"
                Margin="12 0 12 64" TextWrapping="Wrap" TextAlignment="Center" />
-    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12" Spacing="8"
-                IsVisible="{Binding IsPlanetarium}">
+    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12" Spacing="8">
       <ToggleButton Classes="map-button" IsChecked="{Binding OrbitLinesShown}" Command="{Binding OrbitLinesCommand}">
         <Border Classes="map-icon" OpacityMask="{Binding OrbitLinesIconMask}" />
       </ToggleButton>
@@ -34,23 +34,25 @@
         <Border Classes="map-icon" OpacityMask="{Binding RecenterIcon}" />
       </ToggleButton>
     </StackPanel>
-    <ItemsControl ItemsSource="{Binding Layers}" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12">
-      <ItemsControl.ItemsPanel>
-        <ItemsPanelTemplate>
-          <StackPanel Orientation="Horizontal" Spacing="8" />
-        </ItemsPanelTemplate>
-      </ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="maps:MapLayerItem">
-          <Button Classes="map-layer" Command="{Binding Command}" IsVisible="{Binding IsShown}">
-            <Grid>
-              <maps:LayerPreview Cubemap="{Binding Cubemap}" Face="{Binding Face}"
-                                 Placeholder="{DynamicResource surfaceContainerHighestColor}" />
-              <Border Classes="map-layer-selection" IsVisible="{Binding IsSelected}" />
-            </Grid>
-          </Button>
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
+    <StackPanel HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12" Spacing="8">
+      <ItemsControl ItemsSource="{Binding Layers}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="8" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="maps:MapLayerItem">
+            <Button Classes="map-layer" Command="{Binding Command}" IsVisible="{Binding IsShown}">
+              <Grid>
+                <maps:LayerPreview Cubemap="{Binding Cubemap}" Face="{Binding Face}"
+                                   Placeholder="{DynamicResource surfaceContainerHighestColor}" />
+                <Border Classes="map-layer-selection" IsVisible="{Binding IsSelected}" />
+              </Grid>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
   </Grid>
 </UserControl>

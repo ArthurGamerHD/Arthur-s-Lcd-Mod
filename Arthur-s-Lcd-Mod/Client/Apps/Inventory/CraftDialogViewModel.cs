@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using LcdMod.Client.Apps.Dialogs;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Apps.Inventory
 {
@@ -11,6 +11,11 @@ namespace LcdMod.Client.Apps.Inventory
     /// Queues items on the selected assemblers. With one request the amount field is the item count; with several
     /// it is a multiplier applied to every request's amount.
     /// </summary>
+    [PreviewWith("Title", "Craft")]
+    [PreviewWith("SmallFontSize", 0.5525f)]
+    [PreviewWith("IsRegular", true)]
+    [PreviewWith("IsCompact", false)]
+    [PreviewWith("FontSize", 0.65f)]
     internal sealed class CraftDialogViewModel : DialogViewModel
     {
         const int MAXIMUM_AMOUNT = 1000000;
@@ -49,19 +54,25 @@ namespace LcdMod.Client.Apps.Inventory
         }
 
         public bool IsMultiple { get; }
+        [PreviewWith(true)]
         public bool IsSingle => !IsMultiple;
+        [PreviewWith(1)]
         public IReadOnlyList<CraftRequestModel> Requests => _requests;
+        [PreviewWith(4)]
         public IEnumerable<CraftAssemblerModel> AssemblerItems => Assemblers;
+        [PreviewWith("Steel Plate")]
         public string ItemName
         {
             get { return _requests[0].Name; }
             set { _requests[0].Name = value; }
         }
+        [PreviewWith("MyObjectBuilder_Component/SteelPlate")]
         public string ItemIcon
         {
             get { return _requests[0].Icon; }
             set { _requests[0].Icon = value; }
         }
+        [PreviewWith("Amount")]
         public string AmountLabel { get; set; }
         public bool IsEmpty => Assemblers.Count == 0;
         public ICommand IncreaseCommand { get; }
@@ -70,6 +81,7 @@ namespace LcdMod.Client.Apps.Inventory
         public ICommand CancelCommand => CloseCommand;
         public Action<Exception> Failed { get; set; }
 
+        [PreviewWith("250")]
         public string Amount
         {
             get { return _amount; }
@@ -81,6 +93,7 @@ namespace LcdMod.Client.Apps.Inventory
             }
         }
 
+        [PreviewWith(true)]
         public bool CanCraft
         {
             get
@@ -197,12 +210,18 @@ namespace LcdMod.Client.Apps.Inventory
             SetMultiplier(1);
         }
 
+        [PreviewWith("SteelPlate")]
         public object Key { get; }
+        [PreviewWith("Steel Plate")]
         public string Name { get; set; }
+        [PreviewWith("MyObjectBuilder_Component/SteelPlate")]
         public string Icon { get; set; }
+        [PreviewWith(250)]
         public int Amount { get; }
+        [PreviewWith("×250")]
         public string TotalText => _totalText;
         internal CraftDialogViewModel Owner { get; set; }
+        [PreviewWith(0.65f)]
         public float FontSize => Owner == null ? .65f : Owner.FontSize;
 
         internal void SetMultiplier(int multiplier)
@@ -216,18 +235,24 @@ namespace LcdMod.Client.Apps.Inventory
     {
         bool _selected;
         string _label;
+        [PreviewWith(1L, 2L, 3L, 4L)]
         public long Id { get; set; }
+        [PreviewWith(true, false, true, false)]
         public bool Idle { get; set; }
+        [PreviewWith(1f, 2f, 0.5f, 0.2f)]
         public float Speed { get; set; }
         public Func<CraftRequestModel, bool> CanCraft { get; set; } = _ => true;
         public Action<CraftRequestModel, int> Queue { get; set; }
         internal CraftDialogViewModel Owner { get; set; }
+        [PreviewWith(0.5525f)]
         public float FontSize => Owner == null ? .65f : Owner.SmallFontSize;
+        [PreviewWith("Assembler (Main) (Idle) x1", "Industrial Assembler x2", "Basic Assembler (Idle) x0.5", "Survival Kit x0.2")]
         public string Label
         {
             get { return _label; }
             set { RaiseAndSetIfChanged(ref _label, value, nameof(Label)); }
         }
+        [PreviewWith(true, false, false, false)]
         public bool IsSelected
         {
             get { return _selected; }

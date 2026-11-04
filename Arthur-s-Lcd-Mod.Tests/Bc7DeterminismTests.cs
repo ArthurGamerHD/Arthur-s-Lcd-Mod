@@ -8,7 +8,7 @@ public sealed class Bc7DeterminismTests
     public void Bc7Encoder_UsesOnlyIntegerMathAndNoThreads()
     {
         string source = File.ReadAllText(Path.Combine(
-            FindRepositoryRoot(), "External", "Adk", "Adk.Image", "Dds", "Bc7Encoder.cs"));
+            FindRepositoryRoot(), "External", "AcruxUI", "External", "Adk", "Adk.Image", "Dds", "Bc7Encoder.cs"));
 
         string[] forbidden = { "float", "double", "decimal", "Math.Sqrt", "Math.Pow", "Parallel", "Thread", "Task", "Random" };
         foreach (string token in forbidden)

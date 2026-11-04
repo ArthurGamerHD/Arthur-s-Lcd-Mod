@@ -1,57 +1,66 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
-using LcdMod.Common.Mvvm;
-using VRageMath;
+using Acrux.Core.Input;
+using Adk.Mvvm;
+using LcdMod.Common.Config.Components;
 
 namespace LcdMod.Client.Apps.Inventory
 {
+    /// <summary>
+    /// How the inventory shows its items (the block's display mode): the view's style class (card, grid, list or
+    /// table) selects the item template and the cell layout. Byte-sized, so the view's styled property crosses the bridge.
+    /// </summary>
+    public enum InventoryLayout : byte
+    {
+        List = 0,
+        Card = 1,
+        Grid = 2,
+        Table = 3,
+    }
+
+    internal static class InventoryLayouts
+    {
+        public static InventoryLayout From(ItemDisplayMode mode)
+        {
+            switch (mode)
+            {
+                case ItemDisplayMode.Card: return InventoryLayout.Card;
+                case ItemDisplayMode.Grid: return InventoryLayout.Grid;
+                case ItemDisplayMode.Table: return InventoryLayout.Table;
+                default: return InventoryLayout.List;
+            }
+        }
+
+        // Card and grid show items as tiles, without column headers.
+        public static bool IsTiles(InventoryLayout layout) => layout == InventoryLayout.Card || layout == InventoryLayout.Grid;
+    }
+
     internal sealed class InventoryViewModel : ObservableObject
     {
         IReadOnlyList<InventoryItemModel> _items = new InventoryItemModel[0];
-        float _fontSize = 1f;
-        Vector2 _viewport;
-        bool _tiles, _cards, _table;
+        InventoryLayout _layout;
+        [PreviewWith(8)]
         public IReadOnlyList<InventoryItemModel> Items => _items;
-        public bool Tiles => _tiles;
-        public bool Cards => _cards;
-        public bool Table => _table;
-        public bool ShowHeaders => !_tiles;
-        public float FontSize => _fontSize;
-        public string FontFamily { get; private set; } = "White";
+        [PreviewWith("Table")]
+        public InventoryLayout Layout => _layout;
+        [PreviewWith("Name")]
         public string NameHeader { get; private set; }
+        [PreviewWith("Amount")]
         public string AmountHeader { get; private set; }
         public bool SortByAmount { get; private set; }
+        [PreviewWith(true)]
         public bool SortByName => !SortByAmount;
         public bool SortDescending { get; private set; }
         public ICommand NameSortCommand { get; set; }
         public ICommand AmountSortCommand { get; set; }
-        public float HeaderHeight => 30f * _fontSize;
-        public float CellHeight => (_tiles ? 90f : 30f) * _fontSize;
-        public float CellWidth { get; private set; }
-        public float AmountHeaderWidth => Math.Min(_viewport.X, Math.Max(105f * _fontSize, _viewport.X * .22f));
-        public Vector4 NameHeaderMargin => new Vector4(38f * _fontSize, 0f, AmountHeaderWidth, 0f);
 
-        public void Configure(bool tiles, bool cards, bool table, float fontSize, string font,
-            string nameHeader, string amountHeader, bool sortByAmount, bool descending)
+        public void Configure(InventoryLayout layout, string nameHeader, string amountHeader, bool sortByAmount, bool descending)
         {
-            fontSize = Math.Max(.1f, fontSize);
-            if (_tiles == tiles && _cards == cards && _table == table && _fontSize == fontSize &&
-                FontFamily == font && NameHeader == nameHeader && AmountHeader == amountHeader &&
+            if (_layout == layout && NameHeader == nameHeader && AmountHeader == amountHeader &&
                 SortByAmount == sortByAmount && SortDescending == descending) return;
-            _tiles = tiles; _cards = cards; _table = table; _fontSize = fontSize;
-            FontFamily = font; NameHeader = nameHeader; AmountHeader = amountHeader;
+            _layout = layout;
+            NameHeader = nameHeader; AmountHeader = amountHeader;
             SortByAmount = sortByAmount; SortDescending = descending;
-            UpdateItemPresentation();
-            UpdateCellWidth();
-            RaisePropertyChanged<object>(string.Empty);
-        }
-
-        public void SetViewport(Vector2 size)
-        {
-            if (_viewport == size) return;
-            _viewport = size;
-            UpdateCellWidth();
             RaisePropertyChanged<object>(string.Empty);
         }
 
@@ -65,32 +74,13 @@ namespace LcdMod.Client.Apps.Inventory
             // Space Engineers disallows INotifyCollectionChanged. Publish a new
             // source only for membership/order changes; item instances remain stable.
             var snapshot = new InventoryItemModel[items.Count];
-            for (int i = 0; i < items.Count; i++) snapshot[i] = items[i];
-            _items = snapshot;
-            UpdateItemPresentation();
-            UpdateCellWidth();
-            RaisePropertyChanged<object>(string.Empty);
-        }
-
-        void UpdateItemPresentation()
-        {
-            for (int i = 0; i < _items.Count; i++)
-                _items[i].SetPresentation(_tiles, _cards, _table, (i & 1) != 0);
-        }
-
-        void UpdateCellWidth()
-        {
-            float width = Math.Max(0f, _viewport.X);
-            int columns = _tiles ? Math.Max(1, (int)(width / (220f * _fontSize))) : 1;
-            columns = Math.Min(columns, Math.Max(1, _items.Count));
-            float height = Math.Max(0f, _viewport.Y - (ShowHeaders ? HeaderHeight : 0f));
-            if (((_items.Count + columns - 1) / columns) * CellHeight > height)
+            for (int i = 0; i < items.Count; i++)
             {
-                width = Math.Max(0f, width - 5f);
-                columns = _tiles ? Math.Max(1, (int)(width / (220f * _fontSize))) : 1;
-                columns = Math.Min(columns, Math.Max(1, _items.Count));
+                snapshot[i] = items[i];
+                items[i].SetOdd((i & 1) != 0);
             }
-            CellWidth = Math.Max(0f, width / columns - .001f);
+            _items = snapshot;
+            RaisePropertyChanged<IReadOnlyList<InventoryItemModel>>(nameof(Items));
         }
     }
 
@@ -98,14 +88,16 @@ namespace LcdMod.Client.Apps.Inventory
     {
         string _icon, _name, _amount;
         int _status;
-        bool _tiles, _cards, _table, _odd;
-        public bool Tiles => _tiles;
-        public bool Cards => _cards;
-        public bool Table => _table;
+        bool _odd;
+        [PreviewWith(false, true, false, true, false, true, false, true)]
         public bool Odd => _odd;
+        [PreviewWith("MyObjectBuilder_Ingot/Iron", "MyObjectBuilder_Ingot/Nickel", "MyObjectBuilder_Ingot/Silicon", "MyObjectBuilder_Ore/Ice", "MyObjectBuilder_Component/SteelPlate", "MyObjectBuilder_Component/Construction", "MyObjectBuilder_Component/Motor", "MyObjectBuilder_AmmoMagazine/NATO_25x184mm")]
         public string Icon => _icon;
+        [PreviewWith("Iron Ingot", "Nickel Ingot", "Silicon Wafer", "Ice", "Steel Plate", "Construction Comp.", "Motor", "Gatling Ammo Box")]
         public string Name => _name;
+        [PreviewWith("5.4M", "12.9k", "8,240", "2.10M", "1,560", "742", "36", "0")]
         public string Amount => _amount;
+        [PreviewWith(0, 0, 0, 0, 0, 1, 2, 2)]
         public int Status => _status;
         public ICommand Command { get; private set; }
 
@@ -122,11 +114,8 @@ namespace LcdMod.Client.Apps.Inventory
             RaiseAndSetIfChanged(ref _status, status, nameof(Status));
         }
 
-        public void SetPresentation(bool tiles, bool cards, bool table, bool odd)
+        public void SetOdd(bool odd)
         {
-            RaiseAndSetIfChanged(ref _tiles, tiles, nameof(Tiles));
-            RaiseAndSetIfChanged(ref _cards, cards, nameof(Cards));
-            RaiseAndSetIfChanged(ref _table, table, nameof(Table));
             RaiseAndSetIfChanged(ref _odd, odd, nameof(Odd));
         }
     }

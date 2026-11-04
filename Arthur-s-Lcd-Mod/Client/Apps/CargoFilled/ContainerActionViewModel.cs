@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using LcdMod.Client.Apps.Dialogs;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Apps.CargoFilled
 {
@@ -29,6 +29,11 @@ namespace LcdMod.Client.Apps.CargoFilled
     }
 
     /// <summary>Three steps: choose the transfer, the target containers, then the items or categories to move.</summary>
+    [PreviewWith("Title", "Large Cargo Container 1")]
+    [PreviewWith("SmallFontSize", 0.5525f)]
+    [PreviewWith("IsRegular", true)]
+    [PreviewWith("IsCompact", false)]
+    [PreviewWith("FontSize", 0.65f)]
     internal sealed class ContainerActionViewModel : DialogViewModel
     {
         readonly string _sourceName;
@@ -72,12 +77,15 @@ namespace LcdMod.Client.Apps.CargoFilled
         public ICommand ToggleAllCommand { get; }
         public ICommand NextCommand { get; }
         public ICommand ApplyCommand { get; }
+        [PreviewWith("Send items")]
         public string ApplyText => TransferText(_transfer);
         public int Step => _step;
+        [PreviewWith(true)]
         public bool IsChoosingTransfer => _step == 0;
         public bool IsChoosingRows => _step > 0;
         public bool IsChoosingTargets => _step == 1;
         public bool IsChoosingItems => _step == 2;
+        [PreviewWith(3)]
         public IReadOnlyList<ContainerChoiceRow> Rows => _step == 2 ? _items : _targets;
         public bool CanContinue => Count(_targets) > 0;
         public bool CanApply => Count(_items) > 0;
@@ -221,11 +229,15 @@ namespace LcdMod.Client.Apps.CargoFilled
             });
         }
 
+        [PreviewWith("2", "3", "4")]
         public string Id { get; }
+        [PreviewWith("Large Cargo Container 2", "Refinery Output", "Connector (Dock A)")]
         public string Label { get; }
         public bool IsCategory { get; }
         public ICommand Command { get; }
+        [PreviewWith(0.65f)]
         public float FontSize => _owner.FontSize;
+        [PreviewWith("dialog-row")]
         public string Classes => (IsCategory ? "dialog-row category" : "dialog-row") + (_selected ? " selected" : string.Empty);
 
         public bool IsSelected

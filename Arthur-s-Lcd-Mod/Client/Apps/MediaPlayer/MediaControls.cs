@@ -1,9 +1,9 @@
 using System;
-using Adk.Gui.Animation;
-using Adk.Gui.Core;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Rendering;
+using Acrux.Animation;
+using Acrux.Core;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Rendering;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.MediaPlayer
@@ -84,7 +84,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
     }
 
     /// <summary>Hands mouse-wheel input over its children to <see cref="Scrolled"/>.</summary>
-    internal sealed class MediaWheelPanel : Adk.Gui.Layout.Panel
+    internal sealed class MediaWheelPanel : Acrux.Layout.Panel
     {
         public Func<int, bool> Scrolled { get; set; }
 
@@ -104,7 +104,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
             StyledProperty.Register<MediaGlyph, Color>(nameof(GlyphColor), Color.White, UiInvalidation.Render);
         public Color GlyphColor { get { return GetValue(GlyphColorProperty); } set { SetValue(GlyphColorProperty, value); } }
 
-        /// <summary>Colour of marks drawn over the glyph, such as the cross on unavailable captions.</summary>
+        // Colour of marks drawn over the glyph, such as the cross on unavailable captions.
         public static readonly StyledProperty<Color> MarkColorProperty =
             StyledProperty.Register<MediaGlyph, Color>(nameof(MarkColor), Color.Red, UiInvalidation.Render);
         public Color MarkColor { get { return GetValue(MarkColorProperty); } set { SetValue(MarkColorProperty, value); } }
@@ -253,7 +253,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
             StyledProperty.Register<MediaTransportBackground, Color>(nameof(PlayColor), Color.Gray, UiInvalidation.Render);
         public Color PlayColor { get { return GetValue(PlayColorProperty); } set { SetValue(PlayColorProperty, value); } }
 
-        /// <summary>The buttons these shapes belong to; each shape follows its button's render scale, e.g. while pressed.</summary>
+        // The buttons these shapes belong to; each shape follows its button's render scale, e.g. while pressed.
         public Control PreviousButton { get; set; }
         public Control PlayButton { get; set; }
         public Control NextButton { get; set; }
@@ -265,7 +265,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
 
         static float ScaleOf(Control button)
         {
-            var scale = button == null ? null : button.RenderTransform as Adk.Gui.Styling.ScaleTransform;
+            var scale = button == null ? null : button.RenderTransform as Acrux.Styling.ScaleTransform;
             return scale == null ? 1f : Math.Max(0f, Math.Min(scale.ScaleX, scale.ScaleY));
         }
 
@@ -380,7 +380,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
             Invalidate(UiInvalidation.Render);
         }
 
-        /// <summary>Wheel up seeks forward: 1 s per notch, 10 s with Ctrl, 100 s with Shift, 1000 s with both.</summary>
+        // Wheel up seeks forward: 1 s per notch, 10 s with Ctrl, 100 s with Shift, 1000 s with both.
         internal override bool PointerScrolled(Vector2 point, int delta)
         {
             if (!CanSeek || delta == 0 || SeekRequested == null)
@@ -521,7 +521,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
             _dragging = false;
         }
 
-        /// <summary>Wheel up raises the volume: 1% per notch, 5% with Ctrl, 10% with Shift, 20% with both.</summary>
+        // Wheel up raises the volume: 1% per notch, 5% with Ctrl, 10% with Shift, 20% with both.
         internal override bool PointerScrolled(Vector2 point, int delta)
         {
             if (delta == 0)
@@ -577,7 +577,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
             StyledProperty.Register<MediaVisualizer, int>(nameof(Version), 0, UiInvalidation.Render);
         public int Version { get { return GetValue(VersionProperty); } set { SetValue(VersionProperty, value); } }
 
-        /// <summary>Width over height of the texture: 1 for the square visualizer, the picture's for video.</summary>
+        // Width over height of the texture: 1 for the square visualizer, the picture's for video.
         public static readonly StyledProperty<float> AspectRatioProperty =
             StyledProperty.Register<MediaVisualizer, float>(nameof(AspectRatio), 1f, UiInvalidation.Render);
         public float AspectRatio { get { return GetValue(AspectRatioProperty); } set { SetValue(AspectRatioProperty, value); } }
@@ -665,7 +665,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
     }
 
     /// <summary>A dock button whose flyout opens upwards with a vertical volume slider.</summary>
-    internal sealed class MediaVolumeButton : Adk.Gui.Controls.Button
+    internal sealed class MediaVolumeButton : Acrux.Controls.Button
     {
         public static readonly StyledProperty<float> VolumeProperty =
             StyledProperty.Register<MediaVolumeButton, float>(nameof(Volume), 1f);
@@ -675,14 +675,14 @@ namespace LcdMod.Client.Apps.MediaPlayer
             StyledProperty.Register<MediaVolumeButton, float>(nameof(SliderLength), 120f);
         public float SliderLength { get { return GetValue(SliderLengthProperty); } set { SetValue(SliderLengthProperty, value); } }
 
-        readonly Adk.Gui.Controls.Slider _slider;
+        readonly Acrux.Controls.Slider _slider;
 
         public Action<float> VolumeChanged { get; set; }
         public Action<bool> FlyoutToggled { get; set; }
 
         public MediaVolumeButton()
         {
-            _slider = new Adk.Gui.Controls.Slider
+            _slider = new Acrux.Controls.Slider
             {
                 StyleClass = "media-volume-slider",
                 Orientation = Orientation.Vertical,
@@ -697,11 +697,11 @@ namespace LcdMod.Client.Apps.MediaPlayer
             };
             _slider.SetCurrentValue(Volume);
             var flyoutContent = new MediaWheelPanel { Scrolled = Scroll };
-            flyoutContent.AddChild(new Adk.Gui.Controls.Border { StyleClass = "media-volume-flyout", Child = _slider });
-            Flyout = new Adk.Gui.Controls.Primitives.Popup
+            flyoutContent.AddChild(new Acrux.Controls.Border { StyleClass = "media-volume-flyout", Child = _slider });
+            Flyout = new Acrux.Controls.Primitives.Popup
             {
                 Child = flyoutContent,
-                Placement = Adk.Gui.Controls.Primitives.PlacementMode.Top,
+                Placement = Acrux.Controls.Primitives.PlacementMode.Top,
                 IsLightDismissEnabled = true,
                 Opened = () => FlyoutToggled?.Invoke(true),
                 Closed = () => FlyoutToggled?.Invoke(false)
@@ -713,7 +713,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
             return Scroll(delta);
         }
 
-        /// <summary>Wheel up raises the volume: 1% per notch, 5% with Ctrl, 10% with Shift, 20% with both.</summary>
+        // Wheel up raises the volume: 1% per notch, 5% with Ctrl, 10% with Shift, 20% with both.
         bool Scroll(int delta)
         {
             if (delta == 0)
@@ -736,7 +736,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
         }
     }
 
-    internal sealed class MediaPlaylistRow : Adk.Gui.Controls.Button
+    internal sealed class MediaPlaylistRow : Acrux.Controls.Button
     {
         public static readonly StyledProperty<bool> IsCurrentProperty =
             StyledProperty.Register<MediaPlaylistRow, bool>(nameof(IsCurrent), false, UiInvalidation.Style);

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+<Styles xmlns="https://github.com/ArthurGamerHD/AcruxUI"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <StyleInclude Source="/Data/Gui/Styles/Adk/Fluent/FluentStyle.xaml" />
+  <StyleInclude Source="/Data/Gui/Styles/Acrux/Fluent/FluentStyle.xaml" />
   <StyleInclude Source="./Controls/DonutProgressBar.xaml" />
   <StyleInclude Source="./Controls/BlockPropertyPercentage.xaml" />
   <StyleInclude Source="./Controls/ActionButton.xaml" />

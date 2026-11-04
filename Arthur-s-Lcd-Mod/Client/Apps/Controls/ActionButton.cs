@@ -1,8 +1,8 @@
-using Adk.Gui.Core.Input;
-using Adk.Gui.Styling;
-using Adk.Gui.Controls;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
+using Acrux.Core.Input;
+using Acrux.Styling;
+using Acrux.Controls;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
 using LcdMod.Client.Extensions;
 using VRageMath;
 
@@ -67,7 +67,7 @@ namespace LcdMod.Client.Apps.Controls
         public static readonly StyledProperty<string> VariantProperty =
             StyledProperty.Register<ActionButton, string>(nameof(Variant), string.Empty, UiInvalidation.Style);
 
-        /// <summary>Visual variant exposed as the :classic, :transparent or :border pseudo-class.</summary>
+        // Visual variant exposed as the :classic, :transparent or :border pseudo-class.
         public string Variant
         {
             get { return GetValue(VariantProperty); }
@@ -77,7 +77,7 @@ namespace LcdMod.Client.Apps.Controls
         public static readonly StyledProperty<bool> IsConfiguredProperty =
             StyledProperty.Register<ActionButton, bool>(nameof(IsConfigured), true, UiInvalidation.Style);
 
-        /// <summary>False for an empty slot, exposed as the :unconfigured pseudo-class.</summary>
+        // False for an empty slot, exposed as the :unconfigured pseudo-class.
         public bool IsConfigured
         {
             get { return GetValue(IsConfiguredProperty); }
@@ -96,10 +96,8 @@ namespace LcdMod.Client.Apps.Controls
         public static readonly StyledProperty<Color> PanelColorProperty =
             StyledProperty.Register<ActionButton, Color>(nameof(PanelColor), Color.Transparent, UiInvalidation.Render);
 
-        /// <summary>
-        /// The slot's configured color, or transparent for the theme's. It fills the panel, or colors the outline of the
-        /// border and transparent styles, and lightens or darkens while hovered like the pre-migration pad.
-        /// </summary>
+        // The slot's configured color, or transparent for the theme's. It fills the panel, or colors the outline of the
+        // border and transparent styles, and lightens or darkens while hovered like the pre-migration pad.
         public Color PanelColor
         {
             get { return GetValue(PanelColorProperty); }

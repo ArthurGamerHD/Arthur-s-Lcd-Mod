@@ -61,15 +61,56 @@ Space engineers uses Sandbox.ModAPI.Ingame.IMyTextSurface for TextSurfaceScript:
 3. Do NOT import `Sandbox.ModAPI.Ingame` unless explicit necessary
 4. Always prefer the `Sandbox.ModAPI` over `Sandbox.ModAPI.Ingame` when possible
 
-# ADK GUI / Avalonia Compatibility Instruction
+# Acrux / Avalonia Compatibility Instruction
 
-ADK GUI is intended to implement a **subset of Avalonia-compatible XAML**. Avalonia's XAML parser and source are the reference for supported syntax and behavior.
+Acrux (`External/AcruxUI/Framework`) is intended to implement a **subset of Avalonia-compatible XAML**. Avalonia's XAML parser and source are the reference for supported syntax and behavior.
 
 Rules:
 
-1. Do not add features, syntax, properties, or functions to ADK GUI unless they are explicitly supported by Avalonia and, for XAML-facing features, accepted by Avalonia's XAML parser. Verify the corresponding parser support and control/API behavior in the Avalonia source before implementing an addition.
-2. Prefer composing existing compatible controls, templates, styles, and bindings. Do not add convenience functions or app-specific shortcuts to ADK GUI merely to simplify a legacy-app migration. Existing ADK-only behavior is not precedent for new incompatible features.
+1. Do not add features, syntax, properties, or functions to Acrux unless they are explicitly supported by Avalonia and, for XAML-facing features, accepted by Avalonia's XAML parser. Verify the corresponding parser support and control/API behavior in the Avalonia source before implementing an addition.
+2. Prefer composing existing compatible controls, templates, styles, and bindings. Do not add convenience functions or app-specific shortcuts to Acrux merely to simplify a legacy-app migration. Existing Acrux-only behavior is not precedent for new incompatible features.
 3. The only compatibility exceptions are explicitly identified extensions, such as `Markdown` controls or `LocalizedStrings`. Keep these separate from the core compatible API and expose them through explicit extension types/namespaces; they must not introduce incompatible core XAML syntax or change standard control semantics.
 4. Resolve the Avalonia reference checkout from the repository-root `avalonia-source.local` file if it contains a valid path; otherwise check `<repo-root>/../Avalonia-main/`. Verify that the checkout contains the relevant source, including `src/Markup/Avalonia.Markup.Xaml` when checking parser support.
 5. If no usable checkout is found, ask the user for the Avalonia source location before proceeding with work that depends on compatibility verification. Save the verified absolute checkout path as a single line in `<repo-root>/avalonia-source.local` and reuse it on later tasks. This machine-local file must remain untracked.
-6. When the proper solution needs an Avalonia feature missing from ADK, implement that compatible feature in ADK instead of duplicating framework responsibilities in app code. Verify its API, XAML syntax, and behavior against the Avalonia source first, add focused coverage, and then use it in the app. Keep the implementation scoped to the required capability; this is not permission to invent ADK-only shortcuts.
+6. When the proper solution needs an Avalonia feature missing from Acrux, implement that compatible feature in Acrux instead of duplicating framework responsibilities in app code. Verify its API, XAML syntax, and behavior against the Avalonia source first, add focused coverage, and then use it in the app. Keep the implementation scoped to the required capability; this is not permission to invent Acrux-only shortcuts.
+
+# Acrux UI Instruction
+
+The LCD mod does not compile Acrux itself. Its UI runs inside the separate **Acrux UI** mod
+(`External/AcruxUI`, see its README). This mod compiles the generated thin wrappers from
+`$(AcruxUiToolkitRoot)/ClientApi/ClientApi.projitems`: same `Acrux.*` names, but every member forwards to the toolkit.
+
+Rules:
+
+1. Do not edit `ClientApi/` by hand; change Acrux (`External/AcruxUI/Framework`) or its generator
+   (`Framework/Acrux.Generator/AcruxUiToolkitMirrorGenerator.cs`) and rebuild the toolkit, which regenerates ClientApi.
+2. The client starts in `LcdModSessionComponent.LoadData` through `AcruxUiToolkitClient.Connect`; no UI type may be
+   touched before that callback runs.
+3. Base theme styles (`/Data/Gui/Styles/Acrux/...`) come from the toolkit; LCD-specific styles stay in this mod.
+4. After changing the bridge, run `External/AcruxUI/Tests/run.sh` (two-assembly harness) before deploying.
+5. Mod scripts may use only Space Engineers-whitelisted language elements and members (no `#pragma`, `GC`, reflection,
+   ...), including generated code. After packing, run `External/AcruxUI/Tests/check-whitelist.sh`: it compiles the
+   packed mods with the game's own compiler and whitelist. MDK's analyzer alone is not sufficient.
+
+# Comments and Documentation Instruction
+
+Applies to this repository and its submodules (`External/AcruxUI`, `External/AcruxUI/External/Adk`, ...).
+
+Rules:
+
+1. Do not write comments that explain what the code does; the reader can read the code.
+2. Comment only when it adds something the code cannot say:
+   - non-obvious game behavior or conventions (e.g. planet north is planet-local `-Y`, not `Up`);
+   - the reason code looks unusual (a workaround, an ordering constraint, a whitelist limitation, a deliberate
+     choice that would otherwise look like a bug).
+3. XML `/// <summary>` docs:
+   - API members (types/members exposed to other mods or clients, e.g. through the Acrux bridge/ClientApi, or
+     public interfaces): always.
+   - Other `public` members: optional.
+   - Non-public members (`internal`, `private`, `protected` helpers): never; use a short `//` comment only if
+     rule 2 applies.
+4. Do not leave commented-out code or debug-only code in commits.
+5. Comments use only plain text and characters typed on a regular keyboard: letters, digits, spaces and
+   ``"\|<>,.:;?/-_+=*^~´`@#!$%&'()[]{}``. No other non-ASCII characters: no typographic dashes or quotes (`—`, `–`,
+   `“”`, `’`), ellipsis (`…`), arrows (`→`), math or Greek symbols (`≈`, `×`, `°`, `π`), bullets or emoji. Write
+   `-`, `"`, `'`, `...`, `->`, `~=`, `x`, `deg`, `pi` instead.

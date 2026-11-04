@@ -62,6 +62,15 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
     static readonly DiagnosticDescriptor InvalidCustomColorRequirement = Error(
         "LCDTERM113", "Invalid custom-color dependency",
         "Color setting '{0}' uses RequiresCustomColor but component '{1}' has no public bool CustomizedColors property");
+    // The terminal throws on a repeated RegistrationId and then shows none of the mod's controls.
+    static readonly DiagnosticDescriptor HandwrittenRegistrationIdClash = new(
+        "LCDTERM114", "Terminal registration ID also registered by hand",
+        "Terminal setting '{0}' uses RegistrationId {1}, which a hand-written registration also uses ({2}); the terminal would fail to load its controls",
+        "LcdModCodeGenerator", DiagnosticSeverity.Warning, true);
+    static readonly DiagnosticDescriptor DuplicateHandwrittenRegistrationId = new(
+        "LCDTERM115", "Duplicate hand-written terminal registration ID",
+        "RegistrationId {0} is registered by hand more than once ({1}); the terminal would fail to load its controls",
+        "LcdModCodeGenerator", DiagnosticSeverity.Warning, true);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -81,18 +90,73 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
             .Where(static value => value != null)
             .Collect();
 
-        var input = settings.Combine(componentSlots).Combine(context.CompilationProvider);
+        // Calls passing a constant to an int parameter named registrationId: TerminalManager's AddRegistration and
+        // direct TerminalControlRegistration constructions.
+        var handwritten = context.SyntaxProvider.CreateSyntaxProvider(
+                static (node, _) => (node is InvocationExpressionSyntax invocation && invocation.ArgumentList.Arguments.Count > 0) ||
+                                    (node is ObjectCreationExpressionSyntax creation && creation.ArgumentList != null &&
+                                     creation.ArgumentList.Arguments.Count > 0),
+                static (ctx, _) => ReadHandwrittenRegistration(ctx))
+            .Where(static value => value != null)
+            .Collect();
+
+        var input = settings.Combine(componentSlots).Combine(handwritten).Combine(context.CompilationProvider);
         context.RegisterSourceOutput(input, static (spc, value) =>
         {
             var compilation = value.Right;
-            var slots = value.Left.Right;
-            var settingsInput = value.Left.Left;
-            Generate(spc, compilation, settingsInput, slots);
+            var registrations = value.Left.Right;
+            var slots = value.Left.Left.Right;
+            var settingsInput = value.Left.Left.Left;
+            Generate(spc, compilation, settingsInput, slots, registrations);
         });
     }
 
     static DiagnosticDescriptor Error(string id, string title, string message) =>
         new(id, title, message, "LcdModCodeGenerator", DiagnosticSeverity.Error, true);
+
+    sealed class HandwrittenRegistration
+    {
+        public HandwrittenRegistration(int registrationId, Location location, string display)
+        {
+            RegistrationId = registrationId;
+            Location = location;
+            Display = display;
+        }
+
+        public int RegistrationId { get; }
+        public Location Location { get; }
+        public string Display { get; }
+    }
+
+    static HandwrittenRegistration ReadHandwrittenRegistration(GeneratorSyntaxContext context)
+    {
+        ArgumentListSyntax arguments = context.Node is InvocationExpressionSyntax invocation
+            ? invocation.ArgumentList
+            : ((ObjectCreationExpressionSyntax)context.Node).ArgumentList;
+        var method = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
+        if (method == null || arguments == null)
+            return null;
+        IParameterSymbol parameter = method.Parameters.FirstOrDefault(item =>
+            item.Name == "registrationId" && item.Type.SpecialType == SpecialType.System_Int32);
+        if (parameter == null)
+            return null;
+
+        ArgumentSyntax argument = arguments.Arguments.FirstOrDefault(item =>
+            item.NameColon != null && item.NameColon.Name.Identifier.ValueText == parameter.Name);
+        if (argument == null && parameter.Ordinal < arguments.Arguments.Count &&
+            arguments.Arguments[parameter.Ordinal].NameColon == null)
+            argument = arguments.Arguments[parameter.Ordinal];
+        if (argument == null)
+            return null;
+        Optional<object> constant = context.SemanticModel.GetConstantValue(argument.Expression);
+        if (!constant.HasValue || !(constant.Value is int))
+            return null;
+
+        var location = argument.GetLocation();
+        var line = location.GetLineSpan();
+        string display = System.IO.Path.GetFileName(line.Path) + ":" + (line.StartLinePosition.Line + 1);
+        return new HandwrittenRegistration((int)constant.Value, location, display);
+    }
 
     static SettingInput ReadSetting(GeneratorSyntaxContext context)
     {
@@ -129,6 +193,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
                         0f,
                         false,
                         false,
+                        GetNamedString(attribute, "OnlyApps"),
                         AttributeLocation(attribute, property));
                 case SettingKind.Switch:
                     return new SettingInput(
@@ -151,6 +216,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
                         GetNamedFloat(attribute, "MinimumHeightToWidthRatio"),
                         GetNamedBool(attribute, "RefreshTerminalOnSet"),
                         false,
+                        GetNamedString(attribute, "OnlyApps"),
                         AttributeLocation(attribute, property));
                 default:
                     return new SettingInput(
@@ -173,6 +239,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
                         0f,
                         false,
                         GetNamedBool(attribute, "RequiresCustomColor"),
+                        GetNamedString(attribute, "OnlyApps"),
                         AttributeLocation(attribute, property));
             }
         }
@@ -202,7 +269,8 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
         SourceProductionContext spc,
         Compilation compilation,
         ImmutableArray<SettingInput> settings,
-        ImmutableArray<ComponentSlotTarget> rawSlots)
+        ImmutableArray<ComponentSlotTarget> rawSlots,
+        ImmutableArray<HandwrittenRegistration> handwritten)
     {
         // Config-only test projects deliberately do not reference the client terminal runtime.
         if (compilation.GetTypeByMetadataName(RUNTIME_WRAPPER_NAME) == null)
@@ -362,6 +430,26 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
                     Display(items[0]),
                     Display(items[i]),
                     group.Key));
+        }
+
+        var handwrittenById = handwritten.Where(item => item != null).GroupBy(item => item.RegistrationId)
+            .ToDictionary(group => group.Key, group => group.ToArray());
+        foreach (var pair in handwrittenById.Where(pair => pair.Value.Length > 1))
+        {
+            string places = string.Join(", ", pair.Value.Select(item => item.Display));
+            foreach (var item in pair.Value.Skip(1))
+                spc.ReportDiagnostic(Diagnostic.Create(DuplicateHandwrittenRegistrationId, item.Location, pair.Key, places));
+        }
+        foreach (var model in valid)
+        {
+            HandwrittenRegistration[] clashes;
+            if (handwrittenById.TryGetValue(model.Input.RegistrationId, out clashes))
+                spc.ReportDiagnostic(Diagnostic.Create(
+                    HandwrittenRegistrationIdClash,
+                    model.Input.Location,
+                    Display(model),
+                    model.Input.RegistrationId,
+                    string.Join(", ", clashes.Select(item => item.Display))));
         }
 
         var duplicateIds = new HashSet<int>(valid.GroupBy(item => item.Input.RegistrationId)
@@ -866,6 +954,16 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
         sb.AppendLine();
         sb.AppendLine("        protected override bool IsAvailableForCurrentConfig(global::Sandbox.ModAPI.IMyTerminalBlock block)");
         sb.AppendLine("        {");
+        if (!string.IsNullOrWhiteSpace(model.Input.OnlyApps))
+        {
+            sb.AppendLine("            var appSurface = global::LcdMod.Client.Config.ConfigManager.GetSurfaceConfigForCurrentScreen(block);");
+            sb.AppendLine("            global::Generated.AppType appType;");
+            sb.AppendLine("            if (appSurface == null || !global::Generated.AppSchemaRegistry.TryNormalizeAppType(appSurface.AppTypeId, out appType))");
+            sb.AppendLine("                return false;");
+            var apps = model.Input.OnlyApps.Split(',').Select(a => "appType != global::Generated.AppType." + a.Trim());
+            sb.AppendLine("            if (" + string.Join(" && ", apps) + ")");
+            sb.AppendLine("                return false;");
+        }
         if (model.Input.RequiresCustomColor)
         {
             sb.AppendLine("            var component = global::LcdMod.Client.Config.ConfigManager.GetComponentForCurrentSurface<" + componentType + ">(");
@@ -1018,6 +1116,7 @@ namespace Generated
         public string Slot { get; set; }
         public string WriterSuffix { get; set; }
         public bool RequiresAdvancedTweakables { get; set; }
+        public string OnlyApps { get; set; }
         public float Quantum { get; set; }
     }
 
@@ -1044,6 +1143,7 @@ namespace Generated
         public string OnText { get; set; }
         public string OffText { get; set; }
         public bool RequiresAdvancedTweakables { get; set; }
+        public string OnlyApps { get; set; }
         public float MinimumHeightToWidthRatio { get; set; }
         public bool RefreshTerminalOnSet { get; set; }
     }
@@ -1069,6 +1169,7 @@ namespace Generated
         public string Slot { get; set; }
         public bool RequiresCustomColor { get; set; }
         public bool RequiresAdvancedTweakables { get; set; }
+        public string OnlyApps { get; set; }
     }
 }
 """;
@@ -1147,8 +1248,10 @@ namespace Generated
             float minimumHeightToWidthRatio,
             bool refreshTerminalOnSet,
             bool requiresCustomColor,
+            string onlyApps,
             Location location)
         {
+            OnlyApps = onlyApps;
             Kind = kind;
             Property = property;
             RegistrationId = registrationId;
@@ -1190,6 +1293,8 @@ namespace Generated
         public float MinimumHeightToWidthRatio { get; }
         public bool RefreshTerminalOnSet { get; }
         public bool RequiresCustomColor { get; }
+        // AppType names, comma separated: the control shows only on those apps' screens.
+        public string OnlyApps { get; }
         public Location Location { get; }
     }
 

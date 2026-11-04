@@ -90,8 +90,8 @@ namespace LcdMod.Client.Apps
                     {
                         var thr = thrusts[i];
                         if (thr == null) continue;
-                        if (!thr.Enabled) continue; // turned off
-                        if (!thr.IsFunctional) continue; // damaged below functional line
+                        if (!thr.Enabled) continue;
+                        if (!thr.IsFunctional) continue;
                         if (!thr.IsWorking) continue; // no fuel/power or otherwise unable to provide thrust
 
                         var pushDir = Base6Directions.GetOppositeDirection(thr.Orientation.Forward);

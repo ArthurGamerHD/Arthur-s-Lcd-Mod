@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Styles xmlns="https://github.com/ArthurGamerHD/Adk">
+<Styles xmlns="https://github.com/ArthurGamerHD/AcruxUI">
   <Style Selector="CheckBox.craft-assembler">
     <Setter Property="MinHeight" Value="32" />
     <Setter Property="Margin" Value="0 2" />

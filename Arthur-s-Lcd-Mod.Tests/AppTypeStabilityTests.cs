@@ -14,7 +14,7 @@ public sealed class AppTypeStabilityTests
         ["EnergyDashboard"] = 7,
         ["PowerFilled"] = 8,
         ["Farm"] = 9,
-        ["IntegrityMonitor"] = 10,
+        ["PreviewGrid"] = 10,
         ["DockingAlignment"] = 11,
         ["Radar"] = 12,
         ["StarMap"] = 13,
@@ -31,7 +31,10 @@ public sealed class AppTypeStabilityTests
         ["BSoDTest"] = 27,
         ["MediaPlayer"] = 28,
         ["PlanetaryMap"] = 29,
-        ["DefenseDashboard"] = 30
+        ["DefenseDashboard"] = 30,
+        ["TargetInfo"] = 31,
+        ["SelfDiagnostic"] = 32,
+        ["ExternalSensors"] = 33
     };
 
     static readonly IReadOnlyDictionary<string, int> RetiredAppIds = new Dictionary<string, int>

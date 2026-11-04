@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Generated;
-using Adk.Gui.Animation;
-using Adk.Gui.Lcd;
+using Acrux.Animation;
+using Acrux.Lcd;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Apps.Views;
 using LcdMod.Client.Config;
@@ -44,7 +44,13 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
     {
         public static SurfaceCollection Instances = new SurfaceCollection();
         public Dictionary<string, Color> Theme { get; set; }
-        readonly List<MySprite> _backgroundGrids = new List<MySprite>();
+        LcdSurfaceLayers _layers;
+
+        /// <summary>
+        /// Acrux's compositor for this surface. It draws every layer of the frame (tiled background, content,
+        /// overlay and cursor); the script only tells it what to show.
+        /// </summary>
+        protected LcdSurfaceLayers Layers => _layers ?? (_layers = new LcdSurfaceLayers(Surface));
         readonly Dictionary<long, Vector2> _registeredProxyOffsets = new Dictionary<long, Vector2>();
         readonly List<MySprite> _cachedFrame = new List<MySprite>();
         Color _backgroundColor;
@@ -59,6 +65,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected virtual bool ClipToBounds => _registeredProxyOffsets.Count > 0;
 
         protected long WaitForFrame;
+        // The splash shows at least this long at startup.
+        const int SPLASH_FRAMES = 6 * 5;
         protected long LastRenderFrame;
         public long LastRunTick { get; private set; } = long.MinValue;
 
@@ -90,7 +98,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         }
 
         bool _init;
-        int _rotationOrSurfaceIndex;
+        // -1 until the screen resolves its area (never, for a preview).
+        int _rotationOrSurfaceIndex = -1;
 
         protected float CaretY;
         protected float FooterHeight;
@@ -101,7 +110,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         string _customInfo;
 
-        public virtual string Title
+        public virtual string Title => AppName;
+
+        // The script's own name; Title may be what the app shows instead (a grid's name).
+        public string AppName
         {
             get
             {
@@ -162,7 +174,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 ScheduleAnimationFrame,
                 RenderSprites);
 
-            WaitForFrame = MyAPIGateway.Session.GameplayFrameCounter + 6 * 5; // minimum of 5 frames splash screen 
+            WaitForFrame = MyAPIGateway.Session.GameplayFrameCounter + SPLASH_FRAMES;
             Block = (IMyCubeBlock)base.Block;
             var terminalBlock = (IMyTerminalBlock)Block;
             terminalBlock.AppendingCustomInfo += OnAppendingCustomInfo;
@@ -188,10 +200,26 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public abstract IApp App { get; }
 
+        // Projections, build ghosts and pastes in progress still get a script, but their render component has no
+        // screen area. They are physics-less grids (except mod screens like wrist pad), and a paste gains
+        // physics when it finishes, so this is rechecked on every run until the screen initializes.
+        protected bool IsPreviewScreen
+        {
+            get
+            {
+                var grid = Block?.CubeGrid;
+                if (grid == null || grid.Closed || grid.MarkedForClose)
+                    return true;
+                return grid.Physics == null && !ModCompatibilityHelper.IsUsablePhysicslessScreen(Block);
+            }
+        }
+
+        bool _loggedUnresolvedSurface;
+
         protected int ResolveRotationOrSurfaceIndex()
         {
-            if (Block.CubeGrid.Physics == null)
-                return -1; // we can ignore surface that does not exist
+            if (IsPreviewScreen)
+                return -1;
 
             if (Block is IMyTextPanel)
             {
@@ -221,8 +249,62 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 }
             }
 
-            LogHelper.Log(MyLogSeverity.Warning, "Failed to find surface {0} for {1}", Surface.Name, Block);
+            if (!_loggedUnresolvedSurface)
+            {
+                _loggedUnresolvedSurface = true;
+                LogHelper.Log(MyLogSeverity.Warning, "Failed to find surface {0} for {1}", Surface.Name, Block);
+            }
             return -1;
+        }
+
+        int _scheduledFrames;
+        bool _scheduledFrameQueued;
+        long _lastSafeRunTick = long.MinValue;
+        Action _runScheduledFrame;
+
+        public void RequestFrames(int frames = 10)
+        {
+            if (_disposed || frames <= 0)
+                return;
+            if (frames > _scheduledFrames)
+                _scheduledFrames = frames;
+            if (_scheduledFrameQueued)
+                return;
+            _scheduledFrameQueued = true;
+            ScheduleAnimationFrame(_runScheduledFrame ?? (_runScheduledFrame = RunScheduledFrame));
+        }
+
+        void RunScheduledFrame()
+        {
+            _scheduledFrameQueued = false;
+            if (_disposed || _scheduledFrames <= 0)
+                return;
+            _scheduledFrames--;
+            if (IsScreenReadyToRender &&
+                _lastSafeRunTick != MyAPIGateway.Session.GameplayFrameCounter)
+                RunSafeRun();
+            if (_scheduledFrames > 0)
+                RequestFrames(_scheduledFrames);
+        }
+
+        void RunSafeRun()
+        {
+            _lastSafeRunTick = MyAPIGateway.Session.GameplayFrameCounter;
+            PublishAppChange();
+            RaiseUpdateStart();
+            try
+            {
+                SafeRun();
+            }
+            catch (Exception e)
+            {
+                OnException(e);
+            }
+            finally
+            {
+                RaiseUpdateEnd();
+                PublishAppChange();
+            }
         }
 
         static long GetAnimationFrame()
@@ -238,21 +320,33 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                     LcdModClientComponent.RunNextFrame.Add(action);
         }
 
-        void DrawSplash()
+        void DrawSplash(string subtitle = null)
+        {
+            _glitchFrame.Clear();
+            AddSplashSprites(_glitchFrame, subtitle);
+            var frame = Surface.DrawFrame();
+            frame.AddRange(_glitchFrame);
+            frame.Dispose();
+        }
+
+        void AddSplashSprites(List<MySprite> frame, string subtitle)
         {
             if (ViewBox.Size == Vector2.Zero)
                 UpdateViewBox();
 
             var offset = Math.Min(ViewBox.Width, ViewBox.Height) / 5;
-            var frame = Surface.DrawFrame();
             frame.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple", ViewBox.Center,
                 new Vector2(Math.Max(ViewBox.Width, ViewBox.Height) * 2), FactionHelper.GetBackgroundColor(Faction)));
             frame.Add(new MySprite(SpriteType.TEXTURE, Icon,
                 new Vector2(ViewBox.Center.X, ViewBox.Center.Y - offset / 2),
                 new Vector2(Math.Min(ViewBox.Width, ViewBox.Height) / 1.5f), FactionHelper.GetIconColor(Faction)));
-            frame.Add(new MySprite(SpriteType.TEXT, Title, new Vector2(ViewBox.Center.X, ViewBox.Center.Y + offset),
+            frame.Add(new MySprite(SpriteType.TEXT, AppName, new Vector2(ViewBox.Center.X, ViewBox.Center.Y + offset),
                 null, FactionHelper.GetIconColor(Faction), "White", rotation: 1.6f * FontScale));
-            frame.Dispose();
+            if (string.IsNullOrEmpty(subtitle))
+                return;
+            frame.Add(new MySprite(SpriteType.TEXT, subtitle,
+                new Vector2(ViewBox.Center.X, ViewBox.Center.Y + offset + 1.6f * FontScale * 32f), null,
+                FactionHelper.GetIconColor(Faction) * .75f, "White", rotation: .7f * FontScale));
         }
 
         protected void AddEmptyWithFiltersSprites(List<MySprite> sprites)
@@ -335,6 +429,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             {
                 if (Block != null)
                 {
+                    if (Block.MarkedForClose || Block.Closed)
+                        ScreenAreaGeometry.ForgetBlock(Block.EntityId);
                     Block.OnMarkForClose -= HandleBlockMarkedForClose;
                     var terminalBlock = (IMyTerminalBlock)Block;
                     terminalBlock.AppendingCustomInfo -= OnAppendingCustomInfo;
@@ -357,6 +453,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             // Ensure module hooks are detached even if the instance list is already out of sync.
             LcdModSessionComponent.UnhookSurfaceModules(this);
+            StopGlitch();
             Instances.Remove(this);
             LcdModSessionComponent.OnLanguageChanged -= LayoutChanged;
             OnRender = null;
@@ -460,6 +557,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 return;
             }
 
+            // A preview keeps its splash: no config, no app, no frame upload (its screen area index is -1).
+            if (!_init && !TryResolveScreen())
+                return;
+
             if (currentFrame - LastRunTick > MaxRunGap)
                 InvalidateUploadedFrame();
             LastRunTick = currentFrame;
@@ -518,21 +619,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             IsScreenReadyToRender = true;
 
-            PublishAppChange();
-            RaiseUpdateStart();
-            try
-            {
-                SafeRun();
-            }
-            catch (Exception e)
-            {
-                OnException(e);
-            }
-            finally
-            {
-                RaiseUpdateEnd();
-                PublishAppChange();
-            }
+            // A scheduled frame may already have updated the screen this tick.
+            if (_lastSafeRunTick != currentFrame)
+                RunSafeRun();
         }
 
         void PublishAppChange()
@@ -607,9 +696,17 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             return null;
         }
 
+        bool TryResolveScreen()
+        {
+            var index = ResolveRotationOrSurfaceIndex();
+            if (index < 0)
+                return false;
+            _rotationOrSurfaceIndex = index;
+            return true;
+        }
+
         void Init()
         {
-            _rotationOrSurfaceIndex = ResolveRotationOrSurfaceIndex();
             var panel = Block as IMyTextPanel;
             
             if (panel != null && Instances.GetInstance(panel, _rotationOrSurfaceIndex) != null)
@@ -651,10 +748,267 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         readonly List<MySprite> _bSoDReupload = new List<MySprite>();
 
+        // While its grid's power is disrupted the game leaves the screen on its offline picture and stops running the
+        // script; the mod draws a glitched crash screen there itself, into the texture the game released.
+        // The glitch and its fade advance together, at the game's own screen rate (every 10th frame).
+        const int DISRUPTED_FRAME_INTERVAL = 10;
+        // Frames the screen must have been off first: the game releases its texture on its own update after the
+        // block stops working, and would destroy one taken earlier (it has the same name).
+        const int DISRUPTED_START_DELAY = 2;
+        // The crash screen fades to black over this long, starting this long before the disruption ends, and the
+        // screen starts up again with its splash once it is over.
+        const int FADE_FRAMES = 60;
+        const int FADE_LEAD_FRAMES = 2 * 60;
+        // Clients only get EmpImmunitySeconds, the whole seconds left of the disruption plus the immunity after it;
+        // the immunity comes from the EMP block's definition (15 s in vanilla), which the client is not told.
+        const int EMP_IMMUNITY_SECONDS = 15;
+        const int RESTART_SETTLE_FRAMES = 10;
+        // The game redraws a script's frame only when it differs from the one it drew last, which for these scripts
+        // stays the startup splash (they upload past it): an empty frame goes first, held through one of the game's
+        // panel updates (every 10th frame), so the splash again counts as a change.
+        const int SPLASH_FLUSH_FRAMES = 12;
+        // Longer than at startup: the game takes about this long to bring the screen from its offline picture back.
+        const int RESTART_SPLASH_FRAMES = 2 * 60;
+        long _restartAt;
+        long _splashAt;
+        long _fadeStart;
+        bool _fadedOut;
+        int _immunitySeconds = -1;
+        long _disruptionEnd;
+        static readonly Color DisruptedBackground = new Color(0, 88, 151);
+        static readonly List<IMyCubeGrid> DisruptionGroup = new List<IMyCubeGrid>();
+        readonly List<MySprite> _glitchFrame = new List<MySprite>();
+        GlitchedBSoD _glitch;
+        bool _glitchOnWorkingScreen;
+        int _disruptedFrames;
+        bool _ownsDisruptedTexture;
+
+        // Game thread, every frame before the simulation: ahead of the game's own screen updates, so a texture taken
+        // over is gone by the time power that came back wants it.
+        public static void UpdateDisruptedScreens(long frame)
+        {
+            if (MyAPIGateway.Utilities == null || MyAPIGateway.Utilities.IsDedicated)
+                return;
+            foreach (SurfaceScriptBase script in Instances)
+                script.UpdateDisruption(frame);
+        }
+
+        void UpdateDisruption(long frame)
+        {
+            int immunity = !_disposed && RotationOrSurfaceIndex >= 0 && Block != null && !Block.Closed &&
+                           Block.IsFunctional ? DisruptionImmunity(Block.CubeGrid) : -1;
+            if (immunity < 0)
+            {
+                _disruptedFrames = 0;
+                // Without a warning ahead (a modded EMP's shorter immunity), the fade runs once it is over; not on a
+                // texture of the mod's own, which the game wants back as the block powers up.
+                if (_glitch != null && !_ownsDisruptedTexture && !_disposed && Block != null && !Block.Closed)
+                {
+                    if (_fadeStart == 0)
+                        _fadeStart = frame;
+                    if (frame < _fadeStart + FADE_FRAMES)
+                    {
+                        DrawGlitch(frame);
+                        return;
+                    }
+                }
+                StopGlitch(true);
+                UpdateRestart(frame);
+                return;
+            }
+            UpdateDisruptionEnd(immunity, frame);
+            // Some blocks (cockpits) keep working through it: the game keeps its texture and runs the script, which
+            // stops uploading while the glitch draws over it. One that turns off starts over on a texture of its own.
+            bool working = Block.IsWorking;
+            if (_glitch != null && working != _glitchOnWorkingScreen)
+            {
+                StopGlitch();
+                _disruptedFrames = 0;
+            }
+            if (++_disruptedFrames < DISRUPTED_START_DELAY)
+                return;
+            if (_glitch == null)
+            {
+                try
+                {
+                    StartGlitch(working);
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, this);
+                    return;
+                }
+            }
+            if (_fadeStart == 0 && _disruptionEnd != 0 && frame >= _disruptionEnd - FADE_LEAD_FRAMES)
+                _fadeStart = frame;
+            DrawGlitch(frame);
+        }
+
+        void DrawGlitch(long frame)
+        {
+            float fade = _fadeStart == 0 ? 0f : MathHelper.Clamp((frame - _fadeStart) / (float)FADE_FRAMES, 0f, 1f);
+            if (_fadedOut || frame % DISRUPTED_FRAME_INTERVAL != 0)
+                return;
+            try
+            {
+                _glitch.Draw(frame / 60d, _glitchFrame);
+                if (fade > 0f)
+                    _glitchFrame.Add(new MySprite(SpriteType.TEXTURE, "SquareSimple", ViewBox.Center,
+                        new Vector2(Math.Max(ViewBox.Width, ViewBox.Height) * 2f), Color.Black * fade));
+                _renderComp.RenderSpritesToTexture(RotationOrSurfaceIndex, _glitchFrame, _textureSize, _aspectRatio,
+                    Color.Lerp(DisruptedBackground, Color.Black, fade), byte.MaxValue);
+                _fadedOut = fade >= 1f;
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+            }
+        }
+
+        // The seconds count is rounded up and refreshed every 10 frames, so the end is reckoned from when it ticks.
+        void UpdateDisruptionEnd(int immunity, long frame)
+        {
+            if (immunity == _immunitySeconds)
+                return;
+            bool ticked = _immunitySeconds >= 0 && immunity == _immunitySeconds - 1;
+            _immunitySeconds = immunity;
+            int left = immunity - EMP_IMMUNITY_SECONDS;
+            if (left <= 0)
+                return;
+            if (ticked || _disruptionEnd == 0)
+                _disruptionEnd = frame + left * 60L;
+        }
+
+        // The highest EmpImmunitySeconds of the disrupted grids sharing this one's power, or -1 when none is.
+        static int DisruptionImmunity(IMyCubeGrid grid)
+        {
+            var own = grid as MyCubeGrid;
+            if (own == null)
+                return -1;
+            int immunity = own.IsElectricityDisrupted ? own.EmpImmunitySeconds : -1;
+            DisruptionGroup.Clear();
+            MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Logical, DisruptionGroup);
+            for (int i = 0; i < DisruptionGroup.Count; i++)
+            {
+                var other = DisruptionGroup[i] as MyCubeGrid;
+                if (other != null && other.IsElectricityDisrupted)
+                    immunity = Math.Max(immunity, other.EmpImmunitySeconds);
+            }
+            DisruptionGroup.Clear();
+            return immunity;
+        }
+
+        void StartGlitch(bool working)
+        {
+            int area = RotationOrSurfaceIndex;
+            if (!working)
+            {
+                _renderComp.CreateTexture(area, _textureSize);
+                _renderComp.ChangeTexture(area, _renderComp.GenerateOffscreenTextureName(Block.EntityId, area));
+                _ownsDisruptedTexture = true;
+            }
+            _glitchOnWorkingScreen = working;
+            int seed = (int)Block.EntityId ^ area;
+            BSoD bSoD = BSoD.ShowBSoD(this, MemoryCorruptionException.Create(seed));
+            _glitch = new GlitchedBSoD(bSoD.Frame, ViewBox, seed);
+        }
+
+        // recovered: the disruption is over, and the screen restarts with its splash, as if rebooted.
+        void StopGlitch(bool recovered = false)
+        {
+            bool active = _glitch != null;
+            if (_ownsDisruptedTexture)
+                ReleaseDisruptedTexture();
+            _glitch = null;
+            _fadedOut = false;
+            if (recovered || _disposed)
+            {
+                _fadeStart = 0;
+                _immunitySeconds = -1;
+                _disruptionEnd = 0;
+            }
+            if (!active)
+                return;
+            // The script draws its own frames again, on the texture the game kept or makes anew.
+            InvalidateUploadedFrame();
+            if (!recovered || _disposed)
+                return;
+            WaitForFrame = long.MaxValue;
+            _restartAt = MyAPIGateway.Session.GameplayFrameCounter;
+        }
+
+        // A splash drawn while the block is still off is lost when the game makes its texture again on power-up, so
+        // the restart waits for the block to have been working a moment.
+        void UpdateRestart(long frame)
+        {
+            if (_splashAt != 0 && frame >= _splashAt && !_disposed)
+            {
+                _splashAt = 0;
+                try
+                {
+                    DrawSplash(LocHelper.GetLoc(MOD_PREFIX + "PreparingAutomaticRepair"));
+                }
+                catch (Exception e)
+                {
+                    ErrorHandlerHelper.LogError(e, this);
+                }
+                WaitForFrame = frame + RESTART_SPLASH_FRAMES;
+                return;
+            }
+            if (_restartAt == 0 || _disposed)
+                return;
+            if (Block == null || Block.Closed || !Block.IsWorking)
+            {
+                _restartAt = Math.Max(_restartAt, frame + RESTART_SETTLE_FRAMES);
+                return;
+            }
+            if (frame < _restartAt)
+                return;
+            _restartAt = 0;
+            try
+            {
+                LayoutChanged();
+                Surface.DrawFrame().Dispose();
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+            }
+            _splashAt = frame + SPLASH_FLUSH_FRAMES;
+        }
+
+        // Back to what the game shows: its offline picture while the block is still off (it set that once and will
+        // not again), else its own texture, which it creates under the same name.
+        void ReleaseDisruptedTexture()
+        {
+            _ownsDisruptedTexture = false;
+            _glitch = null;
+            int area = RotationOrSurfaceIndex;
+            try
+            {
+                _renderComp.ReleaseTexture(area, false);
+                if (Block != null && !Block.Closed && !Block.IsWorking)
+                    _renderComp.ChangeTexture(area, OfflineTexturePath());
+            }
+            catch (Exception e)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+            }
+        }
+
+        string OfflineTexturePath()
+        {
+            Vector2 size = Surface.SurfaceSize;
+            string id = size.X > size.Y * 4f ? "Offline_wide" : "Offline";
+            var definition = Sandbox.Definitions.MyDefinitionManager.Static
+                .GetDefinition<Sandbox.Definitions.MyLCDTextureDefinition>(MyStringHash.GetOrCompute(id));
+            return definition == null ? null : definition.TexturePath;
+        }
+
         // The crash frame is uploaded once; when it introduced the QR texture, SE drew it without the code.
         void ReuploadBSoD()
         {
-            if (_bSoDReupload.Count == 0 || _disposed)
+            if (_bSoDReupload.Count == 0 || _disposed || RotationOrSurfaceIndex < 0)
                 return;
             try
             {
@@ -670,6 +1024,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public void OnException(Exception e)
         {
+            // Without a screen area there is nowhere to show the crash; a second error would hide the first.
+            if (RotationOrSurfaceIndex < 0 || _disposed)
+            {
+                ErrorHandlerHelper.LogError(e, this);
+                WaitForFrame = MyAPIGateway.Session.GameplayFrameCounter + 600;
+                return;
+            }
+
             try
             {
                 var bSoD = BSoD.ShowBSoD(this, e);
@@ -1043,7 +1405,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         protected virtual void LayoutChanged()
         {
             if(Surface == null)
-                return; // we got disposed
+                return;
 
             _userPadding = Surface.TextPadding;
             _userScale = GeneralComponent.GetScale();
@@ -1057,7 +1419,11 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             InvalidateTitleCache();
             UpdateViewBox();
             InvalidateUploadedFrame();
-            _backgroundGrids.Clear();
+            if (_layers != null)
+            {
+                _layers.InvalidateBackground();
+                _layers.InvalidateContent();
+            }
             (Block as IMyTerminalBlock)?.RefreshTerminal();
         }
 
@@ -1170,79 +1536,14 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
         public void AddBackground(List<MySprite> frame, Color? color = null)
         {
-            EnsureBackgroundGrids(color);
-            frame.AddRange(_backgroundGrids);
+            PrepareBackground(color);
+            Layers.DrawBackground(frame);
         }
 
-        /// <summary>Builds the tiled background once; it asks the game for a draw frame, so parallel renders warm it first.</summary>
-        void EnsureBackgroundGrids(Color? color)
+        // Has Acrux build the tiled background once per layout.
+        void PrepareBackground(Color? color)
         {
-            if (_backgroundGrids.Count > 0)
-                return;
-            var backgroundColor = new Color(color ?? BackgroundColor, 0.66f);
-            var frameTemp = Surface.DrawFrame();
-            AddTiledBackground(frameTemp, backgroundColor);
-            frameTemp.AddToList(_backgroundGrids);
-        }
-
-        void AddTiledBackground(MySpriteDrawFrame frame, Color color)
-        {
-            var tile = MyTextSurfaceHelper.DEFAULT_BACKGROUND;
-            tile.Color = color;
-
-            var tileSize = tile.Size ?? new Vector2(MyTextSurfaceHelper.BACKGROUND_SIZE);
-            if (tileSize.X <= 0f || tileSize.Y <= 0f)
-                tileSize = new Vector2(MyTextSurfaceHelper.BACKGROUND_SIZE);
-
-            var shift = MyTextSurfaceHelper.BACKGROUND_SHIFT;
-            float stepX = Math.Abs(shift.X) > 0.001f ? Math.Abs(shift.X) : tileSize.X;
-            float stepY = Math.Abs(shift.Y) > 0.001f ? Math.Abs(shift.Y) : tileSize.Y;
-
-            if (stepX <= 0f || stepY <= 0f)
-                return;
-
-            var basePosition = (tile.Position ?? Vector2.Zero) + Surface.TextureSize / 2f;
-            var bounds = GetBackgroundBounds();
-            var halfSize = tileSize * 0.5f;
-
-            float startX = GetFirstBackgroundTileCenter(bounds.X, basePosition.X, halfSize.X, stepX);
-            float startY = GetFirstBackgroundTileCenter(bounds.Y, basePosition.Y, halfSize.Y, stepY);
-
-            for (float y = startY; y - halfSize.Y < bounds.Bottom; y += stepY)
-            {
-                for (float x = startX; x - halfSize.X < bounds.Right; x += stepX)
-                {
-                    tile.Position = new Vector2(x, y);
-                    frame.Add(tile);
-                }
-            }
-        }
-
-        RectangleF GetBackgroundBounds()
-        {
-            var textureSize = Surface.TextureSize;
-            var bounds = new RectangleF(
-                0f,
-                0f,
-                Math.Max(1f, textureSize.X),
-                Math.Max(1f, textureSize.Y));
-
-            var viewBox = ViewBox;
-            if (viewBox.Width <= 0f || viewBox.Height <= 0f)
-                return bounds;
-
-            float left = Math.Min(bounds.X, viewBox.X);
-            float top = Math.Min(bounds.Y, viewBox.Y);
-            float right = Math.Max(bounds.Right, viewBox.Right);
-            float bottom = Math.Max(bounds.Bottom, viewBox.Bottom);
-
-            return new RectangleF(left, top, Math.Max(1f, right - left), Math.Max(1f, bottom - top));
-        }
-
-        static float GetFirstBackgroundTileCenter(float boundsStart, float baseCenter, float halfSize, float step)
-        {
-            float baseStart = baseCenter - halfSize;
-            return baseCenter + (float)Math.Floor((boundsStart - baseStart) / step) * step;
+            Layers.PrepareBackground(new Color(color ?? BackgroundColor, 0.66f), ViewBox);
         }
 
 
@@ -1283,30 +1584,13 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         }
 
         static readonly List<SurfaceScriptBase> QueuedRenders = new List<SurfaceScriptBase>();
-        static readonly List<SurfaceScriptBase> ParallelRenders = new List<SurfaceScriptBase>();
-        static readonly List<SurfaceScriptBase> LateRenders = new List<SurfaceScriptBase>();
-        static readonly List<SurfaceScriptBase> LateRendersSnapshot = new List<SurfaceScriptBase>();
-        static readonly Action<int> RenderQueuedInParallel = RenderParallelItem;
         static bool _queueRenders;
-        static volatile bool _renderingInParallel;
-
-        internal static bool ParallelRendering = true;
+        static bool _flushingRenders;
 
         bool _renderQueued;
         bool _queuedForce;
         bool _queuedCursorOnly;
-        bool _inParallelBatch;
-        bool _parallelNotify;
-        Exception _parallelError;
         protected bool RenderingCursorOnly { get; private set; }
-
-        /// <summary>
-        /// Whether this screen's whole render (layout, drawing and upload) touches only its own state, so it can run
-        /// on a worker thread while the rest of the game waits.
-        /// </summary>
-        protected virtual bool RendersInParallel => false;
-
-        internal virtual bool CanRenderInParallel => RendersInParallel && !_disposed;
 
         /// <summary>
         /// Renders now, or, during a game update, queues the screen for <see cref="FlushFrameRenders"/> so every
@@ -1314,15 +1598,10 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         /// </summary>
         protected void RequestRender(bool force, bool cursorOnly)
         {
-            if (_renderingInParallel)
-            {
-                lock (LateRenders)
-                    if (!LateRenders.Contains(this))
-                        LateRenders.Add(this);
-                return;
-            }
-
-            if (_queueRenders)
+            // Between ticks (a paint task's completion, input), a screen whose scheduled update runs this tick
+            // joins that update's render: rendering now would use up the tick's one render (LastRenderFrame), and
+            // the update's own changes (a 3D map's next frame request) would wait for the next tick.
+            if (_queueRenders || (_scheduledFrameQueued && !_flushingRenders))
             {
                 if (_renderQueued)
                 {
@@ -1339,7 +1618,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
 
             try
             {
-                if (RenderNow(force, cursorOnly, true))
+                if (RenderNow(force, cursorOnly))
                     NotifyRendered();
             }
             catch (Exception e)
@@ -1353,63 +1632,25 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _queueRenders = true;
         }
 
-        /// <summary>
-        /// Renders the queued screens: eligible ones on worker threads, then the rest in order, render proxies last
-        /// so they mirror their hosts' new frames.
-        /// </summary>
+        // Renders the queued screens in order, render proxies last so they mirror their hosts' new frames.
         internal static void FlushFrameRenders()
         {
             _queueRenders = false;
             if (QueuedRenders.Count == 0)
                 return;
-
-            ParallelRenders.Clear();
-            if (ParallelRendering)
+            _flushingRenders = true;
+            try
             {
-                for (int i = 0; i < QueuedRenders.Count; i++)
-                {
-                    SurfaceScriptBase screen = QueuedRenders[i];
-                    if (!screen.CanRenderInParallel)
-                        continue;
-                    screen.EnsureBackgroundGrids(null);
-                    screen._inParallelBatch = true;
-                    screen._parallelNotify = false;
-                    screen._parallelError = null;
-                    ParallelRenders.Add(screen);
-                }
+                FlushQueuedRenders();
             }
-
-            if (ParallelRenders.Count > 0)
+            finally
             {
-                _renderingInParallel = true;
-                try
-                {
-                    MyAPIGateway.Parallel.For(0, ParallelRenders.Count, RenderQueuedInParallel);
-                }
-                finally
-                {
-                    _renderingInParallel = false;
-                }
+                _flushingRenders = false;
             }
+        }
 
-            for (int i = 0; i < ParallelRenders.Count; i++)
-            {
-                SurfaceScriptBase screen = ParallelRenders[i];
-                screen._renderQueued = false;
-                screen._inParallelBatch = false;
-                try
-                {
-                    if (screen._parallelError != null)
-                        screen.OnException(screen._parallelError);
-                    else if (screen._parallelNotify)
-                        screen.NotifyRendered();
-                }
-                catch (Exception e)
-                {
-                    screen.OnException(e);
-                }
-            }
-
+        static void FlushQueuedRenders()
+        {
             for (int pass = 0; pass < 2; pass++)
             {
                 for (int i = 0; i < QueuedRenders.Count; i++)
@@ -1422,46 +1663,25 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 }
             }
             QueuedRenders.Clear();
-            ParallelRenders.Clear();
-
-            lock (LateRenders)
-            {
-                LateRendersSnapshot.AddRange(LateRenders);
-                LateRenders.Clear();
-            }
-            for (int i = 0; i < LateRendersSnapshot.Count; i++)
-                LateRendersSnapshot[i].RequestRender(false, false);
-            LateRendersSnapshot.Clear();
         }
 
         internal static void ClearFrameRenders()
         {
             _queueRenders = false;
+            _flushingRenders = false;
+            // A screen left marked as queued would ignore every later request.
+            for (int i = 0; i < QueuedRenders.Count; i++)
+                QueuedRenders[i]._renderQueued = false;
             QueuedRenders.Clear();
-            ParallelRenders.Clear();
-            lock (LateRenders)
-                LateRenders.Clear();
         }
 
-        static void RenderParallelItem(int index)
-        {
-            SurfaceScriptBase screen = ParallelRenders[index];
-            try
-            {
-                screen._parallelNotify = screen.RenderNow(screen._queuedForce, screen._queuedCursorOnly, false);
-            }
-            catch (Exception e)
-            {
-                screen._parallelError = e;
-            }
-        }
-
-        /// <summary>Builds and uploads a frame; returns whether render listeners (such as proxies) must be told.</summary>
-        bool RenderNow(bool force, bool cursorOnly, bool allowAsync)
+        // Builds and uploads a frame; returns whether render listeners (such as proxies) must be told.
+        bool RenderNow(bool force, bool cursorOnly)
         {
             var currentFrame = MyAPIGateway.Session.GameplayFrameCounter;
 
-            if ((!force && LastRenderFrame == currentFrame) || WaitForFrame > currentFrame || _disposed || _asyncRenderPending)
+            if ((!force && LastRenderFrame == currentFrame) || WaitForFrame > currentFrame || _disposed ||
+                _asyncRenderPending || RotationOrSurfaceIndex < 0 || _glitch != null)
                 return false;
 #if DEBUG
             long profileStart = Debugging.FrameProfiler.Start();
@@ -1490,7 +1710,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 AddSpriteCountDebug(renderList);
 #endif
 
-                if (AsyncRender && allowAsync)
+                if (AsyncRender)
                 {
                     _asyncBuffer.Clear();
                     _asyncBuffer.AddRange(renderList);
@@ -1529,11 +1749,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             }
         }
 
-        /// <summary>
-        /// Records the frame about to be uploaded and returns false when it matches the texture
-        /// content already on the LCD. SE releases the texture while the block is out of range or
-        /// not working and stops running the script meanwhile, so a gap between runs forces an upload.
-        /// </summary>
+        // Records the frame about to be uploaded and returns false when it matches the texture content already on the
+        // LCD. SE releases the texture while the block is out of range or not working and stops running the script
+        // meanwhile, so a gap between runs forces an upload.
         bool UpdateUploadedFrame(List<MySprite> sprites, Color backgroundColor, byte opacity, long frame)
         {
             bool same = _hasUploadedFrame &&
@@ -1545,18 +1763,18 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
                 same = SameSprite(sprites[i], _uploadedFrame[i]);
 
             long textureVersion = _uploadedTextureVersion;
-            if (!same || Adk.Gui.Lcd.LcdDynamicTexture.GlobalContentVersion != _uploadedGlobalTextureVersion)
+            if (!same || Acrux.Lcd.LcdDynamicTexture.GlobalContentVersion != _uploadedGlobalTextureVersion)
             {
                 textureVersion = 0;
                 for (int i = 0; i < sprites.Count; i++)
                 {
                     if (sprites[i].Type == SpriteType.TEXTURE)
-                        textureVersion += Adk.Gui.Lcd.LcdDynamicTexture.GetContentVersion(sprites[i].Data);
+                        textureVersion += Acrux.Lcd.LcdDynamicTexture.GetContentVersion(sprites[i].Data);
                 }
             }
             if (same && textureVersion == _uploadedTextureVersion)
             {
-                _uploadedGlobalTextureVersion = Adk.Gui.Lcd.LcdDynamicTexture.GlobalContentVersion;
+                _uploadedGlobalTextureVersion = Acrux.Lcd.LcdDynamicTexture.GlobalContentVersion;
                 return false;
             }
 
@@ -1565,7 +1783,7 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _uploadedBackground = backgroundColor;
             _uploadedOpacity = opacity;
             _uploadedTextureVersion = textureVersion;
-            _uploadedGlobalTextureVersion = Adk.Gui.Lcd.LcdDynamicTexture.GlobalContentVersion;
+            _uploadedGlobalTextureVersion = Acrux.Lcd.LcdDynamicTexture.GlobalContentVersion;
             _uploadedFrameTick = frame;
             _hasUploadedFrame = true;
             return true;
@@ -1577,10 +1795,8 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
             _hasPublishedFrame = false;
         }
 
-        /// <summary>
-        /// Proxies render from this surface's unclipped frame, so they must be notified when content
-        /// outside this surface changes (such as the cursor over a proxy) even if the clipped upload is identical.
-        /// </summary>
+        // Proxies render from this surface's unclipped frame, so they must be notified when content outside this
+        // surface changes (such as the cursor over a proxy) even if the clipped upload is identical.
         bool PublishProxyFrame(List<MySprite> sprites)
         {
             if (_registeredProxyOffsets.Count <= 0)
@@ -1682,11 +1898,9 @@ namespace LcdMod.Client.SurfaceScripts.Abstract
         LcdTextMetrics _boundsTextMetrics;
         readonly List<MySprite> _clippedFrame = new List<MySprite>();
 
-        /// <summary>
-        /// Keeps only the sprites that can show on this surface: textures and text touching the active clip (the latest
-        /// clip rect intersected with the surface), and the clip rects they need. A render proxy receives its host's
-        /// whole frame, so without this any change elsewhere on the host made every proxy upload again.
-        /// </summary>
+        // Keeps only the sprites that can show on this surface: textures and text touching the active clip (the latest
+        // clip rect intersected with the surface), and the clip rects they need. A render proxy receives its host's
+        // whole frame, so without this any change elsewhere on the host made every proxy upload again.
         List<MySprite> ClipSpriteListToSurfaceBounds(List<MySprite> sprites)
         {
             if (!ClipToBounds || sprites == null || sprites.Count == 0)

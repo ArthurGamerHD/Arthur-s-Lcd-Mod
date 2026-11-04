@@ -24,20 +24,18 @@ namespace LcdMod.Client.Video
 
         public MatroskaChunkIndex Index { get; }
 
-        /// <summary>Captions from outside the file, used when its own chunks carry none.</summary>
+        // Captions from outside the file, used when its own chunks carry none.
         public SubtitleTrack Subtitles { get; set; }
 
-        /// <summary>Cluster bytes of chunk <paramref name="chunk"/>, or null while it is not here yet.</summary>
+        // Cluster bytes of chunk chunk, or null while it is not here yet.
         public byte[] TryGet(int chunk)
         {
             byte[] data;
             return Chunks.TryGetValue(chunk, out data) ? data : null;
         }
 
-        /// <summary>Asks for a chunk the player will need soon.</summary>
         public abstract void Request(int chunk);
 
-        /// <summary>Drops cached chunks outside <paramref name="first"/>..<paramref name="last"/>.</summary>
         public void Keep(int first, int last)
         {
             _keepFirst = first;

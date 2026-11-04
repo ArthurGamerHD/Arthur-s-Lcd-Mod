@@ -7,7 +7,7 @@ This layer is intended to be parent-driven: create a container, add children thr
 Use `Window` as the root of top-level ADK XAML. A window contains no LCD or HUD logic; its `Platform` creates the backend-specific `WindowImpl`.
 
 ```xml
-<Window xmlns="https://github.com/ArthurGamerHD/Adk"
+<Window xmlns="https://github.com/ArthurGamerHD/AcruxUI"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Example.StatusWindow">
   <TextBlock Text="Hello" />
@@ -100,8 +100,8 @@ without replacing it.
 Views can request their own stylesheet with Avalonia-style property syntax:
 
 ```xml
-<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
-             xmlns:styling="using:Adk.Gui.Styling">
+<UserControl xmlns="https://github.com/ArthurGamerHD/AcruxUI"
+             xmlns:styling="using:Acrux.Styling">
   <UserControl.Styles>
     <styling:StyleInclude Source="/Data/Gui/Styles/MyViewStyle.xaml" />
   </UserControl.Styles>

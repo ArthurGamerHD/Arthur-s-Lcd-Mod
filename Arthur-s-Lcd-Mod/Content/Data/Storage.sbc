@@ -11,6 +11,7 @@
                 <guid>C08C59FB-B74E-46F6-A477-26909D107E86</guid>
                 <guid>53382c89-f012-4593-a96c-12c3bb89dbac</guid> <!-- Grid image manifest -->
                 <guid>965fd5b6-df4d-499d-9f2c-51602451416f</guid> <!-- Grid image payloads -->
+                <guid>b3f0c6d2-5a41-4e8f-9d27-6c1e8a4b7f15</guid> <!-- Grid snapshots -->
             </RegisteredStorageGuids>
         </EntityComponent>
     </EntityComponents>

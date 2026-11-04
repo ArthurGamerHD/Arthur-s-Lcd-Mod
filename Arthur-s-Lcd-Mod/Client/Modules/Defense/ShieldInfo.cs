@@ -1,5 +1,5 @@
 using System;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Modules.Defense
 {

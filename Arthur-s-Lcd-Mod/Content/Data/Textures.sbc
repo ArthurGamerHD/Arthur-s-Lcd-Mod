@@ -2,18 +2,6 @@
 <Definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
     <LCDTextures>
 
-        <LCDTextureDefinition> <!-- Custom variant of Vanilla Cursor Hand sprite -->
-            <Id Type="LCDTextureDefinition" Subtype="CursorHand"/>
-            <SpritePath>Textures/Sprites/MouseCursorHand.dds</SpritePath>
-            <Selectable>false</Selectable>
-        </LCDTextureDefinition>
-
-        <LCDTextureDefinition> <!-- Closed hand while dragging a map -->
-            <Id Type="LCDTextureDefinition" Subtype="CursorGrab"/>
-            <SpritePath>Textures/Sprites/MouseCursorHandGrab.dds</SpritePath>
-            <Selectable>false</Selectable>
-        </LCDTextureDefinition>
-        
         <LCDTextureDefinition> <!-- Custom Warning Sprite -->
             <Id Type="LCDTextureDefinition" Subtype="Warning"/>
             <SpritePath>Textures/Sprites/Warning.dds</SpritePath>
@@ -314,6 +302,12 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
         
+        <LCDTextureDefinition> <!-- External Sensors: first-person view button -->
+            <Id Type="LCDTextureDefinition" Subtype="Camera"/>
+            <SpritePath>Textures/Sprites/Camera.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
         <LCDTextureDefinition> <!-- Planetary Map: Street View sprite -->
             <Id Type="LCDTextureDefinition" Subtype="StreetView"/>
             <SpritePath>Textures/Sprites/StreetView.dds</SpritePath>
@@ -323,6 +317,18 @@
         <LCDTextureDefinition> <!-- Planetary Map: Road overlay sprite -->
             <Id Type="LCDTextureDefinition" Subtype="RoadIcon"/>
             <SpritePath>Textures/Sprites/RoadIcon.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Planetary Map: 2D projection mode -->
+            <Id Type="LCDTextureDefinition" Subtype="Map2D"/>
+            <SpritePath>Textures/Sprites/Map2D.dds</SpritePath>
+            <Selectable>false</Selectable>
+        </LCDTextureDefinition>
+
+        <LCDTextureDefinition> <!-- Planetary Map: 3D terrain mode -->
+            <Id Type="LCDTextureDefinition" Subtype="Map3D"/>
+            <SpritePath>Textures/Sprites/Map3D.dds</SpritePath>
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 

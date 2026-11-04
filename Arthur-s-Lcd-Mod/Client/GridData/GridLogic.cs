@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LcdMod.Client.Terminal;
 using LcdMod.Common.Helpers;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using LcdMod.Common.Networking;
 using Sandbox.ModAPI;
 using VRage;

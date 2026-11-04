@@ -1,7 +1,7 @@
 using ListMode = LcdMod.Client.Apps.Projector.ProjectorListMode;
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Apps.Inventory;
 using LcdMod.Client.Apps.ViewModel;
@@ -121,8 +121,7 @@ namespace LcdMod.Client.Apps
             if (_nativeViewModel == null) return;
             var inventory = _nativeViewModel.Inventory;
             var mode = PresentationMode;
-            inventory.Configure(mode == ItemDisplayMode.Card || mode == ItemDisplayMode.Grid,
-                mode == ItemDisplayMode.Card, mode == ItemDisplayMode.Table, SurfaceFontSize, TextFont,
+            inventory.Configure(InventoryLayouts.From(mode),
                 MyTexts.GetString("StoreBlock_Column_Name"), MyTexts.GetString("StoreBlock_Column_Amount"),
                 NativeSortByAmount, NativeSortDescending);
             // Resolving names can change the sorted source. Prepare a snapshot first.

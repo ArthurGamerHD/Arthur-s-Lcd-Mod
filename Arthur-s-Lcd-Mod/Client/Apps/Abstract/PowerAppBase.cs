@@ -1,4 +1,4 @@
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using LcdMod.Common.Config.Components;
 using System;
 using System.Collections.Generic;
@@ -229,10 +229,9 @@ namespace LcdMod.Client.Apps.Abstract
             SyncOrderedEntries();
         }
 
-        /// <summary>
-        /// Index into the dashboard ranges (1s, 5s, 30s, 1m, 5m, all) the output is averaged over. Vanilla batteries make
-        /// generator output swing between idle and full load every 100 ticks, so a single sample is rarely representative.
-        /// </summary>
+        // Index into the dashboard ranges (1s, 5s, 30s, 1m, 5m, all) the output is averaged over. Vanilla batteries
+        // make generator output swing between idle and full load every 100 ticks, so a single sample is rarely
+        // representative.
         internal int RangeTier
         {
             get

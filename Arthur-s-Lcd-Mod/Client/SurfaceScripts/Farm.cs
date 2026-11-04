@@ -30,7 +30,6 @@ namespace LcdMod.Client.SurfaceScripts
             return DisplayModes.CompactAndCard;
         }
 
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public const string ID = MOD_PREFIX + "Farm";
         public const string TITLE = MOD_PREFIX + "Farm";
 
@@ -68,8 +67,6 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app.IsDirty || InteractiveVisualsDirty)
                 RenderSprites();
         }
-
-        protected override bool RendersInParallel => true;
 
 
         public override List<MySprite> GetSprites()

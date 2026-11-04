@@ -1,4 +1,4 @@
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using LcdMod.Client.Extensions;
 using VRageMath;
 
@@ -15,13 +15,21 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
         bool _isFunctional;
         bool _drawAsLines;
 
+        [PreviewWith(1L, 2L, 3L, 4L)]
         public long EntryId { get; private set; }
+        [PreviewWith("Laser Antenna (Base)", "Laser Antenna (Ship)", "Antenna Tower", "Antenna (Damaged)")]
         public string Name { get { return _name; } }
+        [PreviewWith("RotationPlane", "Search", "GridPower", "Danger")]
         public string StatusIcon { get { return _statusIcon; } }
+        [PreviewWith("Connected to Outpost Theta", "Searching...", "Broadcasting 50 km", "Not functional")]
         public string StatusText { get { return _statusText; } }
+        [PreviewWith("#81C784", "#E0A010", "#C5EDFF", "#602020")]
         public Color StatusColor { get { return _statusColor; } }
+        [PreviewWith("#000000", "#000000", "#000000", "#FFFFFF")]
         public Color StatusForeground { get { return _statusForeground; } }
+        [PreviewWith(true, true, false, false)]
         public bool UseLaserIconCompensation { get { return _useLaserIconCompensation; } }
+        [PreviewWith(true, true, true, false)]
         public bool IsFunctional { get { return _isFunctional; } }
         public bool DrawAsLines
         {
@@ -47,9 +55,13 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
         Vector4 _lineThickness;
         Vector4 _iconMargin;
 
+        [PreviewWith("#3A203F", "#3A203F", "#3A203F", "#602020")]
         public Color CardBackground { get { return _cardBackground; } }
+        [PreviewWith("#0C060D", "#0C060D", "#0C060D", "#130606")]
         public Color CardShadow { get { return _cardShadow; } }
+        [PreviewWith("#C5EDFF")]
         public Color TextColor { get { return _textColor; } }
+        [PreviewWith("#C5EDFF")]
         public Color LineColor { get { return _lineColor; } }
         public Vector4 LineThickness { get { return _lineThickness; } }
         public Vector4 IconMargin { get { return _iconMargin; } }

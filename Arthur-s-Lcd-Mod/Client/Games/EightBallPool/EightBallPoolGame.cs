@@ -8,7 +8,7 @@ using LcdMod.Client.Extensions;
 using LcdMod.Client.Gui.Styling;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using Sandbox.ModAPI;
 using VRage.Game.GUI.TextPanel;
 using VRageMath;
@@ -494,7 +494,7 @@ namespace LcdMod.Client.Games.EightBallPool
 
         public PointerCursor CursorAt(Vector2 position)
         {
-            if (!_playRect.Contains(position)) return PointerCursor.Default;
+            if (!_playRect.Contains(position)) return PointerCursor.Arrow;
             if (AreBallsMoving()) return PointerCursor.Wait;
             if (_gameOver) return PointerCursor.Hand;
             if (_cueBallInHand || _balls[CUE_BALL].Pocketed) return PointerCursor.DragMove;

@@ -1,9 +1,12 @@
+using Acrux.Core.Input;
+using Acrux.Styling;
+using Adk.Mvvm;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Maps;
 using LcdMod.Client.Helpers;
-using Cartography;
-using Cartography.Maps;
+using Acrux.Cartography;
+using Acrux.Cartography.Maps;
 using LcdMod.Common.Config.Components;
 using Sandbox.Engine.Utils;
 using Sandbox.Game.Entities;
@@ -27,6 +30,10 @@ namespace LcdMod.Client.Apps.PlanetaryMap
         void SyncConfig();
     }
 
+    [PreviewWith("IsStarMap", false)]
+    [PreviewWith("IsPlanetary", true)]
+    [PreviewWith("RoadsToggleVisible", true)]
+    [PreviewWith("WaterVisible", true)]
     internal sealed class PlanetaryMapViewModel : CartographyMapViewModel
     {
         const double STREET_CAMERA_HEIGHT_METERS = 2.5d;
@@ -40,6 +47,8 @@ namespace LcdMod.Client.Apps.PlanetaryMap
         const int GPS_CREATED_STATUS_UPDATES = 18;
         const float ORBIT_EPSILON = .000001f;
         const float ZOOM_EPSILON = .0001f;
+        // Opening tilt of the 3D view, from the horizon: a top-down camera would hide the relief.
+        const float VIEW_3D_PITCH = MathHelper.PiOver4;
 
         readonly IPlanetaryMapHost _host;
         readonly Random _random = new Random();
@@ -54,6 +63,8 @@ namespace LcdMod.Client.Apps.PlanetaryMap
         readonly List<byte> _radioConsumed = new List<byte>();
         int _updates;
         bool _streetViewAvailable;
+        bool _is3D;
+        bool _known3D;
         bool _hasLastCreatedGps;
         int _lastCreatedGpsHash;
         string _gpsCreatedStatus;
@@ -61,6 +72,7 @@ namespace LcdMod.Client.Apps.PlanetaryMap
         bool _applyingConfig;
         bool _knownNorthUp = true;
         bool _knownRenderSkybox = true;
+        bool _knownRenderAtmosphere = true;
         bool _knownFollow = true;
         int _knownLayer;
         float _knownYaw;
@@ -73,12 +85,24 @@ namespace LcdMod.Client.Apps.PlanetaryMap
         public PlanetaryMapViewModel(IPlanetaryMapHost host) : base(host, MapMode.PlanetaryMap)
         {
             _host = host;
+            ProjectionCommand = new DelegateCommand(_ => Toggle3D());
         }
 
         public event Action SurfaceGpsCreated;
         public event Action CameraOrbitChanged;
 
         public bool StreetViewAvailable => _streetViewAvailable;
+        public ICommand ProjectionCommand { get; }
+        public bool Is3D => _is3D;
+        [PreviewWith("Map2D Uniform")]
+        public BackgroundBrush ProjectionIcon => _is3D ? Map3DIcon : Map2DIcon;
+        [PreviewWith("2D map\nShow the planet as a flat projected globe.")]
+        public string ProjectionTip => Tooltip(_is3D ? "View3D" : "View2D");
+
+        static readonly BackgroundBrush Map2DIcon = new ImageBrush("Map2D") { Stretch = Stretch.Uniform };
+        static readonly BackgroundBrush Map3DIcon = new ImageBrush("Map3D") { Stretch = Stretch.Uniform };
+        
+        [PreviewWith("Street View\nDo you really expects me to to program the entire 3D world of space engineers just to preview the street view on the editor?.")]
         public string StreetViewTip => LocHelper.GetLoc(MOD_PREFIX + "PlanetaryMap_StreetView_Title") + "\n" +
                                        LocHelper.GetLoc(MOD_PREFIX + (_streetViewAvailable
                                            ? "PlanetaryMap_StreetView_Available_Tooltip"
@@ -90,6 +114,9 @@ namespace LcdMod.Client.Apps.PlanetaryMap
             _updates++;
             ApplyConfig(false);
             Update();
+            // The terrain heights load after the planet; until then the 3D mode shows the flat globe.
+            if (_is3D && !State.SurfaceViewActive && Renderer != null && Renderer.EnterPlanetSurfaceView(Data, State))
+                ViewChanged();
             if (RaiseAndSetIfChanged(ref _streetViewAvailable, CanUseStreetView(), nameof(StreetViewAvailable)))
                 RaisePropertyChanged<string>(nameof(StreetViewTip));
         }
@@ -108,6 +135,16 @@ namespace LcdMod.Client.Apps.PlanetaryMap
                 if (force || config.RenderSkybox != _knownRenderSkybox)
                 {
                     State.RenderSkybox = config.RenderSkybox;
+                    changed = true;
+                }
+                if (force || config.RenderAtmosphere != _knownRenderAtmosphere)
+                {
+                    State.AtmosphereVisible = config.RenderAtmosphere;
+                    changed = true;
+                }
+                if (force || config.View3D != _known3D)
+                {
+                    Set3D(config.View3D);
                     changed = true;
                 }
                 if (force || config.NorthUp != _knownNorthUp)
@@ -163,7 +200,9 @@ namespace LcdMod.Client.Apps.PlanetaryMap
         void Capture(PlanetaryMapConfigComponent config)
         {
             _knownNorthUp = config.NorthUp;
+            _known3D = config.View3D;
             _knownRenderSkybox = config.RenderSkybox;
+            _knownRenderAtmosphere = config.RenderAtmosphere;
             _knownFollow = config.FollowCamera;
             _knownLayer = config.MapLayer;
             _knownYaw = config.OrbitYawRadians;
@@ -187,10 +226,11 @@ namespace LcdMod.Client.Apps.PlanetaryMap
             GetPlanetOrbitAngles(out yaw, out pitch);
             float[] basis = GetOrbitBasis(false);
             bool northUp = State.PlanetOrientation != PlanetOrientationMode.HeadingLocked;
-            bool changed = config.NorthUp != northUp || config.FollowCamera != State.FollowPlayer ||
+            bool changed = config.View3D != _is3D || config.NorthUp != northUp || config.FollowCamera != State.FollowPlayer ||
                            config.MapLayer != (int)State.Layer || !SameBasis(config.OrbitBasis, basis) ||
                            !Near(config.Zoom, State.Zoom, ZOOM_EPSILON) ||
                            config.HasStaticCameraPosition != State.HasStaticCameraPosition;
+            config.View3D = _is3D;
             config.NorthUp = northUp;
             config.FollowCamera = State.FollowPlayer;
             config.MapLayer = (int)State.Layer;
@@ -211,6 +251,36 @@ namespace LcdMod.Client.Apps.PlanetaryMap
             if (changed)
                 _host.SyncConfig();
             CameraOrbitChanged?.Invoke();
+        }
+
+        // The user switched the map between 2D and 3D, or dropped into Street View (FTUE tips complete on them).
+        public event Action ProjectionToggled;
+        public event Action StreetViewEntered;
+
+        void Toggle3D()
+        {
+            Set3D(!_is3D);
+            ViewChanged();
+            _host.PlayClick();
+            ProjectionToggled?.Invoke();
+        }
+
+        void Set3D(bool value)
+        {
+            if (!RaiseAndSetIfChanged(ref _is3D, value, nameof(Is3D)))
+                return;
+            State.SurfaceViewOnly = value;
+            if (value)
+            {
+                State.SurfaceViewYaw = 0f;
+                State.SurfaceViewPitch = VIEW_3D_PITCH;
+            }
+            else if (Renderer != null)
+                Renderer.ExitPlanetSurfaceView(State);
+            else
+                State.SurfaceViewActive = false;
+            RaisePropertyChanged<BackgroundBrush>(nameof(ProjectionIcon));
+            RaisePropertyChanged<string>(nameof(ProjectionTip));
         }
 
         protected override bool TryGetStatus(out string status, out Color color)
@@ -314,6 +384,7 @@ namespace LcdMod.Client.Apps.PlanetaryMap
             spectator.SpectatorCameraMovement = MySpectatorCameraMovementEnum.UserControlled;
             spectator.SetViewMatrix((Matrix)view);
             ShowStreetViewNotification();
+            StreetViewEntered?.Invoke();
         }
 
         static void ShowStreetViewNotification()
@@ -559,8 +630,10 @@ namespace LcdMod.Client.Apps.PlanetaryMap
             double longitude = 0d;
             if (localDirection.Normalize() > 1e-6f)
             {
-                latitude = Math.Asin(MathHelper.Clamp(localDirection.Y, -1f, 1f)) * 180d / Math.PI;
-                longitude = Math.Atan2(localDirection.X, localDirection.Z) * 180d / Math.PI;
+                // North is planet-local -Y (CartographyMapRenderer.PlanetLocalNorth); with north there, east at the
+                // +Z meridian is -X, so longitude grows towards -X.
+                latitude = Math.Asin(MathHelper.Clamp(-localDirection.Y, -1f, 1f)) * 180d / Math.PI;
+                longitude = Math.Atan2(-localDirection.X, localDirection.Z) * 180d / Math.PI;
             }
             return string.Format(
                 FormatingHelper.Culture,

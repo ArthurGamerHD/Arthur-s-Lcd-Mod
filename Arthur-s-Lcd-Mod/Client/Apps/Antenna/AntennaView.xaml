@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:antennaApp="using:LcdMod.Client.Apps.Antenna"
     xmlns:antenna="using:LcdMod.Client.Gui.UserControls.Antenna"
-    xmlns:styling="using:Adk.Gui.Styling"
+    xmlns:styling="using:Acrux.Styling"
     x:Class="LcdMod.Client.Apps.Antenna.AntennaView"
-    x:DataType="LcdMod.Client.Apps.Antenna.AntennaViewModel">
+    x:DataType="LcdMod.Client.Apps.Antenna.AntennaViewModel"
+    Design.DataContext="{x:Static antennaApp:AntennaViewModelPreview.Default}">
   <UserControl.Styles>
     <styling:StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/AntennaEntryControl.xaml" />
   </UserControl.Styles>

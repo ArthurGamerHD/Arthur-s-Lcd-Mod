@@ -25,11 +25,13 @@ namespace LcdMod.Client.Terminal.Controls.Gps
             if (surface == null)
                 return false;
 
+            // The Star Map is always the orbit map; External Sensors shares its config and looks out of the ship.
             var starMap = surface.TryGet<StarMapConfigComponent>(Constants.APP);
             if (starMap != null)
             {
-                var general = surface.TryGet<GeneralConfigComponent>(Constants.GENERAL);
-                return general != null && general.DisplayMode == (int)StarMapDisplayMode.Planetarium;
+                Generated.AppType app;
+                return Generated.AppSchemaRegistry.TryNormalizeAppType(surface.AppTypeId, out app) &&
+                       app == Generated.AppType.StarMap;
             }
 
             var planetaryMap = surface.TryGet<PlanetaryMapConfigComponent>(Constants.APP);

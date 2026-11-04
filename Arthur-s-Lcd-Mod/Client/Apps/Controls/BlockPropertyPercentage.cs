@@ -1,7 +1,7 @@
-using Adk.Gui.Controls;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Styling;
+using Acrux.Controls;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Styling;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Controls

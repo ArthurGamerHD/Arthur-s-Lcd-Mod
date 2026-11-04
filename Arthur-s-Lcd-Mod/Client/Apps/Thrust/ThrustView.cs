@@ -1,8 +1,8 @@
-using Adk.Gui.Controls;
+using Acrux.Controls;
 using System;
-using Adk.Gui.Core;
-using Adk.Gui.Rendering;
-using Adk.Gui.Styling;
+using Acrux.Core;
+using Acrux.Rendering;
+using Acrux.Styling;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Thrust
@@ -11,18 +11,24 @@ namespace LcdMod.Client.Apps.Thrust
     {
         readonly ThrustViewModel _viewModel;
 
-        public ThrustView(ThrustViewModel viewModel)
+        public ThrustView()
         {
-            _viewModel = viewModel;
             Resources.Add("FontSizeMultiplier", new LcdMod.Client.Apps.Views.FontSizeMultiplierConverter());
             InitializeComponent();
+        }
+
+        // The cells bind the app's per-axis models; without them (a preview clone) the cells show their defaults.
+        public ThrustView(ThrustViewModel viewModel) : this()
+        {
+            _viewModel = viewModel;
             BindCells(viewModel);
             DataContext = viewModel;
         }
 
         partial void OnHotReloaded()
         {
-            BindCells(_viewModel);
+            if (_viewModel != null)
+                BindCells(_viewModel);
         }
 
         void BindCells(ThrustViewModel viewModel)

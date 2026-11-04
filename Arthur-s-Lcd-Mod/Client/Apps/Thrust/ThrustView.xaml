@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
-<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+<UserControl xmlns="https://github.com/ArthurGamerHD/AcruxUI"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:LcdMod.Client.Apps.Thrust"
              x:Class="LcdMod.Client.Apps.Thrust.ThrustView"
-             x:DataType="local:ThrustViewModel">
+             x:DataType="local:ThrustViewModel"
+             Design.DataContext="{x:Static local:ThrustViewModelPreview.Default}">
   <Grid RowDefinitions="*,Auto">
     <local:ThrustAxesControl Margin="{Binding AxesMargin}" Scale="{Binding Scale}"
                             PositiveFill="{Binding PositiveFill}" NegativeFill="{Binding NegativeFill}"

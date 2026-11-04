@@ -30,10 +30,10 @@ namespace LcdMod.Client.Debugging
         static readonly List<KeyValuePair<string, int>> SortedChanges = new List<KeyValuePair<string, int>>();
         const int TOP_CHANGES = 12;
 
-        /// <summary>Counts UI property and pseudo-class changes; anything near one per frame keeps a screen redrawing.</summary>
-        public static void TraceChange(Adk.Gui.Core.Control control, string change)
+        // Counts UI property and pseudo-class changes; anything near one per frame keeps a screen redrawing.
+        public static void TraceChange(Acrux.Core.Control control, string change)
         {
-            var visual = control as Adk.Gui.Core.VisualElement;
+            var visual = control as Acrux.Core.VisualElement;
             string parent = visual?.Parent == null ? "-" : visual.Parent.GetType().Name;
             string key = control.GetType().Name + (string.IsNullOrEmpty(control.StyleClass) ? "" : "." + control.StyleClass) +
                          " < " + parent + ": " + change;
@@ -47,11 +47,6 @@ namespace LcdMod.Client.Debugging
         static readonly List<ScreenCost> Sorted = new List<ScreenCost>();
         static long _windowStartFrame = -1;
         static long _eyeTrackingTicks;
-        static long _lookAtTicks;
-        static long _rayTestTicks;
-        static long _eyeTrackingCalls;
-        static long _screensTested;
-        static long _screensLookedAt;
         static long _renderTicks;
         static int _renders;
 
@@ -60,31 +55,16 @@ namespace LcdMod.Client.Debugging
             return Stopwatch.GetTimestamp();
         }
 
-        public static void EndEyeTracking(long start, int tested, int lookedAt)
+        public static void EndEyeTracking(long start)
         {
             _eyeTrackingTicks += Stopwatch.GetTimestamp() - start;
-            _eyeTrackingCalls++;
-            _screensTested += tested;
-            _screensLookedAt += lookedAt;
             FlushIfDue();
-        }
-
-        public static void AddRayTest(long start)
-        {
-            _rayTestTicks += Stopwatch.GetTimestamp() - start;
-        }
-
-        public static void AddLookAt(long start)
-        {
-            _lookAtTicks += Stopwatch.GetTimestamp() - start;
         }
 
         public static void EndRender(long start, string screen, int sprites, bool uploaded)
         {
             long elapsed = Stopwatch.GetTimestamp() - start;
-            // Screens can render in parallel.
-            lock (Screens)
-                RecordRender(elapsed, screen, sprites, uploaded);
+            RecordRender(elapsed, screen, sprites, uploaded);
         }
 
         static void RecordRender(long elapsed, string screen, int sprites, bool uploaded)
@@ -114,11 +94,7 @@ namespace LcdMod.Client.Debugging
 
             var text = new StringBuilder();
             text.Append("[Profile] per frame over ").Append(frames).Append(" frames: eye tracking ")
-                .Append(Milliseconds(_eyeTrackingTicks, frames)).Append(" ms, of which LookAt ")
-                .Append(Milliseconds(_lookAtTicks, frames)).Append(" ms, ray tests ")
-                .Append(Milliseconds(_rayTestTicks, frames)).Append(" ms (")
-                .Append(Average(_screensTested, _eyeTrackingCalls)).Append(" screens tested, ")
-                .Append(Average(_screensLookedAt, _eyeTrackingCalls)).Append(" looked at); rendering ")
+                .Append(Milliseconds(_eyeTrackingTicks, frames)).Append(" ms; rendering ")
                 .Append(Milliseconds(_renderTicks, frames)).Append(" ms (")
                 .Append((_renders / (double)frames).ToString("0.##")).Append(" renders)");
 
@@ -145,7 +121,7 @@ namespace LcdMod.Client.Debugging
             LogHelper.LogInfo(text.ToString());
 
             _windowStartFrame = frame;
-            _eyeTrackingTicks = _lookAtTicks = _rayTestTicks = _eyeTrackingCalls = _screensTested = _screensLookedAt = _renderTicks = 0;
+            _eyeTrackingTicks = _renderTicks = 0;
             _renders = 0;
             Screens.Clear();
         }
@@ -155,10 +131,6 @@ namespace LcdMod.Client.Debugging
             return (ticks * 1000.0 / Stopwatch.Frequency / frames).ToString("0.###");
         }
 
-        static string Average(long total, long count)
-        {
-            return count <= 0 ? "0" : (total / (double)count).ToString("0.#");
-        }
     }
 }
 #endif

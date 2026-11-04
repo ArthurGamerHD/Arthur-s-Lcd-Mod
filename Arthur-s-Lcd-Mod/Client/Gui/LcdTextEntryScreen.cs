@@ -1,6 +1,6 @@
 using System.Collections.Generic;
-using Adk.Gui.Controls;
-using Adk.Gui.Lcd;
+using Acrux.Controls;
+using Acrux.Lcd;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using Sandbox.ModAPI;
@@ -18,8 +18,6 @@ namespace LcdMod.Client.Gui
     /// </summary>
     internal sealed class LcdTextEntryScreen : MyModScreen
     {
-        const float SurfaceHeightsPerMouseCount = 1f / 1000f;
-
         static LcdTextEntryScreen _current;
 
         readonly InteractiveSurfaceScript _surface;
@@ -44,10 +42,9 @@ namespace LcdMod.Client.Gui
             SkipTransition = true;
         }
 
-        /// <summary>True while an entry owns the keyboard and the LCD cursor; eye tracking stands aside.</summary>
+        // True while an entry owns the keyboard and the LCD cursor; eye tracking stands aside.
         public static bool IsActive => _current != null && _current.IsOpen;
 
-        /// <summary>Opens the screen when <paramref name="host"/> has a focused text box and no entry is running.</summary>
         public static void TrackFocus(InteractiveSurfaceScript surface, LcdGuiHost host)
         {
             if (surface == null || host == null || !(host.VisualTree.FocusedElement is TextBox))
@@ -83,8 +80,8 @@ namespace LcdMod.Client.Gui
             }
             if (input.IsNewKeyPressed(MyKeys.Enter) || input.IsNewKeyPressed(MyKeys.Escape))
             {
-                _host.Input.SuppressUntilReleased(Adk.Gui.Core.Input.Key.Enter);
-                _host.Input.SuppressUntilReleased(Adk.Gui.Core.Input.Key.Escape);
+                _host.Input.SuppressUntilReleased(Acrux.Core.Input.Key.Enter);
+                _host.Input.SuppressUntilReleased(Acrux.Core.Input.Key.Escape);
                 End(true);
                 return;
             }
@@ -125,14 +122,7 @@ namespace LcdMod.Client.Gui
 
         void MovePointer(VRage.ModAPI.IMyInput input)
         {
-            var surface = _surface.Surface;
-            Vector2 min = (surface.TextureSize - surface.SurfaceSize) * .5f;
-            Vector2 max = min + surface.SurfaceSize;
-            if (float.IsNaN(_pointer.X) || float.IsNaN(_pointer.Y))
-                _pointer = (min + max) * .5f;
-            float scale = surface.SurfaceSize.Y * SurfaceHeightsPerMouseCount;
-            _pointer = Vector2.Clamp(_pointer + new Vector2(input.GetMouseX(), input.GetMouseY()) * scale, min, max);
-            _surface.LookAt(_pointer);
+            SurfacePointer.Move(_surface, ref _pointer, input);
             _surface.SetPointerButtonState(ControlClickButton.Primary, input.IsLeftMousePressed());
             _surface.SetPointerButtonState(ControlClickButton.Secondary, input.IsRightMousePressed());
             _surface.SetPointerButtonState(ControlClickButton.Middle, input.IsMiddleMousePressed());

@@ -1,5 +1,5 @@
-using Adk.Gui.Controls;
-using Adk.Gui.Core;
+using Acrux.Controls;
+using Acrux.Core;
 using LcdMod.Client.Market;
 using VRageMath;
 
@@ -10,11 +10,17 @@ namespace LcdMod.Client.Apps.NpcMarket
         readonly MarketItemDialogViewModel _model;
         readonly ComboBox<NpcMarketMode> _mode;
 
-        public MarketItemDialogView(MarketItemDialogViewModel model)
+        // Any view model with the bound members works (the IDE preview's clone, for one); the mode picker needs the
+        // app's model, so it is there only with the typed constructor.
+        public MarketItemDialogView()
+        {
+            InitializeComponent();
+        }
+
+        public MarketItemDialogView(MarketItemDialogViewModel model) : this()
         {
             _model = model;
             DataContext = model;
-            InitializeComponent();
             _mode = new ComboBox<NpcMarketMode>(new[] { NpcMarketMode.Buy, NpcMarketMode.Sell }, mode => model.ModeLabel(mode),
                 model.SelectMode)
             {
@@ -26,7 +32,8 @@ namespace LcdMod.Client.Apps.NpcMarket
 
         protected override Vector2 MeasureOverride(Vector2 availableSize)
         {
-            _mode.TextScale = _model.FontSize;
+            if (_mode != null)
+                _mode.TextScale = _model.FontSize;
             return base.MeasureOverride(availableSize);
         }
     }

@@ -12,11 +12,13 @@ using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage.Game;
 using VRageMath;
+using Acrux.Cartography;
 
-namespace Cartography
+namespace LcdMod.Client.Modules.Cartography
 {
     internal sealed class CartographyDebugReportService
     {
+        static readonly PlanetCubeFace[] FaceOrder = CartographyModule.FaceExportOrder;
         const int DEFAULT_FACE_SIDE = 256;
         const int MINIMUM_FACE_SIDE = 16;
         const int MAXIMUM_FACE_SIDE = 1024;
@@ -532,7 +534,7 @@ namespace Cartography
                     float v = (y + 0.5f) / faceSide;
                     for (int tileX = 0; tileX < 3; tileX++)
                     {
-                        PlanetCubeFace face = PlanetMapSource.ExportOrder[tileY * 3 + tileX];
+                        PlanetCubeFace face = FaceOrder[tileY * 3 + tileX];
                         for (int x = 0; x < faceSide; x++)
                         {
                             float u = (x + 0.5f) / faceSide;

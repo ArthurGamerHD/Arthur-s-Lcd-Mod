@@ -7,10 +7,8 @@ namespace LcdMod.Client.Video
     {
         public const int SAMPLE_RATE = 24000;
 
-        /// <summary>
-        /// Downmixes and linearly resamples interleaved 16-bit PCM, padding silence in front when the track
-        /// starts after the video.
-        /// </summary>
+        // Downmixes and linearly resamples interleaved 16-bit PCM, padding silence in front when the track starts after
+        // the video.
         public static byte[] ToMono24k(byte[] samples, int sampleRate, int channels, double startSeconds)
         {
             if (samples == null || sampleRate <= 0 || channels <= 0)
@@ -37,10 +35,8 @@ namespace LcdMod.Client.Video
             return output;
         }
 
-        /// <summary>
-        /// Places mono 24 kHz audio that starts at <paramref name="audioStart"/> onto the range
-        /// <paramref name="rangeStart"/>..<paramref name="rangeEnd"/>, trimming or padding silence at either end.
-        /// </summary>
+        // Places mono 24 kHz audio that starts at audioStart onto the range rangeStart..rangeEnd, trimming or padding
+        // silence at either end.
         public static byte[] FitToRange(byte[] mono, double audioStart, double rangeStart, double rangeEnd)
         {
             int length = Math.Max(1, (int)Math.Round((rangeEnd - rangeStart) * SAMPLE_RATE));

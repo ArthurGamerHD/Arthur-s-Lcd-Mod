@@ -33,7 +33,6 @@ namespace LcdMod.Client.SurfaceScripts
     {
         public override IApp App => _app;
         AntennaApp _app;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public const string ID = "AntennaGraph";
         public const string TITLE = "Antenna";
 
@@ -68,8 +67,6 @@ namespace LcdMod.Client.SurfaceScripts
 
             RenderSprites();
         }
-
-        protected override bool RendersInParallel => true;
 
 
         public override List<MySprite> GetSprites()

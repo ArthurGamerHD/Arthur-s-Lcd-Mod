@@ -1,5 +1,5 @@
-using Adk.Gui.Controls;
-using Adk.Gui.Extensions;
+using Acrux.Controls;
+using Acrux.Extensions;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Helpers;
 

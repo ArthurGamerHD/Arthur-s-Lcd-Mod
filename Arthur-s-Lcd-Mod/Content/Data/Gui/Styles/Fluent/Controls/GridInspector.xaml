@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shared by the grid views: Integrity Monitor (and Preview Grid), Self Status and Target View. -->
+<Styles xmlns="https://github.com/ArthurGamerHD/AcruxUI"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <StyleInclude Source="./Maps.xaml" />
+  <Style Selector="Border.xray-icon">
+    <Setter Property="Margin" Value="5" />
+  </Style>
+  <Style Selector="Border.xray-swatch">
+    <Setter Property="Height" Value="4" />
+    <Setter Property="VerticalAlignment" Value="Bottom" />
+  </Style>
+  <Style Selector="Border.xray-count">
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Margin" Value="0 2 2 0" />
+    <Setter Property="Padding" Value="3 0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Background" Value="{DynamicResource accentColor}" />
+  </Style>
+  <Style Selector="Border.axis-flyout">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="1" />
+    <Setter Property="CornerRadius" Value="32" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
+  </Style>
+  <Style Selector="Border.legend-flyout">
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="MaxWidth" Value="340" />
+    <Setter Property="Padding" Value="16 8 2 8" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
+  </Style>
+  <Style Selector="ToggleButton.axis-option">
+    <Setter Property="Width" Value="38" />
+    <Setter Property="Height" Value="38" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="19" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="ToggleButton.axis-option TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+    <Setter Property="FontSize" Value="0.55" />
+  </Style>
+  <Style Selector="ToggleButton.axis-option:checked TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource accentColor}" />
+  </Style>
+  <Style Selector="ToggleButton.axis-option:pointerover TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource onAccentColor}" />
+  </Style>
+  <Style Selector="Border.xray-count TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource onAccentColor}" />
+    <Setter Property="FontSize" Value="0.45" />
+  </Style>
+  <Style Selector="Button.snapshot-button">
+    <Setter Property="Height" Value="42" />
+    <Setter Property="Padding" Value="16 0" />
+    <Setter Property="CornerRadius" Value="21" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.snapshot-button TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+    <Setter Property="FontSize" Value="0.55" />
+  </Style>
+  <Style Selector="Button.snapshot-button:pointerover TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource onAccentColor}" />
+  </Style>
+  <Style Selector="TextBlock.side-warning">
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="Foreground" Value="{DynamicResource warningColor}" />
+    <Setter Property="FontSize" Value="0.45" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+</Styles>

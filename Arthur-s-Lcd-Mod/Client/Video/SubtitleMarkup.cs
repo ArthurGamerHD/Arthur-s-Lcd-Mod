@@ -9,9 +9,9 @@ namespace LcdMod.Client.Video
     internal enum SubtitleSizeUnit
     {
         None,
-        /// <summary>HTML's 1-7 font sizes, as a factor of the normal size 3.</summary>
+        // HTML's 1-7 font sizes, as a factor of the normal size 3.
         Relative,
-        /// <summary>Pixels of whatever picture the track was authored for, which need not be the one it ships with.</summary>
+        // Pixels of whatever picture the track was authored for, which need not be the one it ships with.
         Pixels
     }
 

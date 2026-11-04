@@ -1,6 +1,7 @@
 using System;
-using Adk.Gui.Controls;
-using Adk.Gui.Extensions;
+using Acrux.Controls;
+using Acrux.Extensions;
+using LcdMod.Client.Helpers;
 using LcdMod.Common.Helpers;
 using VRageMath;
 
@@ -9,6 +10,14 @@ namespace LcdMod.Client.Apps.Dialogs
     /// <summary>Shows windows modally on top of the top-most open window, wiring a DialogViewModel DataContext.</summary>
     internal static class DialogService
     {
+        // Toolkit dialog texts use the mod's translations of the same keys ("LcdMod_" + key).
+        internal static string LocalizeToolkitText(string key)
+        {
+            string id = "LcdMod_" + key;
+            string text = LocHelper.GetLoc(id);
+            return string.Equals(text, id, StringComparison.Ordinal) ? null : text;
+        }
+
         public static Window TopMost(Window root)
         {
             var owner = root;
@@ -17,17 +26,43 @@ namespace LcdMod.Client.Apps.Dialogs
             return owner;
         }
 
-        public static void ShowModal(Window dialog, Window root, float fontSize)
+        // A dialog's look on a surface: its view model's font size and texts (what ShowModal sets first).
+        internal static void Prepare(Window dialog, float fontSize)
         {
             var model = dialog.DataContext as DialogViewModel;
             if (model != null)
-            {
                 model.FontSize = fontSize;
+            // Dialogs that Acrux UI provides (e.g. the file picker) use the toolkit's dialog model.
+            var shared = dialog.DataContext as Acrux.Dialogs.DialogViewModel;
+            if (shared != null)
+            {
+                shared.FontSize = fontSize;
+                if (shared.Localizer == null)
+                    shared.Localizer = LocalizeToolkitText;
+            }
+        }
+
+        public static void ShowModal(Window dialog, Window root, float fontSize)
+        {
+            Prepare(dialog, fontSize);
+            var model = dialog.DataContext as DialogViewModel;
+            if (model != null)
+            {
                 model.CloseRequested = dialog.Close;
                 dialog.Closed += () =>
                 {
                     model.CloseRequested = null;
                     model.OnClosed();
+                };
+            }
+            var shared = dialog.DataContext as Acrux.Dialogs.DialogViewModel;
+            if (shared != null)
+            {
+                shared.CloseRequested = dialog.Close;
+                dialog.Closed += () =>
+                {
+                    shared.CloseRequested = null;
+                    shared.OnClosed();
                 };
             }
             Window owner = TopMost(root);
@@ -60,6 +95,12 @@ namespace LcdMod.Client.Apps.Dialogs
 
             internal bool IsCompact => _compact;
 
+            // The layout switch alone; the caller applies it with the size the dialog is shown on.
+            internal static CompactLayout For(Window dialog)
+            {
+                return new CompactLayout(dialog);
+            }
+
             internal static CompactLayout Follow(Window dialog, Window owner)
             {
                 var layout = new CompactLayout(dialog);
@@ -75,7 +116,7 @@ namespace LcdMod.Client.Apps.Dialogs
                 return size.X > 0f && size.Y > 0f && size.Y / size.X < Constants.MIN_SCREEN_HEIGHT_TO_WIDTH_RATIO;
             }
 
-            void Apply(Vector2 ownerSize)
+            internal void Apply(Vector2 ownerSize)
             {
                 if (ownerSize.X <= 0f || ownerSize.Y <= 0f)
                     return;
@@ -86,6 +127,9 @@ namespace LcdMod.Client.Apps.Dialogs
                 var model = _dialog.DataContext as DialogViewModel;
                 if (model != null)
                     model.IsCompact = tiny;
+                var shared = _dialog.DataContext as Acrux.Dialogs.DialogViewModel;
+                if (shared != null)
+                    shared.IsCompact = tiny;
                 if (tiny)
                 {
                     _state = _dialog.WindowState;

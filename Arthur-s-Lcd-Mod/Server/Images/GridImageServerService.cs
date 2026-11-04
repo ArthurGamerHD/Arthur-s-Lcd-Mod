@@ -135,7 +135,7 @@ namespace LcdMod.Server.Images
             reply(new PacketGridImageData(packet.GridId, entry.Clone(), payload));
         }
 
-        /// <summary>Copies images referenced by <paramref name="ids"/> into <paramref name="grid"/> from any other grid holding them.</summary>
+        // Copies images referenced by ids into grid from any other grid holding them.
         public void EnsureImages(IMyCubeGrid grid, HashSet<string> ids)
         {
             if (grid == null || ids == null)

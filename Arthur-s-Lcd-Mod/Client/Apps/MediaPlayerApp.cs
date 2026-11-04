@@ -1,3 +1,4 @@
+using Acrux.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -351,6 +352,21 @@ namespace LcdMod.Client.Apps
 
         public override void Update()
         {
+            UpdatePlayback();
+            _nativeViewModel.Refresh();
+            if (!CanRenderVisualizer)
+                ReleaseVisualizerTexture();
+            ScheduleVisualizerFrameIfNeeded();
+        }
+
+        // Playback only (volume, playlist, track advance): the view and visualizer need a screen a detached player lacks.
+        internal void UpdateDetached()
+        {
+            UpdatePlayback();
+        }
+
+        void UpdatePlayback()
+        {
             EnsureLibrary();
             _player = GetHostMediaPlayer();
             if (_player != null)
@@ -361,10 +377,6 @@ namespace LcdMod.Client.Apps
             NormalizeSelectionFromConfig();
             RestoreQueueFromConfig();
             HandlePlaybackCompletion();
-            _nativeViewModel.Refresh();
-            if (!CanRenderVisualizer)
-                ReleaseVisualizerTexture();
-            ScheduleVisualizerFrameIfNeeded();
         }
 
 
@@ -542,6 +554,9 @@ namespace LcdMod.Client.Apps
 
 
 
+        // The file picker was opened at least once (the local videos FTUE tip waits for it).
+        public bool PickerOpened { get; private set; }
+
         void PickAudio()
         {
             if (_interactiveHost == null)
@@ -559,6 +574,7 @@ namespace LcdMod.Client.Apps
             dialog.SetLoading(true, ResolveLoc(LOC_LOADING_AUDIO_FILES));
             if (!ShowDialog(new FilePickerView(dialog)))
                 return;
+            PickerOpened = true;
 
             MediaAudioFilePickerTreeProvider.BuildRootsAsync(delegate(List<FolderModel> roots, Exception error)
             {
@@ -2472,23 +2488,26 @@ namespace LcdMod.Client.Apps
                 if (current == null || !visited.Add(current))
                     continue;
 
-                if (current.Files != null && current.Files.Count > 0)
+                // The picker tree lives in Acrux UI: read each list across once, then work locally.
+                var files = current.Files == null ? null : new List<FileModel>(current.Files);
+                if (files != null && files.Count > 0)
                 {
-                    current.Files.Sort(ComparePickerFiles);
-                    for (int i = 0; i < current.Files.Count; i++)
+                    files.Sort(ComparePickerFiles);
+                    for (int i = 0; i < files.Count; i++)
                     {
-                        if (current.Files[i] != null && !current.Files[i].IsBlocked &&
-                            (current.Files[i].Tag as MediaAudioFileReference) != null)
-                            result.Add(current.Files[i]);
+                        if (files[i] != null && !files[i].IsBlocked &&
+                            (files[i].Tag as MediaAudioFileReference) != null)
+                            result.Add(files[i]);
                     }
                 }
 
-                if (current.Folders == null || current.Folders.Count == 0)
+                var folders = current.Folders == null ? null : new List<FolderModel>(current.Folders);
+                if (folders == null || folders.Count == 0)
                     continue;
 
-                current.Folders.Sort(ComparePickerFolders);
-                for (int i = current.Folders.Count - 1; i >= 0; i--)
-                    stack.Push(current.Folders[i]);
+                folders.Sort(ComparePickerFolders);
+                for (int i = folders.Count - 1; i >= 0; i--)
+                    stack.Push(folders[i]);
             }
         }
 

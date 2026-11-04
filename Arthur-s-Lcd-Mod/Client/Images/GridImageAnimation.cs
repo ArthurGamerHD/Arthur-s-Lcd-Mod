@@ -31,16 +31,15 @@ namespace LcdMod.Client.Images
         public int Width => _video.Width;
         public int Height => _video.Height;
 
-        /// <summary>Game frame of the last <see cref="Advance"/>, so unused animations can release their texture.</summary>
+        // Game frame of the last Advance, so unused animations can release their texture.
         public long LastUsedFrame { get; private set; }
 
-        /// <summary>Incremented whenever a new frame reaches the texture.</summary>
         public int Version { get; private set; }
 
-        /// <summary>The texture name to draw, or null until the first frame is uploaded.</summary>
+        // The texture name to draw, or null until the first frame is uploaded.
         public string TextureName => _shownFrame >= 0 && _texture != null ? _texture.Name : null;
 
-        /// <summary>Starts decoding the frame showing at <paramref name="seconds"/> when it is not on the texture yet.</summary>
+        // Starts decoding the frame showing at seconds when it is not on the texture yet.
         public void Advance(double seconds)
         {
             if (_disposed)
@@ -111,7 +110,7 @@ namespace LcdMod.Client.Images
             return _video.FrameAtTime(seconds % duration);
         }
 
-        /// <summary>Frees the texture; the next <see cref="Advance"/> creates it again.</summary>
+        // Frees the texture; the next Advance creates it again.
         public void Release()
         {
             if (_decoding || _texture == null)

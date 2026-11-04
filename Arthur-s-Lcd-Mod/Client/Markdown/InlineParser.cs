@@ -601,7 +601,6 @@ namespace LcdMod.Client.Markdown
 
             int originalPosition = _position;
 
-            // Skip '['
             _position++;
 
             List<InlineNode> labelNodes;
@@ -619,7 +618,6 @@ namespace LcdMod.Client.Markdown
                 return false;
             }
 
-            // Skip '('
             _position++;
 
             int urlStart = _position;

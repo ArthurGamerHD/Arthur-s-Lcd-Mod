@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:maps="using:LcdMod.Client.Apps.Maps"
     xmlns:planetary="using:LcdMod.Client.Apps.PlanetaryMap"
     xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
     x:Class="LcdMod.Client.Apps.PlanetaryMap.PlanetaryMapView"
-    x:DataType="planetary:PlanetaryMapViewModel">
+    x:DataType="planetary:PlanetaryMapViewModel"
+    Design.DataContext="{x:Static planetary:PlanetaryMapViewModelPreview.Default}">
   <UserControl.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Maps.xaml" />
   </UserControl.Styles>
@@ -37,28 +38,36 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
-      <ToggleButton Classes="map-button" IsVisible="{Binding WaterVisible}" IsEnabled="{Binding WaterEnabled}"
-                    IsChecked="{Binding IsWaterHidden}" Command="{Binding WaterCommand}"
-                    ToolTip.Tip="{ext:loc LcdMod_PlanetaryMap_Water_Title}" ToolTip.Placement="Top">
-        <Border Classes="map-icon" OpacityMask="{Binding WaterIcon}" />
-      </ToggleButton>
     </StackPanel>
-    <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12" Spacing="8">
-      <ToggleButton Classes="map-button roads" IsVisible="{Binding RoadsToggleVisible}"
-                    IsChecked="{Binding IsRoadsShown}" Command="{Binding RoadsCommand}"
-                    ToolTip.Tip="{ext:loc LcdMod_PlanetaryMap_Roads_Title}" ToolTip.Placement="Left">
-        <Border Classes="map-icon" OpacityMask="{Binding RoadIcon}" />
-      </ToggleButton>
-    </StackPanel>
+    <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12" Background="Transparent">
+      <Border Width="42" Classes="map-multi-button" Padding="1" Background="{DynamicResource surfaceContainerHighColor}" CornerRadius="32" >
+        <StackPanel>
+          <ToggleButton Classes="map-button-tiny map-button" IsChecked="{Binding Is3D}" Command="{Binding ProjectionCommand}"
+                        ToolTip.Tip="{Binding ProjectionTip}" ToolTip.Placement="Left">
+            <Border Classes="map-icon" OpacityMask="{Binding ProjectionIcon}" />
+          </ToggleButton>
+          <ToggleButton Classes="map-button-tiny map-button roads" IsVisible="{Binding RoadsToggleVisible}"
+                        IsChecked="{Binding IsRoadsShown}" Command="{Binding RoadsCommand}"
+                        ToolTip.Tip="{ext:loc LcdMod_PlanetaryMap_Roads_Title}" ToolTip.Placement="Left">
+            <Border Classes="map-icon" OpacityMask="{Binding RoadIcon}" />
+          </ToggleButton>
+          <ToggleButton Classes="map-button-tiny map-button" IsVisible="{Binding WaterVisible}" IsEnabled="{Binding WaterEnabled}"
+                        IsChecked="{Binding IsWaterHidden}" Command="{Binding WaterCommand}"
+                        ToolTip.Tip="{ext:loc LcdMod_PlanetaryMap_Water_Title}" ToolTip.Placement="Top">
+            <Border Classes="map-icon" OpacityMask="{Binding WaterIcon}" />
+          </ToggleButton>
+          <ToggleButton Classes="map-button-tiny map-button" IsChecked="{Binding IsFollowing}" Command="{Binding FollowCommand}"
+                        ToolTip.Tip="{Binding FollowTip}" ToolTip.Placement="Left">
+            <Border Classes="map-icon" OpacityMask="{Binding FollowIcon}" />
+          </ToggleButton>
+        </StackPanel>
+      </Border>
+    </Grid>
     <StackPanel HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12" Spacing="8">
       <ToggleButton Classes="map-button" IsChecked="{Binding IsNorthLocked}" Command="{Binding OrientationCommand}"
                     ToolTip.Tip="{Binding OrientationTip}" ToolTip.Placement="Left">
         <Border Classes="map-icon" OpacityMask="{Binding CompassIcon}"
                 RenderTransform="{Binding OrientationTransform}" />
-      </ToggleButton>
-      <ToggleButton Classes="map-button" IsChecked="{Binding IsFollowing}" Command="{Binding FollowCommand}"
-                    ToolTip.Tip="{Binding FollowTip}" ToolTip.Placement="Left">
-        <Border Classes="map-icon" OpacityMask="{Binding FollowIcon}" />
       </ToggleButton>
     </StackPanel>
   </Grid>

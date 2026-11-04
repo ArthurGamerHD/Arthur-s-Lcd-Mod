@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
-using LcdMod.Common.Mvvm;
+using Acrux.Core.Input;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Apps.Projector
 {

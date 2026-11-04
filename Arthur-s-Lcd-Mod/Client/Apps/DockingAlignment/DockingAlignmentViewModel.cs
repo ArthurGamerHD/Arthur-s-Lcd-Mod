@@ -1,7 +1,7 @@
 using System;
-using Adk.Gui.Styling;
+using Acrux.Styling;
 using LcdMod.Client.Extensions;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.DockingAlignment
@@ -37,6 +37,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         Color _statusColor;
 
+        [PreviewWith("#E0A010")]
         public Color StatusColor
         {
             get { return _statusColor; }
@@ -45,6 +46,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         bool _hasTarget;
 
+        [PreviewWith(true)]
         public bool HasTarget
         {
             get { return _hasTarget; }
@@ -60,6 +62,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         string _referenceName;
 
+        [PreviewWith("Connector (Docking)")]
         public string ReferenceName
         {
             get { return _referenceName; }
@@ -68,6 +71,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         string _targetName;
 
+        [PreviewWith("Mining Drone Mk II > Connector")]
         public string TargetName
         {
             get { return _targetName; }
@@ -76,6 +80,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         double _pitch;
 
+        [PreviewWith(2.5d)]
         public double Pitch
         {
             get { return _pitch; }
@@ -84,6 +89,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         double _yaw;
 
+        [PreviewWith(-1.2d)]
         public double Yaw
         {
             get { return _yaw; }
@@ -92,6 +98,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         double _roll;
 
+        [PreviewWith(4d)]
         public double Roll
         {
             get { return _roll; }
@@ -100,6 +107,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         double _leftRight;
 
+        [PreviewWith(-0.42d)]
         public double LeftRight
         {
             get { return _leftRight; }
@@ -108,6 +116,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         double _forwardBack;
 
+        [PreviewWith(6.4d)]
         public double ForwardBack
         {
             get { return _forwardBack; }
@@ -116,6 +125,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         double _upDown;
 
+        [PreviewWith(0.18d)]
         public double UpDown
         {
             get { return _upDown; }
@@ -124,6 +134,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         double _distance;
 
+        [PreviewWith(6.416291763939667d)]
         public double Distance
         {
             get { return _distance; }
@@ -132,6 +143,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         double _axisDistance;
 
+        [PreviewWith(6.4d)]
         public double AxisDistance
         {
             get { return _axisDistance; }
@@ -140,6 +152,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         double _distanceRate;
 
+        [PreviewWith(-0.8d)]
         public double DistanceRate
         {
             get { return _distanceRate; }
@@ -148,6 +161,7 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         double _closingVelocity;
 
+        [PreviewWith(0.8d)]
         public double ClosingVelocity
         {
             get { return _closingVelocity; }
@@ -156,36 +170,53 @@ namespace LcdMod.Client.Apps.DockingAlignment
 
         double _footerRoll;
 
+        [PreviewWith(4d)]
         public double FooterRoll
         {
             get { return _footerRoll; }
             private set { RaiseAndSetIfChanged(ref _footerRoll, value, nameof(FooterRoll)); }
         }
 
+        [PreviewWith(1f)]
         public float FontScale { get; private set; } = 1f;
+        [PreviewWith(1f)]
         public float RenderScale { get; private set; } = 1f;
+        [PreviewWith("White")]
         public string FontFamily { get; private set; } = "White";
+        [PreviewWith("#C5EDFF")]
         public Color Foreground { get; private set; } = Color.White;
+        [PreviewWith("#3A203F")]
         public Color Accent { get; private set; } = Color.White;
+        [PreviewWith("#602020")]
         public Color ErrorColor { get; private set; } = Color.Red;
         public BackgroundBrush FooterBackground { get; private set; }
         public BackgroundBrush WarningBrush { get; private set; }
         public BackgroundBrush WarningShadowBrush { get; private set; }
+        [PreviewWith("#E0A010")]
         public Color WarningColor { get; private set; }
+        [PreviewWith("#2D2003")]
         public Color WarningShadowColor { get; private set; }
+        [PreviewWith("Pitch")]
         public string PitchLabel { get; private set; }
+        [PreviewWith("Yaw")]
         public string YawLabel { get; private set; }
+        [PreviewWith("Roll")]
         public string RollLabel { get; private set; }
 
+        [PreviewWith(58f)]
         public float FooterHeight => 58f * FontScale;
 
         // The legacy size tier was selected in physical pixels; keep that tier
         // while publishing logical font sizes for the window's single DPI pass.
+        [PreviewWith(0.74385715f)]
         public float InstrumentFont => MathHelper.Clamp(Math.Min(_viewport.X,
             Math.Max(0f, _viewport.Y - FooterHeight)) * RenderScale / 560f, .45f, .95f) * FontScale;
 
+        [PreviewWith(0.48350713f)]
         public float LabelFont => InstrumentFont * .65f;
+        [PreviewWith(0.55789286f)]
         public float NameFont => InstrumentFont * .75f;
+        [PreviewWith(0.52f)]
         public float FooterFont => Math.Max(.36f / RenderScale, .52f) * FontScale;
         public bool HasWarning => !string.IsNullOrEmpty(_warning);
 

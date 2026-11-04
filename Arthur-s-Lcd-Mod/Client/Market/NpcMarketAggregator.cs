@@ -473,7 +473,7 @@ namespace LcdMod.Client.Market
             return path;
         }
 
-        /// <summary>Registers the Engineers Exchange icon behind a generated sprite name by matching its gas or prefab key.</summary>
+        // Registers the Engineers Exchange icon behind a generated sprite name by matching its gas or prefab key.
         internal static bool TryRegisterIcon(string spriteName)
         {
             var definitions = MyDefinitionManager.Static;

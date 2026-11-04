@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Rendering;
+using Acrux.Rendering;
 using LcdMod.Client.Apps.Maps;
 using VRageMath;
 
@@ -82,7 +82,7 @@ namespace LcdMod.Client.Apps.Radar
             return TryProject(a, out pa) & TryProject(b, out pb);
         }
 
-        /// <summary>Apparent size of an object at <paramref name="point"/> relative to the target at the default zoom.</summary>
+        // Apparent size of an object at point relative to the target at the default zoom.
         public float Perspective(Vector3 point)
         {
             return MathHelper.Clamp(ReferenceDistance / Math.Max(Near, Depth(point)), .35f, 4f);
@@ -97,6 +97,9 @@ namespace LcdMod.Client.Apps.Radar
         const float QUADRANT_COVERAGE = .8f;
         const float LOCK_ANIM_DISTANCE = 20f;
         const float ICON_SIZE = 16f;
+        // A contact's icon takes clicks this far around its centre, in pixels at the default zoom.
+        const float HIT_RADIUS = 14f;
+        const float MISSILE_SIZE = .8f;
 
         static readonly List<Vector2> PolygonBuffer = new List<Vector2>(CIRCLE_SEGMENTS);
         static readonly List<float> Crossings = new List<float>(8);
@@ -136,11 +139,62 @@ namespace LcdMod.Client.Apps.Radar
             FillPolygon3D(canvas, camera, line,
                 new Vector3(0f, -ship * .8f, 0f), new Vector3(ship * .5f, ship * .5f, 0f), new Vector3(-ship * .5f, ship * .5f, 0f));
 
+            for (int i = 0; i < scene.Missiles.Count; i++)
+                DrawMissileGeometry(canvas, camera, scene.Missiles[i], range, px);
             for (int i = 0; i < scene.Targets.Count; i++)
-                DrawTargetGeometry(canvas, camera, scene.Targets[i], range, px);
+                DrawTargetGeometry(canvas, camera, scene.Targets[i], range, px, line);
         }
 
-        static void DrawTargetGeometry(PixelCanvas canvas, RadarCamera camera, RadarTarget target, float range, float px)
+        // The trail fades out behind the missile; the line ahead is fainter than the trail's head.
+        static void DrawMissileGeometry(PixelCanvas canvas, RadarCamera camera, RadarMissile missile, float range, float px)
+        {
+            Vector3 top = missile.Position * range;
+            var foot = new Vector3(top.X, top.Y, 0f);
+            if (Math.Abs(top.Z) > 1e-3f)
+                DrawLine3D(canvas, camera, foot, top, 1.5f * px, new Color(missile.Color, .45f));
+            int count = missile.Trail.Count;
+            for (int i = 1; i < count; i++)
+            {
+                float alpha = .15f + .6f * i / count;
+                DrawLine3D(canvas, camera, missile.Trail[i - 1] * range, missile.Trail[i] * range, 2f * px,
+                    new Color(missile.Color, alpha));
+            }
+            if (count > 0)
+                DrawLine3D(canvas, camera, missile.Trail[count - 1] * range, top, 2f * px, new Color(missile.Color, .75f));
+            DrawLine3D(canvas, camera, top, missile.Ahead * range, 1.5f * px, new Color(missile.Color, .5f));
+        }
+
+        // The contact whose icon holds the pixel, nearest the camera first; 0 for none.
+        public static long HitTest(RadarScene scene, Vector2I canvas, Vector2 pixel)
+        {
+            if (canvas.X <= 0 || canvas.Y <= 0)
+                return 0;
+            RadarCamera camera = RadarCamera.Create(scene, canvas);
+            float range = Math.Max(1f, scene.WorldRange);
+            float px = PixelScale(canvas);
+            long hit = 0;
+            float nearest = float.MaxValue;
+            for (int i = 0; i < scene.Targets.Count; i++)
+            {
+                RadarTarget target = scene.Targets[i];
+                if (target.Marker == RadarMarker.OutOfRange || target.EntityId == 0)
+                    continue;
+                Vector3 point = target.Position * range;
+                Vector2 icon;
+                if (!camera.TryProject(point, out icon))
+                    continue;
+                float radius = HIT_RADIUS * px * camera.Perspective(point);
+                float depth = camera.Depth(point);
+                if (Vector2.DistanceSquared(icon, pixel) > radius * radius || depth >= nearest)
+                    continue;
+                hit = target.EntityId;
+                nearest = depth;
+            }
+            return hit;
+        }
+
+        static void DrawTargetGeometry(PixelCanvas canvas, RadarCamera camera, RadarTarget target, float range, float px,
+            Color line)
         {
             Vector3 top = target.Position * range;
             var foot = new Vector3(top.X, top.Y, 0f);
@@ -152,9 +206,15 @@ namespace LcdMod.Client.Apps.Radar
             }
 
             Vector2 icon;
-            if (!target.TargetLock || !camera.TryProject(top, out icon))
+            if (!(target.TargetLock || target.LockCandidate) || !camera.TryProject(top, out icon))
                 return;
             float scale = px * camera.Perspective(top);
+            if (!target.TargetLock)
+            {
+                BoxCorners(canvas, icon, (ICON_SIZE + 24f) * scale + LOCK_ANIM_DISTANCE * 2f * scale, 8f * scale,
+                    2f * scale, line);
+                return;
+            }
             float lockOffset = (1f - MathHelper.Clamp(target.TargetLockPercent, 0f, 1f)) * LOCK_ANIM_DISTANCE * scale;
             float box = (ICON_SIZE + 24f) * scale + lockOffset * 2f;
             BoxCorners(canvas, icon, box, 10f * scale, 3f * scale, target.IconColor);
@@ -162,7 +222,7 @@ namespace LcdMod.Client.Apps.Radar
                 Diamond(canvas, icon, (ICON_SIZE + 10f) * scale, 2f * scale, target.IconColor);
         }
 
-        /// <summary>Contact icons and plane labels as billboards, far to near, positioned in canvas pixels.</summary>
+        // Contact icons and plane labels as billboards, far to near, positioned in canvas pixels.
         public static void BuildBillboards(RadarScene scene, Vector2I canvas, List<MapMarker> markers)
         {
             if (canvas.X <= 0 || canvas.Y <= 0)
@@ -212,6 +272,28 @@ namespace LcdMod.Client.Apps.Radar
                 }
                 markers.Add(marker);
             }
+            for (int i = 0; i < scene.Missiles.Count; i++)
+            {
+                RadarMissile missile = scene.Missiles[i];
+                Vector3 point = missile.Position * range;
+                Vector2 pixel, ahead;
+                if (!camera.TryProject(point, out pixel))
+                    continue;
+                float rotation = 0f;
+                if (camera.TryProject(point + missile.Heading * range * .05f, out ahead) &&
+                    Vector2.DistanceSquared(ahead, pixel) > 1e-4f)
+                    rotation = (float)Math.Atan2(ahead.Y - pixel.Y, ahead.X - pixel.X) + MathHelper.PiOver2;
+                markers.Add(new MapMarker
+                {
+                    Kind = MapMarkerKind.Radio,
+                    Position = pixel,
+                    Color = missile.Color,
+                    Depth = camera.Depth(point),
+                    Icon = "Triangle",
+                    Size = MISSILE_SIZE * camera.Perspective(point),
+                    Rotation = rotation
+                });
+            }
             markers.Sort(start, markers.Count - start, FarToNear.Instance);
         }
 
@@ -256,7 +338,7 @@ namespace LcdMod.Client.Apps.Radar
             FillWorldPolygon(canvas, camera, WorldPolygon, color);
         }
 
-        /// <summary>Clips the polygon against the camera near plane, then fills its projection.</summary>
+        // Clips the polygon against the camera near plane, then fills its projection.
         internal static void FillWorldPolygon(PixelCanvas canvas, RadarCamera camera, List<Vector3> points, Color color)
         {
             List<Vector2> polygon = Polygon();
@@ -310,7 +392,7 @@ namespace LcdMod.Client.Apps.Radar
             return PolygonBuffer;
         }
 
-        /// <summary>Even-odd scanline fill with fractional coverage at the span ends.</summary>
+        // Even-odd scanline fill with fractional coverage at the span ends.
         internal static void FillPolygon(PixelCanvas canvas, List<Vector2> polygon, Color color)
         {
             int count = polygon.Count;
@@ -356,7 +438,7 @@ namespace LcdMod.Client.Apps.Radar
             }
         }
 
-        /// <summary>Antialiased thick segment: coverage falls off over one pixel past half the width.</summary>
+        // Antialiased thick segment: coverage falls off over one pixel past half the width.
         internal static void DrawLine(PixelCanvas canvas, Vector2 a, Vector2 b, float width, Color color)
         {
             float half = Math.Max(.5f, width * .5f);

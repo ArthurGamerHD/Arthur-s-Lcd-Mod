@@ -1,23 +1,32 @@
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Views;
 using LcdMod.Client.Gui.UserControls.Antenna;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Apps.Antenna
 {
+    /// <summary>What the antenna view model reads from its app (<see cref="AntennaApp"/>; a design-time host in the preview).</summary>
+    internal interface IAntennaHost
+    {
+        IReadOnlyList<AntennaEntry> Antennas { get; }
+        bool IsGridMode { get; }
+    }
+
     internal sealed class AntennaViewModel : ObservableObject
     {
         const float MINIMUM_COLUMN_WIDTH = 400f;
-        readonly AntennaApp _app;
+        readonly IAntennaHost _app;
         float _viewportWidth;
         int _columns = 1;
 
-        public AntennaViewModel(AntennaApp app)
+        public AntennaViewModel(IAntennaHost app)
         {
             _app = app;
         }
 
+        [PreviewWith(4)]
         public IReadOnlyList<AntennaEntry> Entries => _app.Antennas;
+        [PreviewWith(1)]
         public int Columns => _columns;
 
         public void SetViewportWidth(float width)

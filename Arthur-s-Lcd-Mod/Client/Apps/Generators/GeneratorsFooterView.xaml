@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+<UserControl xmlns="https://github.com/ArthurGamerHD/AcruxUI"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:generators="using:LcdMod.Client.Apps.Generators"
              x:Class="LcdMod.Client.Apps.Generators.GeneratorsFooterView"
-             x:DataType="LcdMod.Client.Apps.Generators.GeneratorsViewModel">
+             x:DataType="LcdMod.Client.Apps.Generators.GeneratorsViewModel"
+             Design.DataContext="{x:Static generators:GeneratorsViewModelPreview.Default}">
   <Grid ColumnDefinitions="Auto,Auto" HorizontalAlignment="Center" Margin="6 4">
     <TextBlock x:Name="RangeLabel" Text="{Binding GraphWindowLabel}"
                FontFamily="{DynamicResource textFont}" Foreground="{DynamicResource fontColor}"

@@ -11,8 +11,8 @@ namespace LcdMod.Client.Config
         public static bool AdvancedTweakables => Config != null && Config.AdvancedTweekables;
         public static bool RenderOtherUserTextures => Config == null || Config.RenderOtherUserTextures;
         public static bool AcceptMediaStreams => Config == null || Config.AcceptMediaStreams;
-        public static Adk.Gui.Controls.CaptionButtonsPlacement CaptionButtons =>
-            Config?.CaptionButtons ?? Adk.Gui.Controls.CaptionButtonsPlacement.Left;
+        public static Acrux.Controls.CaptionButtonsPlacement CaptionButtons =>
+            Config?.CaptionButtons ?? Acrux.Controls.CaptionButtonsPlacement.Left;
         public static PlanetTextureQuality TextureQuality => PlanetTextureQualitySettings.Normalize(
             Config?.TextureQuality ?? PlanetTextureQuality.High);
 
@@ -20,7 +20,6 @@ namespace LcdMod.Client.Config
         
 #if DEBUG
         public static bool DebugInteractive => Config != null && Config.DebugInteractive;
-        public static bool DebugSurface => Config != null && Config.DebugSurface;
         public static bool SpriteCountDebug => Config != null && Config.SpriteCountDebug;
         public static bool VisibleClip => Config != null && Config.VisibleClip;
 #endif

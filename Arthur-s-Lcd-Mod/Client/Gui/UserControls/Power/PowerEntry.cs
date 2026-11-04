@@ -1,4 +1,4 @@
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using System;
 using System.Collections.Generic;
 using Sandbox.ModAPI;
@@ -12,6 +12,8 @@ namespace LcdMod.Client.Gui.UserControls.Power
 
         public long EntryId { get; private set; }
         public IMyTerminalBlock Entity { get; private set; }
+        // The label shown for the entry: its block's custom name (updated with the block); settable without one.
+        public string Name { get; set; } = string.Empty;
         public string FillClass { get; private set; }
         public float Ratio { get; private set; }
         public string PercentText { get; private set; }
@@ -65,6 +67,8 @@ namespace LcdMod.Client.Gui.UserControls.Power
         {
             EntryId = entryId;
             Entity = entity;
+            if (entity != null)
+                Name = entity.CustomName ?? string.Empty;
             FillClass = fillClass;
             Ratio = ratio;
             PercentText = percentText ?? string.Empty;
@@ -75,7 +79,7 @@ namespace LcdMod.Client.Gui.UserControls.Power
             _getDetails = getDetails ?? _getDetails;
         }
 
-        /// <summary>True when the entry has its own details (batteries, jump drives) worth a flyout.</summary>
+        // True when the entry has its own details (batteries, jump drives) worth a flyout.
         public bool HasDetails => _getDetails != null;
 
         public IList<PowerDetailLine> GetDetails()

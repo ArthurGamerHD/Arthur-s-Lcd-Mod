@@ -57,7 +57,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
         public static VisualizerField Color(string label) =>
             new VisualizerField("Color", label, VisualizerFieldKind.Color, 0f, 1f);
 
-        /// <summary>A size in percent of the image's shorter side; the range is the desktop one at 1080 pixels.</summary>
+        // A size in percent of the image's shorter side; the range is the desktop one at 1080 pixels.
         public static VisualizerField Length(string key, string label, float minimumPixels, float maximumPixels) =>
             new VisualizerField(key, label, VisualizerFieldKind.Length,
                 minimumPixels / REFERENCE_SIDE_PIXELS * 100f, maximumPixels / REFERENCE_SIDE_PIXELS * 100f);
@@ -365,7 +365,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
             return false;
         }
 
-        /// <summary>Every instance with every value spelled out, as written by export and the settings window.</summary>
+        // Every instance with every value spelled out, as written by export and the settings window.
         public static MediaVisualizerInstanceSettings[] Expand(MediaVisualizerInstanceSettings[] instances)
         {
             var source = instances ?? MediaVisualizerDefaults.Instances;

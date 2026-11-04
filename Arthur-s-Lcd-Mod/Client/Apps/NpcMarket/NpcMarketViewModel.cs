@@ -1,15 +1,44 @@
-using Adk.Gui.Core.Input;
-using Adk.Gui.Styling;
+using Acrux.Core.Input;
+using Acrux.Styling;
 using System;
 using System.Collections.Generic;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Market;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRage;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.NpcMarket
 {
+    /// <summary>What the market view model reads from and asks of its app (<see cref="NpcMarketApp"/>; a design-time host in the preview).</summary>
+    internal interface INpcMarketHost
+    {
+        NpcMarketMode Mode { get; }
+        IReadOnlyList<NpcMarketRow> NativeRows { get; }
+        string NativeUpdatedText { get; }
+        string NativeNextTickText { get; }
+        string NativeRefreshText { get; }
+        string NativeSearchQuery { get; }
+        string NativeEmptyText { get; }
+        string NativeNoTraderText { get; }
+        bool NativeRefreshEnabled { get; }
+        bool NativeModeEnabled { get; }
+        NpcMarketSortColumn SortColumn { get; }
+        bool SortDescending { get; }
+        NpcMarketApp.MarketContentState ContentState { get; }
+        string NativeSearchPlaceholder { get; }
+        float NativeFontScale { get; }
+        Color NativeForeground { get; }
+        Color ResolveMarketColor(Gui.Styling.ResourceKey<Color> key, Color fallback);
+        void SetNativeSearch(string value);
+        void ClearNativeSearch();
+        void SortNative(NpcMarketSortColumn column);
+        void OpenNativeRow(string itemKey, NpcMarketMode mode);
+        void OnNativePageChanged(int pageIndex);
+        void RefreshNativeMarket();
+        void SetMode(NpcMarketMode mode);
+    }
+
     internal sealed class NpcMarketViewModel : ObservableObject
     {
         public const float HEADER_HEIGHT = 28f;
@@ -25,7 +54,7 @@ namespace LcdMod.Client.Apps.NpcMarket
         const float INDICATOR_DOT_GAP = 8f;
         const float FOOTER_HEIGHT = 58f;
 
-        readonly NpcMarketApp _app;
+        readonly INpcMarketHost _app;
         readonly Dictionary<string, MarketRowModel> _rowsByKey = new Dictionary<string, MarketRowModel>(StringComparer.Ordinal);
         readonly List<MarketRowModel> _rows = new List<MarketRowModel>();
         readonly List<MarketPageModel> _pagePool = new List<MarketPageModel>();
@@ -51,7 +80,7 @@ namespace LcdMod.Client.Apps.NpcMarket
         Color _secondaryContainer = Color.Gray;
         Color _arrowColor = Color.White;
 
-        public NpcMarketViewModel(NpcMarketApp app)
+        public NpcMarketViewModel(INpcMarketHost app)
         {
             _app = app;
             _headers = new[]
@@ -71,17 +100,22 @@ namespace LcdMod.Client.Apps.NpcMarket
             NextPageCommand = new DelegateCommand(_ => MovePage(1));
         }
 
+        [PreviewWith(1)]
         public IReadOnlyList<MarketPageModel> Pages => _pages;
         public int SelectedPage => _selectedPage;
+        [PreviewWith(1f)]
         public float ViewportFraction => _viewportFraction;
         public bool ShowNavigation => _showNavigation;
+        [PreviewWith(42f)]
         public float ArrowButtonWidth => _arrowButtonWidth;
+        [PreviewWith(136f)]
         public float IndicatorButtonWidth => _indicatorButtonWidth;
+        [PreviewWith("#B4C5EDFF")]
         public Color ArrowColor => _arrowColor;
         public bool HasSearch => _searchQuery.Length > 0;
         public string SearchQuery => _searchQuery;
 
-        /// <summary>The header's search box is expanded: opened by the user, or holding a query.</summary>
+        // The header's search box is expanded: opened by the user, or holding a query.
         public bool IsSearchOpen
         {
             get { return _searchOpen || HasSearch; }
@@ -100,18 +134,28 @@ namespace LcdMod.Client.Apps.NpcMarket
             set { _app.SetNativeSearch(value ?? string.Empty); }
         }
 
+        [PreviewWith("Search")]
         public string SearchPlaceholder => _app.NativeSearchPlaceholder;
+        [PreviewWith(true)]
         public bool ShowTable => _showTable;
         public bool ShowMessage => _showMessage;
         public string MessageText => _messageText;
+        [PreviewWith("Warning")]
         public string MessageIcon => _messageIcon;
         public BackgroundBrush MessageIconMask { get; private set; } = new ImageBrush("Warning") { Stretch = Stretch.Uniform };
+        [PreviewWith("#E0A010")]
         public Color MessageColor => _messageColor;
+        [PreviewWith(166.62401f)]
         public float MessageIconSize { get; private set; } = 64f;
+        [PreviewWith("2 min ago")]
         public string UpdatedText => _app.NativeUpdatedText;
+        [PreviewWith("8 min")]
         public string NextTickText => _app.NativeNextTickText;
+        [PreviewWith("Refresh")]
         public string RefreshText => _app.NativeRefreshText;
+        [PreviewWith(true)]
         public bool RefreshEnabled => _app.NativeRefreshEnabled;
+        [PreviewWith(true)]
         public bool ModeEnabled => _app.NativeModeEnabled;
         public bool CanNavigate => _pages.Count > 1 && _showNavigation;
         public ICommand SearchCommand { get; }
@@ -119,8 +163,9 @@ namespace LcdMod.Client.Apps.NpcMarket
         public ICommand RefreshMarketCommand { get; }
         public ICommand PreviousPageCommand { get; }
         public ICommand NextPageCommand { get; }
-        public NpcMarketApp App => _app;
-        public float FontScale => _app.AppHost.Surface.FontSize > 0f ? _app.AppHost.Surface.FontSize : 1f;
+        public INpcMarketHost App => _app;
+        [PreviewWith(1f)]
+        public float FontScale => _app.NativeFontScale;
 
         internal MarketSortHeaderModel Header(NpcMarketSortColumn column) => _headers[(int)column];
 
@@ -158,11 +203,11 @@ namespace LcdMod.Client.Apps.NpcMarket
 
         public void Refresh()
         {
-            Color muted = _app.ResolveMarketColor(Gui.Styling.ThemeResources.MutedTextColor, new Color(_app.AppHost.ForegroundColor, 0.68f));
+            Color muted = _app.ResolveMarketColor(Gui.Styling.ThemeResources.MutedTextColor, new Color(_app.NativeForeground, 0.68f));
             Color trendUp = _app.ResolveMarketColor(MarketThemeResources.PriceTrendUpColor, Color.LightGreen);
             Color trendDown = _app.ResolveMarketColor(MarketThemeResources.PriceTrendDownColor, Color.IndianRed);
             Color trendNeutral = _app.ResolveMarketColor(MarketThemeResources.PriceTrendNeutralColor, muted);
-            _foreground = _app.ResolveMarketColor(Gui.Styling.ThemeResources.OnSurfaceColor, _app.AppHost.ForegroundColor);
+            _foreground = _app.ResolveMarketColor(Gui.Styling.ThemeResources.OnSurfaceColor, _app.NativeForeground);
             _accent = _app.ResolveMarketColor(Gui.Styling.ThemeResources.AccentColor, _foreground);
             _secondaryContainer = _app.ResolveMarketColor(Gui.Styling.ThemeResources.SecondaryContainerColor, Color.Gray);
             Color font = _app.ResolveMarketColor(Gui.Styling.ThemeResources.FontColor, _foreground);
@@ -360,6 +405,20 @@ namespace LcdMod.Client.Apps.NpcMarket
         }
     }
 
+    [PreviewWith("TrendHeader.Label", "Trend")]
+    [PreviewWith("TrendHeader.IsActive", false)]
+    [PreviewWith("SellTrendHeader.Label", "Sell Trend")]
+    [PreviewWith("SellTrendHeader.IsActive", false)]
+    [PreviewWith("SellPriceHeader.Label", "Sell Price per Unit")]
+    [PreviewWith("SellPriceHeader.IsActive", false)]
+    [PreviewWith("PriceHeader.Label", "Price per Unit")]
+    [PreviewWith("PriceHeader.IsActive", false)]
+    [PreviewWith("NameHeader.Label", "Name")]
+    [PreviewWith("NameHeader.IsActive", true)]
+    [PreviewWith("BuyTrendHeader.Label", "Buy Trend")]
+    [PreviewWith("BuyTrendHeader.IsActive", false)]
+    [PreviewWith("BuyPriceHeader.Label", "Buy Price per Unit")]
+    [PreviewWith("BuyPriceHeader.IsActive", false)]
     internal sealed class MarketPageModel : ObservableObject
     {
         readonly NpcMarketViewModel _owner;
@@ -376,7 +435,9 @@ namespace LcdMod.Client.Apps.NpcMarket
             SelectCommand = new DelegateCommand(_ => _owner.SelectPage(this));
         }
 
+        [PreviewWith(5)]
         public IReadOnlyList<MarketRowModel> Rows => _rows;
+        [PreviewWith(true)]
         public bool IsBoth => _isBoth;
         public bool IsSingle => !_isBoth;
         public ICommand SearchCommand => _owner.SearchCommand;
@@ -393,6 +454,7 @@ namespace LcdMod.Client.Apps.NpcMarket
             set { _owner.SearchText = value; }
         }
 
+        [PreviewWith("Search")]
         public string SearchPlaceholder => _owner.SearchPlaceholder;
 
         internal void NotifySearchState()
@@ -407,9 +469,12 @@ namespace LcdMod.Client.Apps.NpcMarket
         public MarketSortHeaderModel BuyTrendHeader => _owner.Header(NpcMarketSortColumn.BuyTrend);
         public MarketSortHeaderModel SellPriceHeader => _owner.Header(NpcMarketSortColumn.SellPrice);
         public MarketSortHeaderModel SellTrendHeader => _owner.Header(NpcMarketSortColumn.SellTrend);
+        [PreviewWith(true)]
         public bool IsCurrent => _isCurrent;
         public BackgroundBrush DotMask { get; private set; } = new ImageBrush("CircleHollow");
+        [PreviewWith("#E0DDE0")]
         public Color DotColor => _dotColor;
+        [PreviewWith("#352937")]
         public Color DotInnerColor => _dotInnerColor;
         public ICommand SelectCommand { get; }
 
@@ -432,8 +497,11 @@ namespace LcdMod.Client.Apps.NpcMarket
 
         float _dotSize = 8f;
         float _dotCellWidth = 16f;
+        [PreviewWith(8f)]
         public float DotSize => _dotSize;
+        [PreviewWith(6f)]
         public float InnerDotSize => _dotSize * .75f;
+        [PreviewWith(16f)]
         public float DotCellWidth => _dotCellWidth;
 
         internal void SetIndicator(bool current, bool onScreen, Color foreground, Color accent, Color secondary,
@@ -461,7 +529,7 @@ namespace LcdMod.Client.Apps.NpcMarket
         bool _isActive;
         Transform _indicatorTransform;
 
-        public MarketSortHeaderModel(NpcMarketSortColumn column, NpcMarketApp app)
+        public MarketSortHeaderModel(NpcMarketSortColumn column, INpcMarketHost app)
         {
             _column = column;
             Command = new DelegateCommand(_ => app.SortNative(_column));
@@ -540,6 +608,18 @@ namespace LcdMod.Client.Apps.NpcMarket
         }
     }
 
+    [PreviewWith("Trend.Text", "+4.2%", "-1.8%", "0%", "+2.5%", "-6%")]
+    [PreviewWith("Trend.IsPlaceholder", false)]
+    [PreviewWith("Trend.HasValue", true)]
+    [PreviewWith("Trend.Color", "#81C784", "#FAA39B", "#C1BBC2", "#81C784", "#FAA39B")]
+    [PreviewWith("SellTrend.Text", "-4.2%", "+1.8%", "0%", "-2.5%", "+6%")]
+    [PreviewWith("SellTrend.IsPlaceholder", false, false, true, false, false)]
+    [PreviewWith("SellTrend.HasValue", true, true, false, true, true)]
+    [PreviewWith("SellTrend.Color", "#FAA39B", "#81C784", "#C1BBC2", "#FAA39B", "#81C784")]
+    [PreviewWith("BuyTrend.Text", "+4.2%", "-1.8%", "0%", "0%", "-6%")]
+    [PreviewWith("BuyTrend.IsPlaceholder", false, false, false, true, false)]
+    [PreviewWith("BuyTrend.HasValue", true, true, true, false, true)]
+    [PreviewWith("BuyTrend.Color", "#FAA39B", "#81C784", "#C1BBC2", "#C1BBC2", "#81C784")]
     internal sealed class MarketRowModel : ObservableObject
     {
         readonly string _key;
@@ -553,7 +633,7 @@ namespace LcdMod.Client.Apps.NpcMarket
         bool _hasQuote;
         bool _isBoth;
 
-        public MarketRowModel(string key, NpcMarketApp app)
+        public MarketRowModel(string key, INpcMarketHost app)
         {
             _key = key;
             Command = new DelegateCommand(_ => app.OpenNativeRow(_key, app.Mode));
@@ -561,17 +641,27 @@ namespace LcdMod.Client.Apps.NpcMarket
             SellCommand = new DelegateCommand(_ => app.OpenNativeRow(_key, NpcMarketMode.Sell));
         }
 
+        [PreviewWith("MyObjectBuilder_Ingot/Platinum", "MyObjectBuilder_Ingot/Uranium", "MyObjectBuilder_Ingot/Gold", "MyObjectBuilder_Component/SteelPlate", "MyObjectBuilder_Ore/Ice")]
         public string Icon => _icon;
+        [PreviewWith("Platinum Ingot", "Uranium Ingot", "Gold Ingot", "Steel Plate", "Ice")]
         public string Name => _name;
+        [PreviewWith("3.12K SC", "2.48K SC", "1.65K SC", "92 SC", "14 SC")]
         public string Price => _price;
+        [PreviewWith("3.05K SC", "2.51K SC", "1.65K SC", "", "15 SC")]
         public string BuyPrice => _buyPrice;
+        [PreviewWith("2.88K SC", "2.3K SC", "", "88 SC", "12 SC")]
         public string SellPrice => _sellPrice;
         public bool HasQuote => _hasQuote;
+        [PreviewWith(true)]
         public bool IsBoth => _isBoth;
         public bool IsSingle => !_isBoth;
+        [PreviewWith(true, true, true, false, true)]
         public bool HasBuy => _hasBuy;
+        [PreviewWith(true, true, false, true, true)]
         public bool HasSell => _hasSell;
+        [PreviewWith(false, false, false, true, false)]
         public bool NoBuy => !_hasBuy;
+        [PreviewWith(false, false, true, false, false)]
         public bool NoSell => !_hasSell;
         public MarketTrendModel Trend { get; } = new MarketTrendModel();
         public MarketTrendModel BuyTrend { get; } = new MarketTrendModel();

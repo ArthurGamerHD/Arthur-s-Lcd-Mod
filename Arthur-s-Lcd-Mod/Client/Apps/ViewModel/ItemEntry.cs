@@ -1,5 +1,5 @@
 using System;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRage;
 using VRage.Game.ModAPI.Ingame;
 using VRageMath;

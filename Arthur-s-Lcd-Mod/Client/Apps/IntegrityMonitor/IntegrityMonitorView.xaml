@@ -1,34 +1,142 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:integrity="using:LcdMod.Client.Apps.IntegrityMonitor"
+    xmlns:maps="using:LcdMod.Client.Apps.Maps"
     xmlns:views="using:LcdMod.Client.Apps.Views"
     x:Class="LcdMod.Client.Apps.IntegrityMonitor.IntegrityMonitorView"
-    x:DataType="integrity:IntegrityMonitorViewModel">
-  <Grid RowDefinitions="*,Auto">
+    x:DataType="integrity:IntegrityMonitorViewModel"
+    Design.DataContext="{x:Static integrity:IntegrityMonitorViewModelPreview.Default}">
+  <UserControl.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/GridInspector.xaml" />
+  </UserControl.Styles>
+  <Grid>
     <integrity:IntegrityMapView Cells="{Binding Cells}" Version="{Binding Version}" FitSide="{Binding FitSide}"
                                 MapRotation="{Binding MapRotation}" MapScale="{Binding MapScale}"
-                                IsVisible="{Binding HasMap}" />
+                                IsVisible="{Binding Show2D}" />
+    <maps:CartographyMapView Surface="{Binding Surface}" Version="{Binding SceneVersion}" IsVisible="{Binding Show3D}" />
     <views:StatusMessageView DataContext="{Binding Status}" />
-    <Border Grid.Row="1" Background="{Binding LegendBackground}" Padding="6" IsVisible="{Binding HasLegend}">
-      <ItemsControl ItemsSource="{Binding Legend}">
+    <!-- The X-ray layers, like the map's layers: the selected tile first; the others beside it only while open. -->
+    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasMap}"
+                HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="12">
+      <Button Classes="map-layer" Command="{Binding XRayToggleCommand}" ToolTip.Tip="{Binding XRayTip}" ToolTip.Placement="Top">
+        <Grid>
+          <Border Classes="xray-icon" Background="{Binding XRayIcon}" />
+          <ItemsControl ItemsSource="{Binding XRaySwatches}" VerticalAlignment="Bottom">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="integrity:XRaySwatch">
+                <Border Classes="xray-swatch" Width="{Binding Width}" Background="{Binding Color}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Border Classes="xray-count" IsVisible="{Binding HasXRayCount}">
+            <TextBlock Text="{Binding XRayCount}" />
+          </Border>
+          <Border Classes="map-layer-selection" />
+        </Grid>
+      </Button>
+      <ItemsControl ItemsSource="{Binding XRayLayers}" IsVisible="{Binding IsXRayOpen}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
-            <WrapPanel ItemWidth="150" LineSpacing="4" />
+            <StackPanel Orientation="Horizontal" Spacing="8" />
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="integrity:IntegrityLegendEntry">
-            <Grid ColumnDefinitions="Auto,*">
-              <Border Width="12" Height="12" Background="{Binding Color}" Margin="0 0 6 0" VerticalAlignment="Center" />
-              <TextBlock Grid.Column="1" Text="{Binding Caption}" FontSize="{DynamicResource fontScale}"
-                         FontFamily="{DynamicResource textFont}" Foreground="{DynamicResource fontColor}"
-                         TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-            </Grid>
+          <DataTemplate x:DataType="integrity:XRayLayerItem">
+            <Button Classes="map-layer" Command="{Binding Command}" IsVisible="{Binding IsShown}"
+                    ToolTip.Tip="{Binding Tip}" ToolTip.Placement="Top">
+              <Grid>
+                <Border Classes="xray-icon" Background="{Binding Icon}" />
+                <Border Classes="xray-swatch" Background="{Binding Color}" />
+                <Border Classes="map-layer-selection" IsVisible="{Binding IsSelected}" />
+              </Grid>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+    <!-- Bottom right, across from the X-ray: a small note on what the comparison lacks, and the snapshot button. -->
+    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="12">
+      <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" IsVisible="{Binding HasSideWarning}">
+        <Border Width="12" Height="12" VerticalAlignment="Center" Background="{DynamicResource warningColor}">
+          <Border.OpacityMask>
+            <ImageBrush Source="Warning" Stretch="Uniform" />
+          </Border.OpacityMask>
+        </Border>
+        <TextBlock Classes="side-warning" Text="{Binding SideWarning}" />
+      </StackPanel>
+      <Button Classes="snapshot-button" Command="{Binding SnapshotCommand}" IsVisible="{Binding ShowSnapshotButton}"
+              IsEnabled="{Binding CanSnapshot}" ToolTip.Tip="{Binding SnapshotTip}" ToolTip.Placement="Top">
+        <TextBlock Text="{Binding SnapshotLabel}" />
+      </Button>
+    </StackPanel>
+    <!-- Beside the lock button (the multi-button's second row, below the 38px projection toggle and its padding). -->
+    <Border Classes="axis-flyout" IsVisible="{Binding AreAxesOpen}" HorizontalAlignment="Right" VerticalAlignment="Top"
+            Margin="0 50 62 0">
+      <ItemsControl ItemsSource="{Binding Axes}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="integrity:AxisItem">
+            <ToggleButton Classes="axis-option" IsChecked="{Binding IsSelected}" Command="{Binding Command}"
+                          ToolTip.Tip="{Binding Tip}" ToolTip.Placement="Bottom">
+              <TextBlock Text="{Binding Label}" />
+            </ToggleButton>
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
     </Border>
+    <!-- The legend beside the info button (the button group's third row), like the axis flyout beside the lock. -->
+    <Border Classes="legend-flyout" IsVisible="{Binding ShowInfo}" HorizontalAlignment="Right" VerticalAlignment="Top"
+            Margin="0 88 62 0">
+      <ItemsControl ItemsSource="{Binding Legend}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Vertical" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="integrity:IntegrityLegendEntry">
+            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0 0 14 0">
+              <Border Width="10" Height="10" CornerRadius="2" Background="{Binding Color}" VerticalAlignment="Center" />
+              <TextBlock Classes="map-info-line" Text="{Binding Caption}" VerticalAlignment="Center" />
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </Border>
+    <Grid HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12" Background="Transparent">
+      <Border Width="42" Classes="map-multi-button" Padding="1" Background="{DynamicResource surfaceContainerHighColor}" CornerRadius="32">
+        <StackPanel>
+          <ToggleButton Classes="map-button-tiny map-button" IsChecked="{Binding Is3D}" Command="{Binding ProjectionCommand}"
+                        ToolTip.Tip="{Binding ProjectionTip}" ToolTip.Placement="Left">
+            <Border Classes="map-icon" OpacityMask="{Binding ProjectionIcon}" />
+          </ToggleButton>
+          <Grid IsVisible="{Binding HasMap}">
+            <ToggleButton Classes="map-button-tiny map-button" IsVisible="{Binding CanOrbit}" IsChecked="{Binding IsCameraLocked}"
+                          Command="{Binding CameraLockCommand}" ToolTip.Tip="{Binding CameraTip}" ToolTip.Placement="Left">
+              <Border Classes="map-icon" OpacityMask="{Binding CameraIcon}" />
+            </ToggleButton>
+          </Grid>
+          <ToggleButton Classes="map-button-tiny map-button" IsVisible="{Binding HasLegend}" IsChecked="{Binding IsInfoOpen}"
+                        Command="{Binding InfoCommand}" ToolTip.Tip="{Binding InfoTip}" ToolTip.Placement="Left">
+            <Border Classes="map-icon">
+              <Border.OpacityMask>
+                <ImageBrush Source="Info" Stretch="Uniform" />
+              </Border.OpacityMask>
+            </Border>
+          </ToggleButton>
+        </StackPanel>
+      </Border>
+    </Grid>
   </Grid>
 </UserControl>

@@ -34,3 +34,5 @@ LCDTERM110 | LcdModCodeGenerator | Error | Slider quantum must be finite and non
 LCDTERM111 | LcdModCodeGenerator | Error | Color properties must use Color or OptionalValue<Color>
 LCDTERM112 | LcdModCodeGenerator | Error | Optional color properties require one compile-time resolver
 LCDTERM113 | LcdModCodeGenerator | Error | RequiresCustomColor requires a public bool CustomizedColors property
+LCDTERM114 | LcdModCodeGenerator | Warning | Generated terminal registration IDs must not repeat a hand-written registration
+LCDTERM115 | LcdModCodeGenerator | Warning | Hand-written terminal registration IDs must be unique

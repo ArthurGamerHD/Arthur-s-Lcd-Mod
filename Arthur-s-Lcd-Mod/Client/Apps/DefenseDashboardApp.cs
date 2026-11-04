@@ -19,7 +19,7 @@ using IMyUserControllableGun = Sandbox.ModAPI.IMyUserControllableGun;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(30)]
-    internal sealed partial class DefenseDashboardApp : App
+    internal sealed partial class DefenseDashboardApp : App, DefenseDashboard.IDefenseDashboardHost
     {
         readonly Dictionary<string, WeaponAggregate> _weaponAggregates =
             new Dictionary<string, WeaponAggregate>(StringComparer.OrdinalIgnoreCase);
@@ -54,6 +54,17 @@ namespace LcdMod.Client.Apps
         internal Color NativeTrackColor => ThemeColor(ThemeResources.SurfaceContainerHighestColor);
         internal string NativeTextFont => TextFont;
         internal override float WindowRenderScaling => CardScale;
+        IReadOnlyList<ShieldInfo> DefenseDashboard.IDefenseDashboardHost.NativeShields => NativeShields;
+        IReadOnlyList<WeaponAggregate> DefenseDashboard.IDefenseDashboardHost.NativeWeapons => NativeWeapons;
+        Color DefenseDashboard.IDefenseDashboardHost.NativeCardColor => NativeCardColor;
+        Color DefenseDashboard.IDefenseDashboardHost.NativeAccentColor => NativeAccentColor;
+        Color DefenseDashboard.IDefenseDashboardHost.NativeWarningColor => NativeWarningColor;
+        Color DefenseDashboard.IDefenseDashboardHost.NativeErrorColor => NativeErrorColor;
+        Color DefenseDashboard.IDefenseDashboardHost.NativeForegroundColor => NativeForegroundColor;
+        Color DefenseDashboard.IDefenseDashboardHost.NativeMutedColor => NativeMutedColor;
+        Color DefenseDashboard.IDefenseDashboardHost.NativeSuccessColor => NativeSuccessColor;
+        Color DefenseDashboard.IDefenseDashboardHost.NativeTrackColor => NativeTrackColor;
+        string DefenseDashboard.IDefenseDashboardHost.NativeTextFont => NativeTextFont;
 
         public override void Update()
         {

@@ -4,10 +4,11 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Apps.StarMap;
 using LcdMod.Client.Config;
 using LcdMod.Client.GridData;
+using Acrux.Core.Input;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using Cartography;
-using Cartography.Maps;
+using Acrux.Cartography;
+using Acrux.Cartography.Maps;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Components;
@@ -21,7 +22,10 @@ using static LcdMod.Common.Helpers.Constants;
 
 namespace LcdMod.Client.Apps
 {
-    /// <summary>The Star Map backported from the standalone Minimap, as an orbit map or a first-person HUD.</summary>
+    /// <summary>
+    /// The Star Map backported from the standalone Minimap, as an orbit map. Its first-person HUD is now External
+    /// Sensors: a screen still set to it is moved there.
+    /// </summary>
     [LcdApp(13)]
     [ConfigComponent(APP, typeof(StarMapConfigComponent), PropertyName = "StarMapComponent")]
     public partial class StarMapApp : App, IApp, IStarMapHost
@@ -29,27 +33,13 @@ namespace LcdMod.Client.Apps
         public const string ID = MOD_PREFIX + "StarMapSurface";
         public const string TITLE = MOD_PREFIX + "StarMapSurface";
 
-        public static readonly List<MyTerminalControlComboBoxItem> StarMapDisplayModes =
-            new List<MyTerminalControlComboBoxItem>
-            {
-                new MyTerminalControlComboBoxItem
-                {
-                    Key = (long)StarMapDisplayMode.Planetarium,
-                    Value = VRage.Utils.MyStringId.GetOrCompute("LcdMod_Planetarium")
-                },
-                new MyTerminalControlComboBoxItem
-                {
-                    Key = (long)StarMapDisplayMode.Hud,
-                    Value = VRage.Utils.MyStringId.GetOrCompute("LcdMod_Hud")
-                }
-            };
-
         readonly StarMapViewModel _viewModel;
         readonly LinkedTypedBlockSourceSet<IMyJumpDrive> _jumpDriveSources =
             new LinkedTypedBlockSourceSet<IMyJumpDrive>(blocks => blocks.JumpDrives);
         readonly JumpPointGpsHelper _jumpPointGps = new JumpPointGpsHelper();
         bool _syncConfigNextRun;
         bool _closed;
+        bool _migrating;
 
         public StarMapApp(IAppHost host)
             : base(host)
@@ -72,20 +62,37 @@ namespace LcdMod.Client.Apps
             remove { _viewModel.StaticCameraOrbitChanged -= value; }
         }
 
-        public bool PlanetariumMode => GeneralComponent.DisplayMode == (int)StarMapDisplayMode.Planetarium;
-        public CursorType RequestedCursorType => PlanetariumMode ? CursorType.Default : CursorType.None;
         internal override float WindowRenderScaling => CardScale;
-
-        public List<MyTerminalControlComboBoxItem> GetDisplayModes() => StarMapDisplayModes;
 
         public override void Update()
         {
+            MigrateHud();
             _viewModel.Tick();
             if (!_syncConfigNextRun)
                 return;
             _syncConfigNextRun = false;
             if (Host.Block != null && Host.ProviderConfig != null)
                 ConfigManager.Sync(Host.Block, Host.ProviderConfig);
+        }
+
+        // The HUD mode moved to External Sensors, which keeps this screen's settings (its display mode one is first
+        // person there). Only a player allowed to change the screen switches it; the game syncs the new script.
+        void MigrateHud()
+        {
+            if (_migrating || GeneralComponent.DisplayMode != (int)StarMapDisplayMode.Hud)
+                return;
+            var block = Host.Block as IMyTerminalBlock;
+            if (block == null || !block.HasLocalPlayerAccess())
+                return;
+            _migrating = true;
+            var surface = Host.Surface;
+            Action switchScript = () =>
+            {
+                if (surface != null && !block.MarkedForClose)
+                    surface.Script = SurfaceScripts.ExternalSensorsSurfaceScript.ID;
+            };
+            lock (LcdModClientComponent.RunNextFrame)
+                LcdModClientComponent.RunNextFrame.Add(switchScript);
         }
 
         public override List<MySprite> GetSprites()
@@ -151,19 +158,19 @@ namespace LcdMod.Client.Apps
                 Host.RenderSprites();
         }
 
+        void Maps.IMapHost.RequestFrames()
+        {
+            if (!_closed)
+                Host.RequestFrames();
+        }
+
         StarMapConfigComponent IStarMapHost.Config => StarMapComponent;
-        bool IStarMapHost.IsHud => !PlanetariumMode;
         IMyCubeBlock IStarMapHost.Block => Host.Block;
         string IStarMapHost.Title => Host.Title;
-        string IStarMapHost.Font => TextFont;
-        float IStarMapHost.FontScale => Host.Surface.FontSize;
-        Color IStarMapHost.HeaderColor => GetHeaderColor();
-        Color IStarMapHost.WarningColor => ColorComponent.ResolveWarningColor();
-        Color IStarMapHost.ErrorColor => ColorComponent.ResolveErrorColor();
+        Color IMarkerColors.HeaderColor => GetHeaderColor();
+        Color IMarkerColors.WarningColor => ColorComponent.ResolveWarningColor();
+        Color IMarkerColors.ErrorColor => ColorComponent.ResolveErrorColor();
         Color IStarMapHost.ForegroundColor => Host.ForegroundColor;
-
-        Vector3D IStarMapHost.LinearVelocity =>
-            Host.Block == null || Host.Block.CubeGrid == null ? Vector3D.Zero : (Vector3D)Host.Block.CubeGrid.LinearVelocity;
 
         bool IStarMapHost.HasJumpDrives
         {
@@ -188,7 +195,7 @@ namespace LcdMod.Client.Apps
                 planet.Radius,
                 gravityRange,
                 out jumpPoint,
-                !PlanetariumMode);
+                false);
         }
 
         void IStarMapHost.SyncConfig()

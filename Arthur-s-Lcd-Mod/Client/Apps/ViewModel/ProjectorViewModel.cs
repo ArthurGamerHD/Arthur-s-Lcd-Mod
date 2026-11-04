@@ -1,12 +1,11 @@
 using ListMode = LcdMod.Client.Apps.Projector.ProjectorListMode;
 using System;
-using Adk.Gui.Collections.Reactive;
+using Adk.Mvvm;
 using System.Collections.Generic;
 using LcdMod.Client.GridData;
 using LcdMod.Client.Helpers;
 using LcdMod.Common.Config.Components;
 using LcdMod.Common.Helpers;
-using LcdMod.Common.Mvvm;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
 using VRage;

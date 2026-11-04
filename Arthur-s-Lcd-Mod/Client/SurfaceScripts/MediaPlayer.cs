@@ -30,7 +30,6 @@ namespace LcdMod.Client.SurfaceScripts
         MediaPlayerApp _app;
 
         protected override string DefaultTitle => TITLE;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public override IApp App => _app;
         public override string Title => _app != null ? _app.Title : base.Title;
         public MediaPlayerSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
@@ -73,27 +72,40 @@ namespace LcdMod.Client.SurfaceScripts
             RenderSprites();
         }
 
+        static readonly List<CachedMediaPlayerApp> DetachedScratch = new List<CachedMediaPlayerApp>();
+        static readonly List<CachedMediaPlayerApp> StaleScratch = new List<CachedMediaPlayerApp>();
+        static readonly List<MediaPlayerAppKey> StaleKeysScratch = new List<MediaPlayerAppKey>();
+
+        /// <summary>
+        /// Background service: keeps players whose screen was disposed (out of range, script reloaded) playing.
+        /// A player whose block is gone is closed; one that fails is logged once, then closed, so a broken
+        /// player cannot log every tick.
+        /// </summary>
         public static void UpdateDetachedApps()
         {
-            var detached = new List<CachedMediaPlayerApp>();
-            var stale = new List<CachedMediaPlayerApp>();
+            var detached = DetachedScratch;
+            var stale = StaleScratch;
+            var staleKeys = StaleKeysScratch;
+            detached.Clear();
+            stale.Clear();
+            staleKeys.Clear();
 
             lock (AppCacheLock)
             {
                 if (AppCache.Count == 0)
                     return;
 
-                var staleKeys = new List<MediaPlayerAppKey>();
                 foreach (var pair in AppCache)
                 {
                     var cached = pair.Value;
-                    if (cached == null || cached.Attached)
+                    if (cached != null && cached.Attached)
                         continue;
 
-                    if (cached.IsParentBlockUnavailable())
+                    if (cached == null || cached.IsParentBlockUnavailable())
                     {
                         staleKeys.Add(pair.Key);
-                        stale.Add(cached);
+                        if (cached != null)
+                            stale.Add(cached);
                     }
                     else
                     {
@@ -106,14 +118,12 @@ namespace LcdMod.Client.SurfaceScripts
             }
 
             for (int i = 0; i < stale.Count; i++)
-                stale[i].Close();
+                CloseSafely(stale[i]);
+            stale.Clear();
 
             for (int i = 0; i < detached.Count; i++)
             {
                 var cached = detached[i];
-                if (cached == null)
-                    continue;
-
                 lock (AppCacheLock)
                 {
                     if (cached.Attached)
@@ -122,12 +132,51 @@ namespace LcdMod.Client.SurfaceScripts
 
                 try
                 {
-                    cached.App.Update();
+                    cached.App.UpdateDetached();
                 }
                 catch (Exception error)
                 {
-                    ErrorHandlerHelper.LogError(error, cached.Host);
+                    ErrorHandlerHelper.LogError(error, typeof(MediaPlayerSurfaceScript));
+                    EvictDetached(cached);
                 }
+            }
+            detached.Clear();
+        }
+
+        static void EvictDetached(CachedMediaPlayerApp cached)
+        {
+            lock (AppCacheLock)
+            {
+                if (cached.Attached)
+                    return;
+
+                MediaPlayerAppKey key = default(MediaPlayerAppKey);
+                bool found = false;
+                foreach (var pair in AppCache)
+                {
+                    if (!ReferenceEquals(pair.Value, cached))
+                        continue;
+                    key = pair.Key;
+                    found = true;
+                    break;
+                }
+
+                if (found)
+                    AppCache.Remove(key);
+            }
+
+            CloseSafely(cached);
+        }
+
+        static void CloseSafely(CachedMediaPlayerApp cached)
+        {
+            try
+            {
+                cached.Close();
+            }
+            catch (Exception error)
+            {
+                ErrorHandlerHelper.LogError(error, typeof(MediaPlayerSurfaceScript));
             }
         }
 
@@ -271,7 +320,7 @@ namespace LcdMod.Client.SurfaceScripts
                 if (ReferenceEquals(_attachedHost, host))
                 {
                     _attachedHost = null;
-                    App.SuspendVisualizer();
+                    App.DetachHost();
                 }
             }
 

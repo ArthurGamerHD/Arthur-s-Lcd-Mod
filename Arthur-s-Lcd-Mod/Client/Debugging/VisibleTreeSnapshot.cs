@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using Adk.Gui.Core;
+using Acrux.Core;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using Sandbox.ModAPI;
 using VRageMath;

@@ -18,10 +18,8 @@ namespace LcdMod.Common.Networking
     {
         Pcm = 0,
 
-        /// <summary>
-        /// A chunked Matroska video: segment -1 is the chunk index, the others are the chunks around the
-        /// sender's playhead, each sent in pieces by byte offset.
-        /// </summary>
+        // A chunked Matroska video: segment -1 is the chunk index, the others are the chunks around the sender's
+        // playhead, each sent in pieces by byte offset.
         Video = 1
     }
 

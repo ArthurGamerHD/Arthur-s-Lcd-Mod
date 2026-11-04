@@ -1,3 +1,4 @@
+using Adk.Mvvm;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Views;
 using LcdMod.Client.Games;
@@ -21,7 +22,7 @@ namespace LcdMod.Client.Apps.Games
 
         public IReadOnlyList<GlobalMenuEntry> MenuEntries => _menuEntries;
 
-        /// <summary>The running game; the view takes its input through <see cref="IGameInput"/>.</summary>
+        // The running game; the view takes its input through IGameInput.
         public object Game
         {
             get { return _game; }
@@ -38,9 +39,13 @@ namespace LcdMod.Client.Apps.Games
 
         public IGameInput GameInput => Game as IGameInput;
         public bool IsDoom => Game is DoomGame;
+        [PreviewWith(1)]
         public int MenuVersion => _menuVersion;
+        [PreviewWith(true)]
         public bool MenuVisible => _menuVisible;
+        [PreviewWith(1)]
         public int GameRow => _menuDocked ? 1 : 0;
+        [PreviewWith(1)]
         public int GameRowSpan => _menuDocked ? 1 : 2;
 
         public void SetMenu(IReadOnlyList<GlobalMenuEntry> entries)
@@ -53,7 +58,7 @@ namespace LcdMod.Client.Apps.Games
             Refresh(_titleVisible, long.MinValue, false);
         }
 
-        /// <summary>With the title hidden, a secondary click shows the menu for a while; pointing at it keeps it open.</summary>
+        // With the title hidden, a secondary click shows the menu for a while; pointing at it keeps it open.
         public void Reveal(long frame)
         {
             _revealedUntil = frame + REVEAL_FRAMES;

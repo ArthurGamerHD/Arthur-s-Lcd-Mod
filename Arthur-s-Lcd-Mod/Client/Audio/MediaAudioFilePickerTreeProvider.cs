@@ -1,3 +1,4 @@
+using Acrux.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -539,7 +540,8 @@ namespace LcdMod.Client.Audio
             {
                 return string.Compare(left == null ? null : left.Name, right == null ? null : right.Name, StringComparison.OrdinalIgnoreCase);
             });
-            root.Files.AddRange(files);
+            foreach (var file in files)
+                root.Files.Add(file);
             return root;
         }
 

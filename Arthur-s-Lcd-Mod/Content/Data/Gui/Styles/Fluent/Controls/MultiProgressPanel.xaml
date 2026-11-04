@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/ArthurGamerHD/Adk"
+<Styles xmlns="https://github.com/ArthurGamerHD/AcruxUI"
         xmlns:controls="using:LcdMod.Client.Apps.Controls">
   <Style Selector="controls|MultiProgressPanel">
     <Setter Property="FontSize" Value="{DynamicResource fontScale}" />

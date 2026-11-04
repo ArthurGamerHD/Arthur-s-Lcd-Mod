@@ -1,4 +1,4 @@
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using System;
 using LcdMod.Client.Helpers;
 using VRageMath;

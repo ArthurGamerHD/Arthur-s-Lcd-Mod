@@ -26,7 +26,6 @@ namespace LcdMod.Client.SurfaceScripts
 
         InGameClockDashboardApp _app;
         protected override string DefaultTitle => TITLE;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public override IApp App => _app;
         public InGameClockDashboardSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
@@ -52,8 +51,6 @@ namespace LcdMod.Client.SurfaceScripts
             _app.Update();
             RenderSprites();
         }
-
-        protected override bool RendersInParallel => true;
 
 
         public override List<MySprite> GetSprites()

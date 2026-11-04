@@ -1,8 +1,8 @@
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using System;
 using System.Collections.Generic;
 using LcdMod.Common.Helpers;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.MediaPlayer
@@ -19,7 +19,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
         static readonly Color DockPrimaryColor = new Color(124, 124, 124);
         static readonly Color DockActiveColor = new Color(254, 254, 254);
 
-        readonly MediaPlayerApp _app;
+        readonly IMediaPlayerHost _app;
         readonly List<MediaPlayerApp.MediaQueueRow> _queueData = new List<MediaPlayerApp.MediaQueueRow>();
         readonly List<MediaPlaylistRowModel> _rowPool = new List<MediaPlaylistRowModel>();
         IReadOnlyList<MediaPlaylistRowModel> _rows = new MediaPlaylistRowModel[0];
@@ -30,7 +30,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
         bool _captionsEnabled = true;
         bool _volumeFlyoutOpen;
 
-        public MediaPlayerViewModel(MediaPlayerApp app)
+        public MediaPlayerViewModel(IMediaPlayerHost app)
         {
             _app = app;
             PickCommand = new DelegateCommand(_ => Run(_app.MediaPick));
@@ -61,6 +61,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
 
         public ICommand PickCommand { get; }
         public ICommand ConfigureVisualizerCommand { get; }
+        [PreviewWith("Configure visualizer")]
         public string ConfigureVisualizerText => _app.ConfigureVisualizerText;
         public ICommand ShuffleCommand { get; }
         public ICommand PreviousCommand { get; }
@@ -85,43 +86,68 @@ namespace LcdMod.Client.Apps.MediaPlayer
         public bool VideoPlaylistVisible { get; private set; }
         public Vector4 VideoPlaylistMargin { get; private set; }
         public Vector4 VideoPlaylistPadding { get; private set; }
-        public MediaPlayerApp App => _app;
+        public IMediaPlayerHost App => _app;
 
+        [PreviewWith(true)]
         public bool IsDefault { get; private set; } = true;
         public bool IsWide { get; private set; }
         public bool IsSmall { get; private set; }
         public bool IsVideo { get; private set; }
+        [PreviewWith(true)]
         public bool IsRegular => !IsVideo && !IsSmall;
+        [PreviewWith(5f)]
         public float PlaylistGap { get; private set; }
+        [PreviewWith("0 5 0 0")]
         public Vector4 PlaylistGapMargin => new Vector4(0f, PlaylistGap, 0f, 0f);
+        [PreviewWith("5 0 5 0")]
         public Vector4 OverlayListMargin => new Vector4(PlaylistGap, 0f, PlaylistGap, 0f);
+        [PreviewWith("0 5 0 0")]
         public Vector4 OverlayRowGapMargin => new Vector4(0f, PlaylistGap, 0f, 0f);
+        [PreviewWith("0 8 0 0")]
         public Vector4 ProgressMargin { get; private set; }
+        [PreviewWith(16f)]
         public float ActionRadius => ActionHeight * .5f;
         public float OverlayActionRadius => Math.Min(OverlayActionWidth, OverlayRowHeight) * .5f;
+        [PreviewWith("12 12 12 12")]
         public Vector4 AreaMargin { get; private set; }
+        [PreviewWith(8f)]
         public float Gap { get; private set; }
+        [PreviewWith(1f)]
         public float LayoutScale { get; private set; } = 1f;
+        [PreviewWith("White")]
         public string TextFont { get; private set; } = "White";
 
+        [PreviewWith("Music/Synthwave/Neon Drift.wav")]
         public string SongPath { get; private set; } = string.Empty;
+        [PreviewWith(true)]
         public bool PathVisible { get; private set; }
+        [PreviewWith(0.65f)]
         public float PathFontSize { get; private set; }
+        [PreviewWith("12 6 12 5")]
         public Vector4 PathMargin { get; private set; }
+        [PreviewWith("#C5EDFF")]
         public Color Foreground { get; private set; } = Color.White;
 
+        [PreviewWith(true)]
         public bool BodyVisible { get; private set; }
+        [PreviewWith("0 8 0 0")]
         public Vector4 BodyMargin { get; private set; }
         public bool ShowVisualizer { get; private set; }
+        public Vector4 VisualizerMargin { get; private set; }
+        [PreviewWith(true)]
         public bool ShowFileIcon { get; private set; }
         public bool ShowPlaylistBody { get; private set; }
+        [PreviewWith("3 3 3 3")]
         public Vector4 MediaIconMargin { get; private set; }
         public float[] VisualizerLevels => _app.MediaVisualizerLevels;
         public string VisualizerTexture => _app.MediaVisualizerTexture;
+        [PreviewWith(1f)]
         public float VisualizerAspectRatio => _app.MediaVisualizerAspectRatio;
+        [PreviewWith(1)]
         public int VisualizerVersion => _visualizerVersion;
         public string Subtitle { get; private set; } = string.Empty;
         public bool HasSubtitle => _captionsEnabled && Subtitle.Length > 0;
+        [PreviewWith(0.75f)]
         public float SubtitleFontSize { get; private set; } = .75f;
         public Vector4 CaptionPadding { get; private set; }
         public float CaptionRadius { get; private set; }
@@ -134,9 +160,12 @@ namespace LcdMod.Client.Apps.MediaPlayer
         public Vector4 DockPadding { get; private set; }
         public float DockButtonWidth { get; private set; }
         public Vector4 DockProgressMargin { get; private set; }
+        [PreviewWith("#7C7C7C")]
         public Color DockForeground => DockPrimaryColor;
+        [PreviewWith("#3A3A3A")]
         public Color DockTrackColor => DockSecondaryColor;
         public Color CaptionsColor { get; private set; }
+        [PreviewWith(true)]
         public bool IsPlaying { get; private set; }
         public object VideoKey => _app.MediaVideoKey;
         public float FlashDiameter { get; private set; }
@@ -146,73 +175,122 @@ namespace LcdMod.Client.Apps.MediaPlayer
         public float VideoTitleFontSize { get; private set; }
         public float VideoTitleIconSize { get; private set; }
         public bool HasCaptions { get; private set; }
+        [PreviewWith("SoundHigh")]
         public string VolumeIcon => Volume <= 0f ? "SoundLow" : "SoundHigh";
         public float DockVolumeIconSize { get; private set; }
         public float VolumeSliderLength { get; private set; }
+        [PreviewWith("CaptionsUnavailable")]
         public MediaGlyphKind CaptionsGlyph => !HasCaptions
             ? MediaGlyphKind.CaptionsUnavailable
             : _captionsEnabled ? MediaGlyphKind.CaptionsOn : MediaGlyphKind.CaptionsOff;
+        [PreviewWith("FileWav")]
         public string FileIcon { get; private set; } = "FileWav";
 
+        [PreviewWith(true)]
         public bool ProgressVisible { get; private set; }
+        [PreviewWith(20f)]
         public float ProgressHeight { get; private set; }
+        [PreviewWith(83d)]
         public double PositionSeconds { get; private set; }
+        [PreviewWith(214d)]
         public double DurationSeconds { get; private set; }
+        [PreviewWith(true)]
         public bool CanSeek { get; private set; }
 
+        [PreviewWith(56f)]
         public float ButtonHeight { get; private set; }
+        [PreviewWith("0 8 0 0")]
         public Vector4 ButtonsMargin { get; private set; }
+        [PreviewWith(true)]
         public bool TransportVisible { get; private set; } = true;
+        [PreviewWith(true)]
         public bool PickEnabled { get; private set; }
+        [PreviewWith(true)]
         public bool LibraryEnabled { get; private set; }
+        [PreviewWith(true)]
         public bool PlayEnabled { get; private set; }
+        [PreviewWith(true)]
         public bool StopEnabled { get; private set; }
+        [PreviewWith(true)]
         public bool ShowPlaylistButton { get; private set; }
         public bool ShowStopButton { get; private set; }
+        [PreviewWith("#3C2241")]
         public Color PreviousColor { get; private set; }
+        [PreviewWith("#3C2241")]
         public Color NextColor { get; private set; }
+        [PreviewWith("#3C2241")]
         public Color PlayColor { get; private set; }
+        [PreviewWith("Pause")]
         public MediaGlyphKind PlayGlyph { get; private set; } = MediaGlyphKind.Play;
+        [PreviewWith("#C5EDFF")]
         public Color PlayGlyphColor { get; private set; }
+        [PreviewWith(0.42f)]
         public float PlayGlyphRatio { get; private set; } = .62f;
+        [PreviewWith("#E7D8EA")]
         public Color ShuffleColor { get; private set; }
+        [PreviewWith("#3C2241")]
         public Color RepeatColor { get; private set; }
         public string RepeatSuffix { get; private set; } = string.Empty;
+        [PreviewWith(1.05f)]
         public float RepeatSuffixFontSize { get; private set; } = 1f;
+        [PreviewWith("#E7D8EA")]
         public Color PlaylistColor { get; private set; }
+        [PreviewWith("#602020")]
         public Color ErrorColor { get; private set; }
+        [PreviewWith(0.42f)]
         public float StopRatio { get; private set; } = .42f;
 
+        [PreviewWith(true)]
         public bool VolumeVisible { get; private set; }
+        [PreviewWith(16f)]
         public float VolumeHeight { get; private set; }
+        [PreviewWith("0 8 0 0")]
         public Vector4 VolumeMargin { get; private set; }
+        [PreviewWith(16f)]
         public float VolumeIconSize { get; private set; }
+        [PreviewWith("5 0 5 0")]
         public Vector4 VolumeSliderMargin { get; private set; }
+        [PreviewWith(0.7f)]
         public float Volume { get; private set; } = 1f;
+        [PreviewWith("#3C2241")]
         public Color ActiveColor { get; private set; }
+        [PreviewWith("#352937")]
         public Color InactiveSurfaceColor { get; private set; }
+        [PreviewWith("#E7D8EA")]
         public Color InactiveForegroundColor { get; private set; }
 
         public bool PlaylistPanelVisible { get; private set; }
         public float PlaylistWidth { get; private set; }
         public Vector4 PlaylistMargin { get; private set; }
         public bool PlaylistCompact { get; private set; }
+        [PreviewWith(true)]
         public bool PlaylistNormal { get; private set; }
         public bool PlaylistOverlay { get; private set; }
+        [PreviewWith(32f)]
         public float ActionHeight { get; private set; }
         public float OverlayRowHeight { get; private set; }
         public float OverlayActionWidth { get; private set; }
         public Vector4 VolumeOverlayMargin { get; private set; }
+        [PreviewWith(true)]
         public bool QueueHasItems { get; private set; }
+        [PreviewWith("#3C2241")]
         public Color QueueActionColor { get; private set; }
+        [PreviewWith("Clear")]
         public string ClearQueueText { get; private set; } = string.Empty;
+        [PreviewWith("Save")]
         public string SaveQueueText { get; private set; } = string.Empty;
+        [PreviewWith("The queue is empty")]
         public string QueueEmptyText { get; private set; } = string.Empty;
         public bool QueueEmpty { get; private set; }
+        [PreviewWith(0.58f)]
         public float ActionFontSize { get; private set; }
+        [PreviewWith(0.58f)]
         public float EmptyFontSize { get; private set; }
+        [PreviewWith(5f)]
         public float ListRadius { get; private set; }
+        [PreviewWith(48f)]
         public float RowHeight { get; private set; }
+        [PreviewWith(3)]
         public IReadOnlyList<MediaPlaylistRowModel> Rows => _rows;
 
         void Run(Action action)
@@ -256,6 +334,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
             RaisePropertyChanged<string>(nameof(VisualizerTexture));
         }
 
+        [PreviewWith(true)]
         public bool HasFrameBoundContent => ProgressVisible || ShowVisualizer || IsVideo;
 
         internal void NotifyPointer(Vector2 point)
@@ -302,6 +381,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
 
             float padding = Math.Max(4f, SIDE_PADDING * s);
             AreaMargin = new Vector4(padding);
+            VisualizerMargin = Vector4.Zero;
             float width = Math.Max(0f, _viewport.X - padding * 2f);
             float height = Math.Max(0f, _viewport.Y - padding * 2f);
             bool small = width > 0f && height > 0f && height / Math.Max(1f, width) < Constants.MIN_SCREEN_HEIGHT_TO_WIDTH_RATIO;
@@ -376,6 +456,8 @@ namespace LcdMod.Client.Apps.MediaPlayer
                 PlaylistWidth = Math.Max(120f * s, Math.Min(width * .42f, 280f * s));
                 controlsWidth = Math.Max(1f, width - PlaylistWidth - gap);
                 PlaylistMargin = new Vector4(gap, 0f, 0f, 0f);
+                float padding = AreaMargin.X;
+                VisualizerMargin = new Vector4(padding, 0f, padding + PlaylistWidth + gap, 0f);
             }
 
             bool pathVisible = wide || !playlistVisible;
@@ -595,23 +677,40 @@ namespace LcdMod.Client.Apps.MediaPlayer
         }
 
         public ICommand Command { get; }
+        [PreviewWith("Orbital Sunrise", "Neon Drift", "Asteroid Belt Blues")]
         public string Title => _title;
+        [PreviewWith("3:02", "3:34", "4:11")]
         public string Detail => _detail;
+        [PreviewWith("Orbital Sunrise  3:02", "Neon Drift  3:34", "Asteroid Belt Blues  4:11")]
         public string CompactText => _compactText;
+        [PreviewWith("FileWav")]
         public string Icon => _icon;
+        [PreviewWith(false, true, false)]
         public bool IsCurrent => _isCurrent;
         public bool IsCompact => _compact;
+        [PreviewWith(true)]
         public bool IsNormal => !_compact;
+        [PreviewWith(0.52f)]
         public float TitleFontSize => _titleFontSize;
+        [PreviewWith(0.42f)]
         public float DetailFontSize => _detailFontSize;
+        [PreviewWith(0.46f)]
         public float CompactFontSize => _compactFontSize;
+        [PreviewWith(30f)]
         public float IconSize => _iconSize;
+        [PreviewWith("6 0 6 0")]
         public Vector4 RowPadding => new Vector4(_padding, 0f, _padding, 0f);
+        [PreviewWith(30f)]
         public float HandleWidth => _handleWidth;
+        [PreviewWith(48f)]
         public float RowHeight => _rowHeight;
+        [PreviewWith("#E7D8EA", "#C5EDFF", "#E7D8EA")]
         public Color DetailColor => _detailColor;
+        [PreviewWith("#C5EDFF")]
         public Color IconColor => _iconColor;
+        [PreviewWith("#E7D8EA", "#C5EDFF", "#E7D8EA")]
         public Color TitleColor => _titleColor;
+        [PreviewWith(0, 1, 2)]
         public int Index => _index;
 
         internal void Move(int rows)

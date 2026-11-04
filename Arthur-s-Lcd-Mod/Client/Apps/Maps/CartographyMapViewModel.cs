@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core.Input;
-using Adk.Gui.Rendering;
-using Adk.Gui.Styling;
+using Acrux.Core.Input;
+using Acrux.Rendering;
+using Acrux.Styling;
 using Jakaria.API;
-using Cartography;
-using Cartography.Maps;
-using LcdMod.Common.Mvvm;
+using Acrux.Cartography;
+using Acrux.Cartography.Maps;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Maps
@@ -18,6 +18,7 @@ namespace LcdMod.Client.Apps.Maps
         void PlayClick();
         void PlayGps();
         void RequestRender();
+        void RequestFrames();
     }
 
     internal sealed class MapLayerItem : ObservableObject
@@ -35,20 +36,24 @@ namespace LcdMod.Client.Apps.Maps
             Command = new DelegateCommand(_ => owner.SelectLayer(layer));
         }
 
+        [PreviewWith("Satellite", "Terrain", "Materials", "Biomes")]
         public CartographyLayer Layer { get; }
+        [PreviewWith("Satellite", "Terrain", "Materials", "Biomes")]
         public string Name { get; }
+        [PreviewWith("Satellite\nSurface materials shown using their distant-map colors.", "Terrain\nHeightmap normalized from the planet's minimum to maximum elevation.", "Materials\nRaw material IDs shown with stable category colors.", "Biomes\nRaw biome IDs shown with stable category colors.")]
         public string Tip { get; }
         public ICommand Command { get; }
         public bool IsSelected => _isSelected;
         public bool IsShown => _isShown;
         public PlanetColorCubemap Cubemap => _cubemap;
+        [PreviewWith("Left")]
         public PlanetCubeFace Face => _face;
 
         internal void Update(bool selected, bool shown, PlanetColorCubemap cubemap, PlanetCubeFace face)
         {
             RaiseAndSetIfChanged(ref _isSelected, selected, nameof(IsSelected));
             RaiseAndSetIfChanged(ref _isShown, shown, nameof(IsShown));
-            if (!ReferenceEquals(_cubemap, cubemap))
+            if (!LayerPreview.IsSameCubemap(_cubemap, cubemap))
             {
                 _cubemap = cubemap;
                 RaisePropertyChanged<PlanetColorCubemap>(nameof(Cubemap));
@@ -61,12 +66,13 @@ namespace LcdMod.Client.Apps.Maps
     /// The Star/Planetary map screen model backported from the standalone Minimap: owns the cartography renderer, the
     /// shared view state and the camera input, and repaints the map texture when the view changes.
     /// </summary>
-    internal abstract class CartographyMapViewModel : ObservableObject, IMapSurface, IAsyncMapSurface, IMapSurfaceDrag, IDisposable
+    internal abstract class CartographyMapViewModel : ObservableObject, IMapSurface, IAsyncMapSurface, IMapSurfaceDrag,
+        IDisposable
     {
         protected const float PLANET_MINIMUM_ZOOM = .55f;
         protected const float PLANET_MAXIMUM_ZOOM = 16f;
-        protected const float STAR_MINIMUM_ZOOM = CartographyMapRenderer.StarMinimumZoom;
-        protected const float STAR_MAXIMUM_ZOOM = CartographyMapRenderer.StarMaximumZoom;
+        protected const float STAR_MINIMUM_ZOOM = CartographyMapRenderer.STAR_MINIMUM_ZOOM;
+        protected const float STAR_MAXIMUM_ZOOM = CartographyMapRenderer.STAR_MAXIMUM_ZOOM;
         const float ORBIT_SENSITIVITY = .009f;
         const float COMPASS_NORTH_CORRECTION = -MathHelper.PiOver4;
         const int PLANET_REFRESH_FRAMES = 18;
@@ -90,6 +96,12 @@ namespace LcdMod.Client.Apps.Maps
         CartographyModule _rendererModule;
         RectangleF _canvas;
         bool _dirty = true;
+        bool _scenePending;
+        bool _hasLastCamera;
+        MatrixD _lastCamera;
+        bool _hasTickCamera;
+        MatrixD _tickCamera;
+        bool _cameraMoving;
         int _version;
         int _markersVersion;
         int _updates;
@@ -97,9 +109,12 @@ namespace LcdMod.Client.Apps.Maps
         bool _isNorthLocked = true;
         bool _isFollowing = true;
         float _orientationRotation;
+        [PreviewWith(true)]
         bool _waterVisible;
         bool _waterEnabled;
+        [PreviewWith(false)]
         bool _isWaterHidden;
+        [PreviewWith(true)]
         bool _roadsToggleVisible;
         bool _isRoadsShown = true;
         bool _orbitLinesShown = true;
@@ -120,6 +135,7 @@ namespace LcdMod.Client.Apps.Maps
             _mode = mode;
             Data.ReferenceProvider = () => Host.ReferenceWorldMatrix;
             State.Zoom = mode == MapMode.StarMap ? 1f : PLANET_MAXIMUM_ZOOM;
+            State.BlocksVisible = true;
             for (int i = 0; i < MapLayers.Length; i++)
                 _layers.Add(new MapLayerItem(this, MapLayers[i], LayerName(MapLayers[i]), LayerDescription(MapLayers[i])));
             OrientationCommand = new DelegateCommand(_ => ToggleOrientation());
@@ -133,6 +149,7 @@ namespace LcdMod.Client.Apps.Maps
         public int Version => _version;
         public int MarkersVersion => _markersVersion;
         public IReadOnlyList<MapMarker> Markers => _markers;
+        [PreviewWith(4)]
         public IReadOnlyList<MapLayerItem> Layers => _layers;
         public ICommand OrientationCommand { get; }
         public ICommand FollowCommand { get; }
@@ -140,18 +157,29 @@ namespace LcdMod.Client.Apps.Maps
         public ICommand RoadsCommand { get; }
         public ICommand OrbitLinesCommand { get; }
         public ICommand RecenterCommand { get; }
+        [PreviewWith(true)]
         public bool IsNorthLocked => _isNorthLocked;
+        [PreviewWith("North up\nKeep planetary north at the top of the map.")]
         public string OrientationTip => Tooltip(_isNorthLocked ? "NorthUp" : "CurrentUp");
+        [PreviewWith("Follow ship\nKeep the map camera anchored to the ship.")]
         public string FollowTip => Tooltip(_isFollowing ? "FollowCamera" : "FreeCamera");
         public Transform OrientationTransform => new RotateTransform(MathHelper.ToDegrees(_orientationRotation));
         public IMapSurface Surface => this;
+        [PreviewWith("WaterIcon Uniform")]
         public BackgroundBrush WaterIcon { get; } = Mask("WaterIcon");
+        [PreviewWith("RoadIcon Uniform")]
         public BackgroundBrush RoadIcon { get; } = Mask("RoadIcon");
+        [PreviewWith("CompassIcon Uniform")]
         public BackgroundBrush CompassIcon { get; } = Mask("CompassIcon");
+        [PreviewWith("Lock Uniform")]
         public BackgroundBrush FollowIcon => _isFollowing ? LockIcon : FreeIcon;
+        [PreviewWith("OrbitOn Uniform")]
         public BackgroundBrush OrbitLinesIconMask => _orbitLinesShown ? OrbitOnIcon : OrbitOffIcon;
+        [PreviewWith(true)]
         public bool IsCentered => _isCentered;
+        [PreviewWith("Lock Uniform")]
         public BackgroundBrush RecenterIcon => _isCentered ? LockIcon : FreeIcon;
+        [PreviewWith(true)]
         public bool IsFollowing => _isFollowing;
         public bool WaterVisible => _waterVisible;
         public bool WaterEnabled => _waterEnabled;
@@ -161,6 +189,7 @@ namespace LcdMod.Client.Apps.Maps
         public bool OrbitLinesShown => _orbitLinesShown;
         public string Status => _status;
         public bool HasStatus => _hasStatus;
+        [PreviewWith("#FFFFFF")]
         public Color StatusColor => _statusColor;
         public bool HasMap => _hasMap;
         public bool IsPlanetary => _mode == MapMode.PlanetaryMap;
@@ -183,6 +212,11 @@ namespace LcdMod.Client.Apps.Maps
 
         public void Update()
         {
+            // A frame that finished painting since the last tick is published here, before this tick's draw
+            // requests the next one; the paint task's own callback would only run a tick later, halving the
+            // frame rate. Never from the draw itself: publishing asks the screen to render again.
+            if (_renderer != null)
+                _renderer.CompleteFinishedRender();
             EnsureRenderer();
             AdvanceOrbitInertia();
             if (_updates++ % PLANET_REFRESH_FRAMES == 0)
@@ -205,6 +239,55 @@ namespace LcdMod.Client.Apps.Maps
             RefreshMarkers();
             if (_dirty)
                 Invalidate();
+            TrackCameraMotion();
+            RequestFramesIfScenePending();
+        }
+
+        // Updates run before the tick's physics and frames are captured after it, so a camera on a moving ship
+        // reads here exactly as the last frame captured it: compared only with that frame, it looks still and the
+        // frame burst runs out. Update to update, both readings are pre-physics and show the motion.
+        void TrackCameraMotion()
+        {
+            if (!State.HasFixedStarCamera)
+            {
+                _hasTickCamera = false;
+                _cameraMoving = false;
+                return;
+            }
+            MatrixD camera = State.FixedStarCamera;
+            _cameraMoving = _hasTickCamera && !camera.EqualsFast(ref _tickCamera, 1e-4);
+            _tickCamera = camera;
+            _hasTickCamera = true;
+        }
+
+        // The 3D views (the Planet Map's surface view, the Star Map HUD camera) change every tick while their
+        // camera moves, and an in-flight or incomplete frame needs follow-up ticks to be shown and refined. The
+        // screen's own 6 ups cadence would leave them stuttering, so they ask for a burst of frames instead.
+        bool Is3DView => State.SurfaceViewActive || State.HasFixedStarCamera;
+
+        protected bool IsRendererLoading => _renderer != null && _renderer.IsSceneLoading;
+
+        bool HasPendingScene
+        {
+            get
+            {
+                if (!Is3DView)
+                    return false;
+                if (_scenePending || IsRendererLoading)
+                    return true;
+                if (!State.HasFixedStarCamera)
+                    return false;
+                if (_cameraMoving)
+                    return true;
+                MatrixD camera = State.FixedStarCamera;
+                return !_hasLastCamera || !camera.EqualsFast(ref _lastCamera, 1e-4);
+            }
+        }
+
+        void RequestFramesIfScenePending()
+        {
+            if (HasPendingScene)
+                Host.RequestFrames();
         }
 
         public void Invalidate()
@@ -356,7 +439,7 @@ namespace LcdMod.Client.Apps.Maps
             PlanetCubeFace face;
             float u;
             float v;
-            PlanetMapSource.DirectionToFaceUv(local, out face, out u, out v);
+            face = CartographyModule.DirectionToFaceUv(local, out u, out v);
             return face;
         }
 
@@ -408,11 +491,15 @@ namespace LcdMod.Client.Apps.Maps
             Host.PlayClick();
         }
 
+        // The user showed or hid the roads (a FTUE tip completes on it).
+        public event Action RoadsToggled;
+
         void ToggleRoads()
         {
             State.RoadsVisible = !State.RoadsVisible;
             ViewChanged();
             Host.PlayClick();
+            RoadsToggled?.Invoke();
         }
 
         void ToggleOrbitLines()
@@ -462,7 +549,12 @@ namespace LcdMod.Client.Apps.Maps
             if (State.PlanetOrientation == PlanetOrientationMode.HeadingLocked && Data.HasPlayerWorldMatrix)
                 referenceUp = Data.PlayerWorldMatrix.Forward;
             else if (planet != null && planet.Planet != null)
-                referenceUp = planet.Planet.WorldMatrix.Up;
+            {
+                // North is planet-local -Y (CartographyMapRenderer.PlanetLocalNorth), not the planet's Up.
+                Vector3 north = CartographyMapRenderer.PlanetLocalNorth;
+                MatrixD planetMatrix = planet.Planet.WorldMatrix;
+                referenceUp = planetMatrix.Right * north.X + planetMatrix.Up * north.Y + planetMatrix.Backward * north.Z;
+            }
             if (referenceUp.Normalize() <= 1e-9)
                 referenceUp = Vector3D.Up;
             State.PlanetFreeReferenceUpWorld = referenceUp;
@@ -473,11 +565,18 @@ namespace LcdMod.Client.Apps.Maps
         protected void ViewChanged()
         {
             _dirty = true;
+            _scenePending = true;
+            if (Is3DView)
+                Host.RequestFrames();
             OnViewChanged();
             RefreshPresentation();
             RefreshMarkers();
             Invalidate();
             Host.RequestRender();
+        }
+
+        protected virtual void RefreshCameraForCapture()
+        {
         }
 
         protected virtual void OnViewChanged()
@@ -505,14 +604,39 @@ namespace LcdMod.Client.Apps.Maps
         {
             if (_renderer == null)
                 return false;
-            return _renderer.RequestRender(canvas, Data, _mode, State, error =>
+            // The frame reads entities now; a camera copied at the last tick would lag the moving ship it is
+            // mounted on (at speed, far enough to see its own hull).
+            RefreshCameraForCapture();
+            MatrixD camera = State.FixedStarCamera;
+            bool accepted = _renderer.RequestRender(canvas, Data, _mode, State, error =>
             {
                 completed(error);
+                // Frames first: with a tick scheduled, the render joins that tick's update (which requests the
+                // next frame) instead of rendering now and leaving the update's render nothing to do.
+                RequestFramesIfScenePending();
                 Host.RequestRender();
             });
+            if (accepted)
+            {
+                _scenePending = false;
+                _lastCamera = camera;
+                _hasLastCamera = true;
+            }
+            else if (Is3DView)
+            {
+                _scenePending = true;
+                Host.RequestFrames();
+            }
+            return accepted;
         }
 
         protected virtual bool CanOrbit => true;
+
+        // A subclass that moves its own camera takes the drag; true when it did.
+        protected virtual bool HandleDrag(Vector2 delta)
+        {
+            return false;
+        }
 
         void IMapSurfaceDrag.BeginDrag(Vector2 pixel)
         {
@@ -527,11 +651,16 @@ namespace LcdMod.Client.Apps.Maps
 
         void IMapSurfaceDrag.DragTo(Vector2 pixel, Vector2 delta)
         {
-            if (!CanOrbit)
+            if (HandleDrag(delta) || !CanOrbit)
                 return;
             if (!IsPlanetary)
             {
                 ((IMapSurface)this).Drag(delta);
+                return;
+            }
+            if (State.SurfaceViewActive)
+            {
+                PanSurfaceView(delta);
                 return;
             }
 
@@ -569,6 +698,19 @@ namespace LcdMod.Client.Apps.Maps
             State.PlanetOrbitRight = right;
             State.PlanetOrbitUp = up;
             _orbitInertia.Record(OrbitTime, view, right, up);
+            ViewChanged();
+        }
+
+        void PanSurfaceView(Vector2 delta)
+        {
+            if (_renderer == null)
+                return;
+            UnlockPlanetOrientation();
+            if (State.FollowPlayer)
+                SetFollowPlayer(false);
+            if (!_renderer.PanPlanetSurfaceView(Data, State, delta, Math.Min(_canvas.Width, _canvas.Height)))
+                return;
+            _orbitInertia.Record(OrbitTime, State.PlanetOrbitView, State.PlanetOrbitRight, State.PlanetOrbitUp);
             ViewChanged();
         }
 
@@ -621,13 +763,16 @@ namespace LcdMod.Client.Apps.Maps
                 State.StarOrbitUp = up;
             }
             _dirty = true;
+            _scenePending = true;
             OnViewChanged();
             Host.RequestRender();
+            if (Is3DView)
+                Host.RequestFrames();
         }
 
         void IMapSurface.Drag(Vector2 delta)
         {
-            if (!CanOrbit)
+            if (HandleDrag(delta) || !CanOrbit)
                 return;
             if (IsPlanetary)
             {
@@ -649,7 +794,9 @@ namespace LcdMod.Client.Apps.Maps
 
         void IMapSurface.MiddleDrag(Vector2 delta)
         {
-            if (IsStarMap && CanOrbit && _renderer != null && _renderer.PanStarMap(State, delta))
+            if (_renderer == null || !CanOrbit)
+                return;
+            if (IsStarMap ? _renderer.PanStarMap(State, delta) : _renderer.OrbitPlanetSurfaceView(State, delta))
                 ViewChanged();
         }
 
@@ -660,6 +807,13 @@ namespace LcdMod.Client.Apps.Maps
 
         protected virtual bool HandleScroll(int delta)
         {
+            if (IsPlanetary && State.SurfaceViewOnly)
+            {
+                if (_renderer == null || !_renderer.ScrollPlanetSurfaceView(Data, State, delta))
+                    return false;
+                ViewChanged();
+                return true;
+            }
             float multiplier = IsStarMap ? 1.15f : 1.25f;
             float next = State.Zoom * (delta > 0 ? multiplier : 1f / multiplier);
             next = IsStarMap
@@ -776,7 +930,7 @@ namespace LcdMod.Client.Apps.Maps
             State.StarOrbitUp = new Vector3(0f, .8f, -.6f);
         }
 
-        /// <summary>The orbit basis as view (Backward) then Up, the gimbal-free form persisted in the configuration.</summary>
+        // The orbit basis as view (Backward) then Up, the gimbal-free form persisted in the configuration.
         protected float[] GetOrbitBasis(bool star)
         {
             Vector3 view = star ? State.StarOrbitView : State.PlanetOrbitView;
@@ -825,7 +979,7 @@ namespace LcdMod.Client.Apps.Maps
             RotateStarOrbit(yaw, pitch);
         }
 
-        /// <summary>Planet orbit as yaw/pitch of its view vector, the form stored in the LCD configuration.</summary>
+        // Planet orbit as yaw/pitch of its view vector, the form stored in the LCD configuration.
         protected void GetPlanetOrbitAngles(out float yaw, out float pitch)
         {
             Vector3 view = State.PlanetOrbitView;

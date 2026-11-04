@@ -1,18 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Adk.Gui.Controls;
-using Adk.Gui.Controls.Documents;
-using Adk.Gui.Core;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Layout;
-using Adk.Gui.Rendering;
+using Acrux.Controls;
+using Acrux.Controls.Documents;
+using Acrux.Core;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Layout;
+using Acrux.Rendering;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.Markdown;
 using LcdMod.Client.Markdown.Inline;
 using LcdMod.Client.Markdown.Inline.NonStandard;
-using Inline = Adk.Gui.Controls.Documents.Inline;
+using Inline = Acrux.Controls.Documents.Inline;
 using VRageMath;
 using static LcdMod.Common.Helpers.Constants;
 
@@ -294,7 +294,7 @@ namespace LcdMod.Client.Apps.Markdown
                 _sprite = ResolveSprite(image.Source);
         }
 
-        /// <summary>Maps a block definition name to a registered sprite; set by the client once textures are available.</summary>
+        // Maps a block definition name to a registered sprite; set by the client once textures are available.
         internal static Func<string, string> BlockSpriteResolver { get; set; }
 
         static string ResolveSprite(string sprite)

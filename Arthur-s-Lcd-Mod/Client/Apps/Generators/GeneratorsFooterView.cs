@@ -1,7 +1,7 @@
 using System;
-using Adk.Gui.Controls;
-using Adk.Gui.Core;
-using LcdMod.Common.Mvvm;
+using Acrux.Controls;
+using Acrux.Core;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Generators

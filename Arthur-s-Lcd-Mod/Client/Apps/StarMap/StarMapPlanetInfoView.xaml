@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <UserControl
-    xmlns="https://github.com/ArthurGamerHD/Adk"
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:star="using:LcdMod.Client.Apps.StarMap"
     x:Class="LcdMod.Client.Apps.StarMap.StarMapPlanetInfoView"
-    x:DataType="star:StarMapPlanetInfo">
+    x:DataType="star:StarMapPlanetInfo"
+    Design.DataContext="{x:Static star:StarMapPlanetInfoPreview.Default}">
   <Border Classes="map-info" IsVisible="{Binding IsVisible}">
     <StackPanel Spacing="2">
       <TextBlock Classes="map-info-title" Text="{Binding Name}" />

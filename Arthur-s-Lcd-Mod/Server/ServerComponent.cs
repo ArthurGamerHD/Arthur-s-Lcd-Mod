@@ -9,6 +9,7 @@ using LcdMod.Common.Networking;
 using LcdMod.Server.Images;
 using LcdMod.Server.Modules.RoomEnvironment;
 using LcdMod.Common.Images;
+using LcdMod.Common.Snapshots;
 using Sandbox.Game;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
@@ -57,6 +58,7 @@ namespace LcdMod.Server
             _trackedGrids.Clear();
             _gridRemaps.Clear();
             _images.Unload();
+            GridSnapshotStorage.Clear();
             _entities.Clear();
             UnregisterSingleton();
         }
@@ -92,6 +94,56 @@ namespace LcdMod.Server
             RemapHelper.PinBlocks(packet.Config);
             ScreenProviderConfigStorage.Save(block, packet.Config);
             _images.EnsureConfigImages(block.CubeGrid, packet.Config);
+        }
+
+        [NetworkCallback(typeof(PacketStoreGridSnapshot), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
+        public void HandleStoreGridSnapshot(ReceivedPacketEventArgs args)
+        {
+            StoreGridSnapshot(args.SenderId, args.UnWrap<PacketStoreGridSnapshot>());
+        }
+
+        public void HandleLocalStoreGridSnapshot(PacketStoreGridSnapshot packet)
+        {
+            var player = MyAPIGateway.Session.Player;
+            StoreGridSnapshot(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
+        }
+
+        // Kept on the screen's block (saved with the world) and sent to every client, whose screens draw from it.
+        void StoreGridSnapshot(ulong senderSteamId, PacketStoreGridSnapshot packet)
+        {
+            if (packet == null || string.IsNullOrEmpty(packet.Key) || packet.Key.Length > 64)
+                return;
+            byte[] data = packet.Data ?? Array.Empty<byte>();
+            if (data.Length > LcdMod.Common.Helpers.Constants.MAX_GRID_SNAPSHOT_BYTES)
+                return;
+            var block = MyEntities.GetEntityById(packet.BlockId) as IMyTerminalBlock;
+            if (block == null)
+                return;
+            long identity = MyAPIGateway.Players.TryGetIdentityId(senderSteamId);
+            if (MyAPIGateway.Multiplayer.MultiplayerActive &&
+                (identity == 0 || block.GetUserRelationToOwner(identity) > MyRelationsBetweenPlayerAndBlock.FactionShare))
+                return;
+            if (GridSnapshotStorage.TotalBytes(block, packet.Key) + data.Length > LcdMod.Common.Helpers.Constants.MAX_BLOCK_SNAPSHOT_BYTES)
+            {
+                LogHelper.Log(MyLogSeverity.Warning, "Rejected grid snapshot " + packet.Key + " from " + senderSteamId +
+                                                     ": block " + block.EntityId + " is at its snapshot storage limit");
+                return;
+            }
+            GridSnapshotStorage.Set(block, packet.Key, data);
+
+            var sync = new PacketSyncGridSnapshot { BlockId = packet.BlockId, Key = packet.Key, Data = data };
+            var players = new List<IMyPlayer>();
+            MyAPIGateway.Players.GetPlayers(players);
+            ulong local = MyAPIGateway.Session.Player?.SteamUserId ?? 0;
+            for (int i = 0; i < players.Count; i++)
+            {
+                IMyPlayer player = players[i];
+                // The sender already holds it; so does this server's own player.
+                if (player == null || player.IsBot || player.SteamUserId == 0 || player.SteamUserId == local ||
+                    player.SteamUserId == senderSteamId)
+                    continue;
+                LcdModSessionComponent.NetworkManager.TransmitToPlayer(sync, player.SteamUserId);
+            }
         }
 
         public void SaveData()

@@ -20,9 +20,12 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         readonly List<T> _reference = new List<T>();
         readonly List<IMySlimBlock> _blocks = new List<IMySlimBlock>();
         readonly List<IMyCubeGrid> _grids = new List<IMyCubeGrid>();
-        
-        protected void CreateListbox(string id, string title)
+        string _configKey = Constants.PROJECTOR_REFERENCE;
+
+        // configKey: the app's BlockReferenceConfigComponent slot the selection is kept in.
+        protected void CreateListbox(string id, string title, string configKey = Constants.PROJECTOR_REFERENCE)
         {
+            _configKey = configKey;
             var listbox = CreateControl<IMyTerminalControlListbox>(id);
             listbox.ListContent = Getter;
             listbox.ItemSelected = Setter;
@@ -38,7 +41,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             var selectedBlockId = ListBoxItemHelper.GetLongUserData(selection.FirstOrDefault());
             if (!ConfigManager.ModifyComponentForCurrentSurface<BlockReferenceConfigComponent>(
                     block,
-                    Constants.PROJECTOR_REFERENCE,
+                    _configKey,
                     config => config.EntityId = selectedBlockId))
                 return;
 
@@ -50,7 +53,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
         {
             var reference = ConfigManager.GetComponentForCurrentSurface<BlockReferenceConfigComponent>(
                 block,
-                Constants.PROJECTOR_REFERENCE);
+                _configKey);
             if (reference == null)
                 return;
             

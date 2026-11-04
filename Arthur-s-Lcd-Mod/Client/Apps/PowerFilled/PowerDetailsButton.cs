@@ -1,7 +1,7 @@
-using Adk.Gui.Controls;
-using Adk.Gui.Controls.Primitives;
-using Adk.Gui.Core.Input;
-using Adk.Gui.Core.PropertySystem;
+using Acrux.Controls;
+using Acrux.Controls.Primitives;
+using Acrux.Core.Input;
+using Acrux.Core.PropertySystem;
 
 namespace LcdMod.Client.Apps.PowerFilled
 {
@@ -37,7 +37,7 @@ namespace LcdMod.Client.Apps.PowerFilled
             if (property != HasDetailsProperty)
                 return;
             Flyout = HasDetails ? _flyout : null;
-            Cursor = HasDetails ? PointerCursor.Hand : PointerCursor.Default;
+            Cursor = HasDetails ? PointerCursor.Hand : PointerCursor.Arrow;
         }
 
         void OnOpened()

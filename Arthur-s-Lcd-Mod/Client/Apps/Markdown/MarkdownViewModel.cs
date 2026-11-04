@@ -1,14 +1,20 @@
 using LcdMod.Client.Markdown;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 
 namespace LcdMod.Client.Apps.Markdown
 {
+    /// <summary>What the markdown view model reads from its app (<see cref="MarkdownApp"/>; a design-time host in the preview).</summary>
+    internal interface IMarkdownHost
+    {
+        MarkdownDocument Document { get; }
+    }
+
     internal sealed class MarkdownViewModel : ObservableObject
     {
-        readonly MarkdownApp _app;
+        readonly IMarkdownHost _app;
         MarkdownDocument _document;
 
-        public MarkdownViewModel(MarkdownApp app)
+        public MarkdownViewModel(IMarkdownHost app)
         {
             _app = app;
         }

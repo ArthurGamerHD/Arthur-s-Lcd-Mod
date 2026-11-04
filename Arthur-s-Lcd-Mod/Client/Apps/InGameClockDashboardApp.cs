@@ -59,51 +59,48 @@ namespace LcdMod.Client.Apps
             string momentIcon = ClockDashboardSpriteMap.ResolveDayMomentIcon(_snapshot.DayMoment);
             bool hasSolarEvents = _snapshot.ClockMode == DashboardClockMode.LocalSolar && _snapshot.HasLocalSolarTime;
 
-            var data = new ClockDashboardData
-            {
-                WeatherTemperature = weatherName + ", " + compactTemperature,
-                Time = ClockDashboardFormatter.FormatCompactTime(_snapshot.DisplayDateTime, ClockDashboardComponent),
-                Date = ClockDashboardFormatter.FormatShortWeekday(_snapshot.DisplayDateTime) + ", " +
-                       ClockDashboardFormatter.FormatCompactDate(_snapshot.DisplayDateTime),
-                WeatherIcon = IsClearWeather(_snapshot)
-                    ? momentIcon
-                    : ClockDashboardSpriteMap.ResolveWeatherIcon(_snapshot.WeatherSubtype),
-                MomentIcon = momentIcon,
-                Moment = ClockDashboardFormatter.FormatDayMoment(_snapshot.DayMoment),
-                Wind = _snapshot.HasWindSpeed
-                    ? ClockDashboardFormatter.FormatWindSpeed(_snapshot.WindSpeed)
-                    : ClockDashboardLocalization.Unavailable,
-                Sunrise = hasSolarEvents && _snapshot.HasTerrainSunrise
-                    ? ClockDashboardFormatter.FormatSolarEventTime(_snapshot.TerrainSunriseHour, ClockDashboardComponent)
-                    : ClockDashboardLocalization.Unavailable,
-                Sunset = hasSolarEvents && _snapshot.HasTerrainSunset
-                    ? ClockDashboardFormatter.FormatSolarEventTime(_snapshot.TerrainSunsetHour, ClockDashboardComponent)
-                    : ClockDashboardLocalization.Unavailable,
-                Oxygen = ClockDashboardFormatter.FormatOxygen(_snapshot.OxygenRatio),
-                OxygenRatio = _snapshot.OxygenRatio,
-                OxygenColor = OxygenColor(_snapshot.OxygenRatio),
-                Temperature = _snapshot.HasInteriorTemperature
-                    ? FormatingHelper.TemperatureToString(_snapshot.InteriorTemperatureNormalized,
-                        _snapshot.InteriorTemperatureLevel, temperatureMode)
-                    : ClockDashboardLocalization.Unavailable,
-                TemperatureRatio = _snapshot.HasInteriorTemperature ? _snapshot.InteriorTemperatureNormalized : 0f,
-                TemperatureColor = TemperatureColor(_snapshot.InteriorTemperatureLevel)
-            };
+            // Property by property: each raises only when its text or value changed.
+            InGameClockDashboardViewModel model = _viewModel;
+            model.WeatherTemperature = weatherName + ", " + compactTemperature;
+            model.Time = ClockDashboardFormatter.FormatCompactTime(_snapshot.DisplayDateTime, ClockDashboardComponent) ?? string.Empty;
+            model.Date = ClockDashboardFormatter.FormatShortWeekday(_snapshot.DisplayDateTime) + ", " +
+                         ClockDashboardFormatter.FormatCompactDate(_snapshot.DisplayDateTime);
+            model.WeatherIcon = (IsClearWeather(_snapshot)
+                ? momentIcon
+                : ClockDashboardSpriteMap.ResolveWeatherIcon(_snapshot.WeatherSubtype)) ?? "MissingIcon";
+            model.MomentIcon = momentIcon ?? "WeatherSun";
+            model.Moment = ClockDashboardFormatter.FormatDayMoment(_snapshot.DayMoment) ?? string.Empty;
+            model.Wind = _snapshot.HasWindSpeed
+                ? ClockDashboardFormatter.FormatWindSpeed(_snapshot.WindSpeed) ?? string.Empty
+                : ClockDashboardLocalization.Unavailable;
+            model.Sunrise = hasSolarEvents && _snapshot.HasTerrainSunrise
+                ? ClockDashboardFormatter.FormatSolarEventTime(_snapshot.TerrainSunriseHour, ClockDashboardComponent) ?? string.Empty
+                : ClockDashboardLocalization.Unavailable;
+            model.Sunset = hasSolarEvents && _snapshot.HasTerrainSunset
+                ? ClockDashboardFormatter.FormatSolarEventTime(_snapshot.TerrainSunsetHour, ClockDashboardComponent) ?? string.Empty
+                : ClockDashboardLocalization.Unavailable;
+            model.Oxygen = ClockDashboardFormatter.FormatOxygen(_snapshot.OxygenRatio) ?? string.Empty;
+            model.OxygenRatio = _snapshot.OxygenRatio;
+            model.OxygenColor = OxygenColor(_snapshot.OxygenRatio);
+            model.Temperature = _snapshot.HasInteriorTemperature
+                ? FormatingHelper.TemperatureToString(_snapshot.InteriorTemperatureNormalized,
+                    _snapshot.InteriorTemperatureLevel, temperatureMode) ?? string.Empty
+                : ClockDashboardLocalization.Unavailable;
+            model.TemperatureRatio = _snapshot.HasInteriorTemperature ? _snapshot.InteriorTemperatureNormalized : 0f;
+            model.TemperatureColor = TemperatureColor(_snapshot.InteriorTemperatureLevel);
 
             if (_snapshot.HasIncomingWeather)
             {
-                data.ForecastIcon = ResolveForecastIcon(_snapshot);
-                data.ForecastTitle = _snapshot.IncomingWeatherDisplayName ?? ClockDashboardLocalization.UnknownWeather;
-                data.ForecastArrival = ClockDashboardFormatter.FormatIncomingArrival(_snapshot, ClockDashboardComponent);
+                model.ForecastIcon = ResolveForecastIcon(_snapshot) ?? "WeatherSun";
+                model.ForecastTitle = _snapshot.IncomingWeatherDisplayName ?? ClockDashboardLocalization.UnknownWeather;
+                model.ForecastArrival = ClockDashboardFormatter.FormatIncomingArrival(_snapshot, ClockDashboardComponent) ?? string.Empty;
             }
             else
             {
-                data.ForecastIcon = "WeatherSun";
-                data.ForecastTitle = ClockDashboardLocalization.ClearWeather;
-                data.ForecastArrival = string.Empty;
+                model.ForecastIcon = "WeatherSun";
+                model.ForecastTitle = ClockDashboardLocalization.ClearWeather;
+                model.ForecastArrival = string.Empty;
             }
-
-            _viewModel.Update(data);
         }
 
         static string ResolveForecastIcon(ClockDashboardSnapshot snapshot)

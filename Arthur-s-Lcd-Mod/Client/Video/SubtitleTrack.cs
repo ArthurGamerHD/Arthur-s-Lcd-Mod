@@ -38,7 +38,7 @@ namespace LcdMod.Client.Video
             return text;
         }
 
-        /// <summary>Reads SRT or WebVTT text; blocks without a valid timing line are skipped.</summary>
+        // Reads SRT or WebVTT text; blocks without a valid timing line are skipped.
         public static SubtitleTrack Parse(string content)
         {
             var track = new SubtitleTrack();
@@ -68,7 +68,7 @@ namespace LcdMod.Client.Video
             return track;
         }
 
-        /// <summary>The track as SRT, for sending it to the players a video is streamed to.</summary>
+        // The track as SRT, for sending it to the players a video is streamed to.
         public byte[] ToBytes()
         {
             var text = new StringBuilder();

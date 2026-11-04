@@ -1,8 +1,8 @@
 using System;
-using Adk.Gui.Controls;
-using Adk.Gui.Core;
-using Adk.Gui.Layout;
-using Adk.Gui.Styling;
+using Acrux.Controls;
+using Acrux.Core;
+using Acrux.Layout;
+using Acrux.Styling;
 using LcdMod.Client.Apps.Markdown;
 using LcdMod.Client.Markdown;
 using VRageMath;
@@ -50,7 +50,7 @@ namespace LcdMod.Client.Ftue
             Closed += OnClosed;
         }
 
-        /// <summary>Raised when the user closes the hint, not when it is hidden by the tutorial service.</summary>
+        // Raised when the user closes the hint, not when it is hidden by the tutorial service.
         public Action Dismissed { get; set; }
 
         public MarkdownDocument Document
@@ -94,7 +94,7 @@ namespace LcdMod.Client.Ftue
             }
         }
 
-        /// <summary>Blends the background toward the theme's success colour as the tip completes.</summary>
+        // Blends the background toward the theme's success colour as the tip completes.
         public void SetSuccess(float progress)
         {
             if (progress <= 0f)

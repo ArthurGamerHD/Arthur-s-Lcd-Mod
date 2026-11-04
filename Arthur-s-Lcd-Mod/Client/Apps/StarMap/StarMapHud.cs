@@ -1,13 +1,26 @@
 using System;
 using System.Collections.Generic;
-using Adk.Gui.Core;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Rendering;
+using Acrux.Core;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Rendering;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.StarMap
 {
+    // A ship on the HUD: its centre in camera space (metres: X right, Y up, Z forward), its radius, and a border in
+    // its relation color with its name above and distance below.
+    internal struct HudContact
+    {
+        public Vector3 Center;
+        public float Radius;
+        public string Name;
+        public string Distance;
+        public Color Color;
+        // What the lock key would lock now: bracketed in the HUD color, as the game marks it.
+        public bool IsLockCandidate;
+    }
+
     internal struct HudLadderStep
     {
         public Vector3 Direction;
@@ -22,6 +35,7 @@ namespace LcdMod.Client.Apps.StarMap
     internal sealed class StarMapHud
     {
         public readonly List<HudLadderStep> Ladder = new List<HudLadderStep>();
+        public readonly List<HudContact> Contacts = new List<HudContact>();
 
         public bool Visible;
         public float VerticalFovRadians = MathHelper.ToRadians(70f);
@@ -43,6 +57,12 @@ namespace LcdMod.Client.Apps.StarMap
         public bool PullUp;
         public bool BoreSight;
         public string Magnification;
+        // A grid being locked on, drawn like the radar's lock: corners closing in with the progress (0 to 1), and a
+        // diamond once it is locked.
+        public bool HasLock;
+        public Vector3 LockDirection;
+        public float LockProgress;
+        public Color LockColor = Color.White;
     }
 
     internal sealed class StarMapHudView : VisualElement
@@ -57,6 +77,13 @@ namespace LcdMod.Client.Apps.StarMap
         const float TEXT_BOX_PADDING = 5f;
         const float LADDER_TEXT_SCALE = .7f;
         const float HORIZON_WIDTH = 5f;
+        // As the radar draws its lock, in pixels.
+        const float LOCK_ICON_SIZE = 16f;
+        const float LOCK_ANIM_DISTANCE = 20f;
+        const float CONTACT_MINIMUM_HALF_SIZE = 10f;
+        const float CONTACT_TEXT_SCALE = .5f;
+        const float CANDIDATE_GAP = 6f;
+        const float CANDIDATE_CORNER = 8f;
 
         public StarMapHud Hud
         {
@@ -70,7 +97,7 @@ namespace LcdMod.Client.Apps.StarMap
             set { SetValue(VersionProperty, value); }
         }
 
-        /// <summary>Screen position of a camera-space direction, or false when it points behind the viewer.</summary>
+        // Screen position of a camera-space direction, or false when it points behind the viewer.
         internal bool TryProject(Vector3 direction, out Vector2 point)
         {
             point = default(Vector2);
@@ -98,6 +125,10 @@ namespace LcdMod.Client.Apps.StarMap
                 }
                 if (!hud.EssentialOnly)
                     DrawInstruments(context, hud);
+                for (int i = 0; i < hud.Contacts.Count; i++)
+                    DrawContact(context, hud, hud.Contacts[i]);
+                if (hud.HasLock && TryProject(hud.LockDirection, out point))
+                    DrawLock(context, hud, point);
             }
 
             if (!string.IsNullOrEmpty(hud.Magnification))
@@ -142,6 +173,70 @@ namespace LcdMod.Client.Apps.StarMap
             if (hud.BoreSight)
                 Texture(context, "AH_BoreSight", Bounds.Center + new Vector2(0f, 19f), new Vector2(50f), hud.Color,
                     -MathHelper.PiOver2);
+        }
+
+        void DrawContact(RenderContext context, StarMapHud hud, HudContact contact)
+        {
+            Vector2 center;
+            if (!TryProject(contact.Center, out center))
+                return;
+            float focal = Bounds.Height * .5f / (float)Math.Tan(Math.Max(.001f, hud.VerticalFovRadians) * .5f);
+            float h = Math.Max(CONTACT_MINIMUM_HALF_SIZE, focal * contact.Radius / contact.Center.Z);
+            var topLeft = center + new Vector2(-h, -h);
+            var topRight = center + new Vector2(h, -h);
+            var bottomRight = center + new Vector2(h, h);
+            var bottomLeft = center + new Vector2(-h, h);
+            Line(context, topLeft, topRight, 2f, contact.Color);
+            Line(context, topRight, bottomRight, 2f, contact.Color);
+            Line(context, bottomRight, bottomLeft, 2f, contact.Color);
+            Line(context, bottomLeft, topLeft, 2f, contact.Color);
+            float text = CONTACT_TEXT_SCALE * hud.FontScale;
+            if (!string.IsNullOrEmpty(contact.Name))
+                context.Text(hud.Font, contact.Name, new Vector2(center.X, topLeft.Y - 3f), text, contact.Color,
+                    HorizontalAlignment.Center, VerticalAlignment.Bottom);
+            context.Text(hud.Font, contact.Distance, new Vector2(center.X, bottomLeft.Y + 3f), text, contact.Color,
+                HorizontalAlignment.Center, VerticalAlignment.Top);
+            if (contact.IsLockCandidate)
+                DrawCorners(context, center, h + CANDIDATE_GAP, CANDIDATE_CORNER, 2f, hud.Color);
+        }
+
+        static void DrawCorners(RenderContext context, Vector2 center, float half, float arm, float width, Color color)
+        {
+            for (int sx = -1; sx <= 1; sx += 2)
+                for (int sy = -1; sy <= 1; sy += 2)
+                {
+                    Vector2 corner = center + new Vector2(sx * half, sy * half);
+                    Line(context, corner, corner - new Vector2(sx * arm, 0f), width, color);
+                    Line(context, corner, corner - new Vector2(0f, sy * arm), width, color);
+                }
+        }
+
+        static void DrawLock(RenderContext context, StarMapHud hud, Vector2 center)
+        {
+            float progress = MathHelper.Clamp(hud.LockProgress, 0f, 1f);
+            float box = LOCK_ICON_SIZE + 24f + (1f - progress) * LOCK_ANIM_DISTANCE * 2f;
+            DrawCorners(context, center, box * .5f, 10f, 3f, hud.LockColor);
+            if (progress < .999f)
+                return;
+            float d = (LOCK_ICON_SIZE + 10f) * .5f;
+            Vector2 top = center - new Vector2(0f, d);
+            Vector2 right = center + new Vector2(d, 0f);
+            Vector2 bottom = center + new Vector2(0f, d);
+            Vector2 left = center - new Vector2(d, 0f);
+            Line(context, top, right, 2f, hud.LockColor);
+            Line(context, right, bottom, 2f, hud.LockColor);
+            Line(context, bottom, left, 2f, hud.LockColor);
+            Line(context, left, top, 2f, hud.LockColor);
+        }
+
+        static void Line(RenderContext context, Vector2 from, Vector2 to, float width, Color color)
+        {
+            Vector2 delta = to - from;
+            float length = delta.Length();
+            if (length < 1e-3f)
+                return;
+            Texture(context, "SquareSimple", (from + to) * .5f, new Vector2(length + width, width), color,
+                (float)Math.Atan2(delta.Y, delta.X));
         }
 
         static void TextBox(RenderContext context, StarMapHud hud, Vector2 center, string text, bool frame)

@@ -1,9 +1,9 @@
 using System;
-using Adk.Gui.Core;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Rendering;
-using Cartography;
+using Acrux.Core;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Rendering;
+using Acrux.Cartography;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Maps
@@ -76,7 +76,7 @@ namespace LcdMod.Client.Apps.Maps
             if (_texture == null || !_texture.IsAvailable)
                 return false;
             PlanetCubeFace face = Face;
-            if (!ReferenceEquals(_painted, cubemap) || _paintedFace != face)
+            if (!IsSameCubemap(_painted, cubemap) || _paintedFace != face)
             {
                 _texture.Update(canvas => Paint(canvas, cubemap, face));
                 _painted = cubemap;
@@ -86,6 +86,14 @@ namespace LcdMod.Client.Apps.Maps
                 return true;
             context.MarkVolatile();
             return false;
+        }
+
+        // The bridge hands out a new wrapper per read: wrapper identity alone would repaint the preview every frame.
+        internal static bool IsSameCubemap(PlanetColorCubemap a, PlanetColorCubemap b)
+        {
+            if (ReferenceEquals(a, b))
+                return true;
+            return a != null && b != null && ReferenceEquals(a.Native, b.Native);
         }
 
         static void Paint(PixelCanvas canvas, PlanetColorCubemap cubemap, PlanetCubeFace face)

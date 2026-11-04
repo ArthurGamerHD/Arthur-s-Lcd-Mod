@@ -71,18 +71,16 @@ namespace LcdMod.Client.Video
         public double Duration => _source.Index.GetChunkEnd(_source.Index.ChunkCount - 1);
         public bool HasAudio { get; }
 
-        /// <summary>Whether captions exist, in the file or from a subtitle file next to it.</summary>
+        // Whether captions exist, in the file or from a subtitle file next to it.
         public bool HasSubtitles => _hasSubtitleTrack || _source.Subtitles != null;
         public int Width => _width;
         public int Height => _height;
 
-        /// <summary>Incremented whenever a new picture reaches the texture.</summary>
         public int Version { get; private set; }
 
-        /// <summary>The texture to draw, or null until the first picture is uploaded.</summary>
+        // The texture to draw, or null until the first picture is uploaded.
         public string TextureName => _uploaded && _texture != null ? _texture.Name : null;
 
-        /// <summary>Moves the chunk window to <paramref name="seconds"/> and starts the work it needs.</summary>
         public void Update(double seconds)
         {
             if (_disposed)
@@ -117,16 +115,13 @@ namespace LcdMod.Client.Video
             AdvancePicture(seconds, current);
         }
 
-        /// <summary>True when the chunk playing at <paramref name="seconds"/> is decoded.</summary>
         public bool IsReadyAt(double seconds)
         {
             return _decoded.ContainsKey(_source.Index.ChunkAt(seconds));
         }
 
-        /// <summary>
-        /// Copies up to <paramref name="maxSeconds"/> of audio from <paramref name="seconds"/>, stopping at the end
-        /// of its chunk; false while that chunk is not decoded yet.
-        /// </summary>
+        // Copies up to maxSeconds of audio from seconds, stopping at the end of its chunk; false while that chunk is
+        // not decoded yet.
         public bool TryTakeAudio(double seconds, double maxSeconds, out byte[] pcm, out double taken)
         {
             pcm = null;
@@ -150,7 +145,6 @@ namespace LcdMod.Client.Video
             return true;
         }
 
-        /// <summary>Text of the subtitle showing at <paramref name="seconds"/>, or null.</summary>
         public string SubtitleAt(double seconds)
         {
             string text = null;

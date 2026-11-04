@@ -21,11 +21,8 @@ namespace LcdMod.Client.Modules.Power
         static readonly Dictionary<MyDefinitionId, float> GyroRequiredInputs = new Dictionary<MyDefinitionId, float>();
         static readonly Dictionary<MyDefinitionId, bool> ElectricThrusters = new Dictionary<MyDefinitionId, bool>();
 
-        /// <summary>
-        /// Output the distributor can draw from the producer right now, in MW. Unlike
-        /// <see cref="Sandbox.ModAPI.Ingame.IMyPowerProducer.MaxOutput"/>, which is the nameplate value for reactors and
-        /// hydrogen engines, this is 0 while the block is off, unfueled or damaged.
-        /// </summary>
+        // Output the distributor can draw from the producer right now, in MW. Unlike MaxOutput, which is the nameplate
+        // value for reactors and hydrogen engines, this is 0 while the block is off, unfueled or damaged.
         public static float AvailableOutput(IMyPowerProducer producer)
         {
             if (producer == null)
@@ -48,7 +45,7 @@ namespace LcdMod.Client.Modules.Power
             return source.MaxOutputByType(ElectricityId);
         }
 
-        /// <summary>Net change of the stored energy in MW, as <c>MyBatteryBlock</c> applies it.</summary>
+        // Net change of the stored energy in MW, as MyBatteryBlock applies it.
         public static float BatteryStoredPowerRate(IMyBatteryBlock battery)
         {
             if (battery == null || !battery.IsFunctional || !battery.Enabled)
@@ -69,7 +66,7 @@ namespace LcdMod.Client.Modules.Power
             }
         }
 
-        /// <summary>Hours until <paramref name="remaining"/> MWh are stored or drained at <paramref name="rate"/> MW.</summary>
+        // Hours until remaining MWh are stored or drained at rate MW.
         public static float HoursAtRate(float remaining, float rate)
         {
             if (Math.Abs(rate) < 1e-9f)
@@ -89,10 +86,8 @@ namespace LcdMod.Client.Modules.Power
                 definition => (definition as MyJumpDriveDefinition)?.PowerEfficiency);
         }
 
-        /// <summary>
-        /// Constant draw of a gyroscope in MW. Gyros have no sink of their own: <c>MyGridGyroSystem</c> sums this for every
-        /// enabled, functional gyro into one grid-level sink, whether or not the gyro is turning.
-        /// </summary>
+        // Constant draw of a gyroscope in MW. Gyros have no sink of their own: MyGridGyroSystem sums this for every
+        // enabled, functional gyro into one grid-level sink, whether or not the gyro is turning.
         public static float GyroRequiredInput(IMyGyro gyro)
         {
             if (gyro == null || !gyro.Enabled || !gyro.IsFunctional)
@@ -103,7 +98,7 @@ namespace LcdMod.Client.Modules.Power
             return baseInput * gyro.GyroPower * gyro.PowerConsumptionMultiplier;
         }
 
-        /// <summary>Whether the thruster burns electricity (ion and atmospheric) rather than a gas such as hydrogen.</summary>
+        // Whether the thruster burns electricity (ion and atmospheric) rather than a gas such as hydrogen.
         public static bool IsElectricThruster(IMyThrust thrust)
         {
             if (thrust == null)

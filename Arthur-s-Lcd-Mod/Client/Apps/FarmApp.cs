@@ -20,7 +20,7 @@ namespace LcdMod.Client.Apps
 {
     [LcdApp(9)]
     // ReSharper disable once PartialTypeWithSinglePart
-    internal sealed partial class FarmApp : App, IApp
+    internal sealed partial class FarmApp : App, IApp, Farm.IFarmHost
     {
         const int DATA_REFRESH_RUN_INTERVAL = 6;
         internal sealed class FarmEntry
@@ -38,9 +38,32 @@ namespace LcdMod.Client.Apps
             public string OutputName { get; private set; }
             public Color StatusColor { get; private set; }
             public string DetailsMarkdown { get; private set; } = string.Empty;
+            // The plot block's name (its custom name, else its display name); empty without a block.
+            public string Title { get; private set; } = string.Empty;
 
             public bool Update(
                 FarmPlotEntry plot,
+                float ratio,
+                string percentText,
+                string remainingText,
+                string waterText,
+                float waterRatio,
+                string outputSprite,
+                string outputName,
+                Color statusColor,
+                string detailedInfo)
+            {
+                var block = plot != null ? plot.Block : null;
+                return Update(plot, block != null ? block.EntityId : 0L,
+                    block == null ? string.Empty : !string.IsNullOrEmpty(block.CustomName) ? block.CustomName : block.DisplayNameText,
+                    ratio, percentText, remainingText, waterText, waterRatio, outputSprite, outputName, statusColor, detailedInfo);
+            }
+
+            // The entry's presentation from its values; plot may be null (details then list the growth).
+            public bool Update(
+                FarmPlotEntry plot,
+                long entryId,
+                string title,
                 float ratio,
                 string percentText,
                 string remainingText,
@@ -59,9 +82,10 @@ namespace LcdMod.Client.Apps
                 outputSprite = outputSprite ?? string.Empty;
                 outputName = outputName ?? string.Empty;
 
-                long entryId = plot != null && plot.Block != null ? plot.Block.EntityId : 0L;
+                title = title ?? string.Empty;
                 bool presentationChanged =
                     EntryId != entryId ||
+                    !string.Equals(Title, title, StringComparison.Ordinal) ||
                     !Ratio.Equals(ratio) ||
                     !string.Equals(PercentText, percentText, StringComparison.Ordinal) ||
                     !string.Equals(RemainingText, remainingText, StringComparison.Ordinal) ||
@@ -74,6 +98,7 @@ namespace LcdMod.Client.Apps
 
                 Plot = plot;
                 EntryId = entryId;
+                Title = title;
                 Ratio = ratio;
                 PercentText = percentText;
                 RemainingText = remainingText;
@@ -187,6 +212,10 @@ namespace LcdMod.Client.Apps
 
         internal IReadOnlyList<FarmEntry> NativeEntries => _entries;
         internal Color NativeBackground => _surfaceHost.BackgroundColor;
+        bool Farm.IFarmHost.IsGridDisplay => IsGridDisplay;
+        Color Farm.IFarmHost.NativeBackground => NativeBackground;
+        ColorConfigComponent Farm.IFarmHost.FarmColors => FarmColors;
+        IReadOnlyList<FarmEntry> Farm.IFarmHost.NativeEntries => NativeEntries;
 
         public override void LayoutChanged()
         {

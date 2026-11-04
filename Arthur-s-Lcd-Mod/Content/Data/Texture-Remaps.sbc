@@ -56,36 +56,6 @@
             <Selectable>false</Selectable>
         </LCDTextureDefinition>
 
-        <LCDTextureDefinition> <!-- Remap of Vanilla Cursor sprite -->
-            <Id Type="LCDTextureDefinition" Subtype="CursorDefault"/>
-            <SpritePath>Textures/GUI/MouseCursor.dds</SpritePath>
-            <Selectable>false</Selectable>
-        </LCDTextureDefinition>
-
-        <LCDTextureDefinition> <!-- Remap of Vanilla Cursor sprite -->
-            <Id Type="LCDTextureDefinition" Subtype="CursorArrow"/>
-            <SpritePath>Textures/GUI/MouseCursor.dds</SpritePath>
-            <Selectable>false</Selectable>
-        </LCDTextureDefinition>
-
-        <LCDTextureDefinition> <!-- Remap of Vanilla No Entry sprite -->
-            <Id Type="LCDTextureDefinition" Subtype="CursorNo"/>
-            <SpritePath>Textures/Sprites/NoEntry.dds</SpritePath>
-            <Selectable>false</Selectable>
-        </LCDTextureDefinition>
-
-        <LCDTextureDefinition> <!-- Remap of Vanilla Cross sprite -->
-            <Id Type="LCDTextureDefinition" Subtype="CursorCross"/>
-            <SpritePath>Textures/Sprites/Cross.dds</SpritePath>
-            <Selectable>false</Selectable>
-        </LCDTextureDefinition>
-
-        <LCDTextureDefinition> <!-- Remap of Vanilla Loading sprite -->
-            <Id Type="LCDTextureDefinition" Subtype="CursorWaitCursor"/>
-            <SpritePath>Textures/GUI/Icons/HUD 2017/RadialMenu.png</SpritePath>
-            <Selectable>false</Selectable>
-        </LCDTextureDefinition>
-
         <LCDTextureDefinition> <!-- Remap of Vanilla Help Icon sprite -->
             <Id Type="LCDTextureDefinition" Subtype="CursorHelp"/>
             <SpritePath>Textures/GUI/Controls/button_info_symbol_highlight.dds</SpritePath>

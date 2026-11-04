@@ -25,7 +25,6 @@ namespace LcdMod.Client.SurfaceScripts
         public const string ID = MOD_PREFIX + "Radar";
         public const string TITLE = MOD_PREFIX + "Radar";
         protected override string DefaultTitle => TITLE;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public override IApp App => _app;       
         RadarApp _app;
 

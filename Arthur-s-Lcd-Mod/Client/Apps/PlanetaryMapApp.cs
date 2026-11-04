@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Apps.PlanetaryMap;
 using LcdMod.Client.Config;
+using Acrux.Core.Input;
 using LcdMod.Client.Gui;
 using LcdMod.Client.Helpers;
-using Cartography;
+using Acrux.Cartography;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Terminal.Controls;
 using LcdMod.Common.Config.Components;
@@ -47,9 +48,30 @@ namespace LcdMod.Client.Apps
             remove { _viewModel.CameraOrbitChanged -= value; }
         }
 
+        public event Action ProjectionToggled
+        {
+            add { _viewModel.ProjectionToggled += value; }
+            remove { _viewModel.ProjectionToggled -= value; }
+        }
+
+        public event Action StreetViewEntered
+        {
+            add { _viewModel.StreetViewEntered += value; }
+            remove { _viewModel.StreetViewEntered -= value; }
+        }
+
+        public event Action RoadsToggled
+        {
+            add { _viewModel.RoadsToggled += value; }
+            remove { _viewModel.RoadsToggled -= value; }
+        }
+
+        public bool Is3D => _viewModel.Is3D;
+        public bool StreetViewAvailable => _viewModel.StreetViewAvailable;
+        public bool RoadsToggleVisible => _viewModel.RoadsToggleVisible;
         public bool CanCreateSurfaceGps => _viewModel.CanCreateSurfaceGps;
         public bool CanOrbitCamera => _viewModel.CanCreateSurfaceGps;
-        public CursorType RequestedCursorType => CursorType.Default;
+        public PointerCursor RequestedCursor => PointerCursor.Inherit;
         internal override float WindowRenderScaling => CardScale;
 
         public override void Update()
@@ -111,6 +133,12 @@ namespace LcdMod.Client.Apps
         {
             if (!_closed)
                 Host.RenderSprites();
+        }
+
+        void Maps.IMapHost.RequestFrames()
+        {
+            if (!_closed)
+                Host.RequestFrames();
         }
 
         PlanetaryMapConfigComponent IPlanetaryMapHost.Config => PlanetaryMapComponent;

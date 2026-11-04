@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Adk.Gui.Core;
+using Acrux.Core;
 using LcdMod.Client.Apps;
 using LcdMod.Client.Apps.Abstract;
+using LcdMod.Client.Apps.IntegrityMonitor;
 using LcdMod.Client.Apps.NpcMarket;
 using LcdMod.Client.Helpers;
 using LcdMod.Client.SurfaceScripts.Abstract;
@@ -30,7 +31,24 @@ namespace LcdMod.Client.Ftue
                 CreatePlanetaryMapCameraTip(),
                 CreatePictureFrameCustomTexturesTip(),
                 CreateRadarCameraTip(),
-                CreateRadarRangeTip()
+                CreateRadarRangeTip(),
+                CreatePlanetaryMap3DTip(),
+                CreatePlanetaryMapStreetViewTip(),
+                CreatePlanetaryMapRoadsTip(),
+                CreateGridView3DTip(),
+                CreateGridView2DTip(),
+                CreateGridXRayTip(),
+                CreateGridCameraLockTip(),
+                CreateGridLegendTip(),
+                CreatePreviewGridSnapshotTip(),
+                CreateSelfDiagnosticSnapshotTip(),
+                CreateSelfDiagnosticCombatTip(),
+                CreateTargetInfoLockTip(),
+                CreateTargetInfoMemoryTip(),
+                CreateMediaPlayerVideosTip(),
+                CreateSensorsOrbitTip(),
+                CreateSensorsCamerasTip(),
+                CreateSensorsFirstPersonTip()
             };
         }
 
@@ -131,7 +149,6 @@ namespace LcdMod.Client.Ftue
                 Loc("StarMapStaticCamera_Line1"),
                 Loc("StarMapStaticCamera_Line2"));
             tip.Placement = HintPlacement.Top;
-            tip.ActivationCondition = (surface, app) => app.PlanetariumMode;
             tip.CompletionBinder = (surface, app, complete) =>
             {
                 Action handler = () => CompleteSafely(surface, complete);
@@ -172,6 +189,271 @@ namespace LcdMod.Client.Ftue
                 app.CameraOrbitChanged += handler;
                 return () => app.CameraOrbitChanged -= handler;
             };
+            return tip;
+        }
+
+        static FtueTip CreatePlanetaryMap3DTip()
+        {
+            var tip = CreateAppInputHint<PlanetaryMapApp>(
+                "planetary-map.view-3d",
+                Loc("PlanetaryMap3D_Line1"),
+                Loc("PlanetaryMap3D_Line2"));
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => !app.Is3D && app.CanCreateSurfaceGps;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.ProjectionToggled += handler;
+                return () => app.ProjectionToggled -= handler;
+            };
+            return tip;
+        }
+
+        static FtueTip CreatePlanetaryMapStreetViewTip()
+        {
+            var tip = CreateAppInputHint<PlanetaryMapApp>(
+                "planetary-map.street-view",
+                Loc("PlanetaryMapStreetView_Line1"),
+                Loc("PlanetaryMapStreetView_Line2"));
+            tip.Placement = HintPlacement.Bottom;
+            tip.ActivationCondition = (surface, app) => app.StreetViewAvailable;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.StreetViewEntered += handler;
+                return () => app.StreetViewEntered -= handler;
+            };
+            return tip;
+        }
+
+        static FtueTip CreatePlanetaryMapRoadsTip()
+        {
+            var tip = CreateAppInputHint<PlanetaryMapApp>(
+                "planetary-map.roads",
+                Loc("PlanetaryMapRoads_Line1"),
+                Loc("PlanetaryMapRoads_Line2"));
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => app.RoadsToggleVisible;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.RoadsToggled += handler;
+                return () => app.RoadsToggled -= handler;
+            };
+            return tip;
+        }
+
+        // Preview Grid, Self Diagnostic and Target Info share these: one tip teaches all three.
+        static FtueTip CreateGridView3DTip()
+        {
+            var tip = CreateAppInputHint<GridInspectorApp>(
+                "grid.view-3d",
+                Loc("GridView3D_Line1"),
+                Loc("GridView3D_Line2"));
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => !app.StartsIn3D && app.HasMap && !app.Is3D;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.Opened3D += handler;
+                return () => app.Opened3D -= handler;
+            };
+            return tip;
+        }
+
+        // Self Diagnostic and Target Info open in 3D, so theirs points the other way, to the flat map.
+        static FtueTip CreateGridView2DTip()
+        {
+            var tip = CreateAppInputHint<GridInspectorApp>(
+                "grid.view-2d",
+                Loc("GridView2D_Line1"),
+                Loc("GridView2D_Line2"));
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => app.StartsIn3D && app.HasMap && app.Is3D;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.Opened2D += handler;
+                return () => app.Opened2D -= handler;
+            };
+            return tip;
+        }
+
+        static FtueTip CreateGridXRayTip()
+        {
+            var tip = CreateAppInputHint<GridInspectorApp>(
+                "grid.xray",
+                Loc("GridXRay_Line1"),
+                Loc("GridXRay_Line2"));
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => app.HasMap && app.Is3D;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.XRayPicked += handler;
+                return () => app.XRayPicked -= handler;
+            };
+            return tip;
+        }
+
+        static FtueTip CreateGridCameraLockTip()
+        {
+            var tip = CreateAppInputHint<GridInspectorApp>(
+                "grid.camera-lock",
+                Loc("GridCameraLock_Line1"),
+                Loc("GridCameraLock_Line2"));
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => app.HasMap && app.Is3D && app.CanOrbit && !app.IsCameraLocked;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.CameraRelocked += handler;
+                return () => app.CameraRelocked -= handler;
+            };
+            return tip;
+        }
+
+        static FtueTip CreateGridLegendTip()
+        {
+            var tip = CreateAppInputHint<GridInspectorApp>(
+                "grid.legend",
+                Loc("GridLegend_Line1"),
+                Loc("GridLegend_Line2"));
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => app.HasLegend && !app.IsInfoOpen;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.InfoOpened += handler;
+                return () => app.InfoOpened -= handler;
+            };
+            return tip;
+        }
+
+        static FtueTip CreatePreviewGridSnapshotTip()
+        {
+            return CreateSnapshotTip<PreviewGridApp>("preview-grid.snapshot", "PreviewGridSnapshot");
+        }
+
+        static FtueTip CreateSelfDiagnosticSnapshotTip()
+        {
+            return CreateSnapshotTip<SelfDiagnosticApp>("self-diagnostic.snapshot", "SelfDiagnosticSnapshot");
+        }
+
+        static FtueTip CreateSnapshotTip<TApp>(string id, string key) where TApp : GridInspectorApp
+        {
+            var tip = CreateAppInputHint<TApp>(id, Loc(key + "_Line1"), Loc(key + "_Line2"));
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => app.ShowsSnapshotButton;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.SnapshotRequested += handler;
+                return () => app.SnapshotRequested -= handler;
+            };
+            return tip;
+        }
+
+        // Explains what is on the screen; completed by dismissing it.
+        static FtueTip CreateSelfDiagnosticCombatTip()
+        {
+            var tip = CreateAppInputHint<SelfDiagnosticApp>(
+                "self-diagnostic.combat",
+                Loc("SelfDiagnosticCombat_Line1"),
+                Loc("SelfDiagnosticCombat_Line2"));
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => app.ShowsCombat;
+            return tip;
+        }
+
+        static FtueTip CreateSensorsOrbitTip()
+        {
+            var tip = CreateAppInputHint<ExternalSensorsApp>(
+                "external-sensors.orbit",
+                Loc("SensorsOrbit_Line1"),
+                Loc("SensorsOrbit_Line2"));
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => !app.IsFirstPerson;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.OrbitChanged += handler;
+                return () => app.OrbitChanged -= handler;
+            };
+            return tip;
+        }
+
+        // Explains what the third-person view shows; completes on dismiss.
+        static FtueTip CreateSensorsCamerasTip()
+        {
+            var tip = CreateAppInputHint<ExternalSensorsApp>(
+                "external-sensors.cameras",
+                Loc("SensorsCameras_Line1"),
+                Loc("SensorsCameras_Line2"));
+            tip.Placement = HintPlacement.Bottom;
+            tip.ActivationCondition = (surface, app) => !app.IsFirstPerson;
+            return tip;
+        }
+
+        static FtueTip CreateSensorsFirstPersonTip()
+        {
+            var tip = CreateAppInputHint<ExternalSensorsApp>(
+                "external-sensors.first-person",
+                Loc("SensorsFirstPerson_Line1"),
+                Loc("SensorsFirstPerson_Line2"));
+            tip.Placement = HintPlacement.Bottom;
+            tip.ActivationCondition = (surface, app) => !app.IsFirstPerson;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.ViewToggled += handler;
+                return () => app.ViewToggled -= handler;
+            };
+            return tip;
+        }
+
+        static FtueTip CreateTargetInfoLockTip()
+        {
+            var tip = CreateAppInputHint<TargetInfoApp>(
+                "target-info.lock",
+                Loc("TargetInfoLock_Line1"),
+                Loc("TargetInfoLock_Line2"));
+            tip.Placement = HintPlacement.Bottom;
+            tip.ActivationCondition = (surface, app) => !app.HasTarget && !app.IsShowingMemory;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.TargetAcquired += handler;
+                return () => app.TargetAcquired -= handler;
+            };
+            return tip;
+        }
+
+        static FtueTip CreateTargetInfoMemoryTip()
+        {
+            var tip = CreateAppInputHint<TargetInfoApp>(
+                "target-info.memory",
+                Loc("TargetInfoMemory_Line1"),
+                Loc("TargetInfoMemory_Line2"));
+            tip.Placement = HintPlacement.Top;
+            tip.ActivationCondition = (surface, app) => app.IsShowingMemory;
+            tip.CompletionBinder = (surface, app, complete) =>
+            {
+                Action handler = () => CompleteSafely(surface, complete);
+                app.TargetAcquired += handler;
+                return () => app.TargetAcquired -= handler;
+            };
+            return tip;
+        }
+
+        static FtueTip CreateMediaPlayerVideosTip()
+        {
+            var tip = CreateAppInputHint<MediaPlayerApp>(
+                "media-player.local-videos",
+                Loc("MediaPlayerVideos_Line1"),
+                Loc("MediaPlayerVideos_Line2"),
+                (surface, app) => new object[] { GetTextureStoragePath() });
+            tip.ActivationCondition = (surface, app) => app.PickerOpened;
             return tip;
         }
 

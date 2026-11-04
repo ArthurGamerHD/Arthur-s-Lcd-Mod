@@ -2,9 +2,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Adk.Gui.Controls;
-using Adk.Gui.Core;
-using Adk.Gui.Layout;
+using Acrux.Controls;
+using Acrux.Core;
+using Acrux.Layout;
 using LcdMod.Client.SurfaceScripts;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Common.Helpers;

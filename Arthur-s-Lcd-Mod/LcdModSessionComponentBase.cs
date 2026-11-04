@@ -5,14 +5,10 @@ using Generated;
 using LcdMod.Client;
 using LcdMod.Client.Config;
 using LcdMod.Client.GridData;
-#if DEBUG
-using LcdMod.Client.ScreenAreas;
-#endif
 using LcdMod.Common.Config.Models;
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
 using LcdMod.Server;
-using Sandbox.Game;
 using Sandbox.ModAPI;
 using VRage;
 using VRage.Game;
@@ -148,10 +144,18 @@ namespace LcdMod
 
             if (!IsDedicatedServer)
             {
-                Client = new LcdModClientComponent(this);
-                Client.LoadData();
+                // Screens are drawn by Acrux UI; the client starts once its API is available.
+                Acrux.Toolkit.Ui.ClientName = "Arthur's LCD Mod";
+                Acrux.Toolkit.AcruxUiToolkitClient.Connect(ACRUX_UI_TOOLKIT_REPLY_CHANNEL, () =>
+                {
+                    LogHelper.LogInfo("Connected to Acrux UI");
+                    Client = new LcdModClientComponent(this);
+                    Client.LoadData();
+                });
             }
         }
+
+        const long ACRUX_UI_TOOLKIT_REPLY_CHANNEL = (LcdMod.Common.Helpers.Constants.WORKSHOP_ID << 8) | 4L;
 
         protected override void UnloadData()
         {
@@ -166,6 +170,8 @@ namespace LcdMod
 
             Client?.UnloadData();
             Server?.UnloadData();
+            if (!IsDedicatedServer)
+                Acrux.Toolkit.AcruxUiToolkitClient.Disconnect();
             Client = null;
             Server = null;
             UnregisterSingleton();
@@ -206,16 +212,6 @@ namespace LcdMod
         public override void UpdateAfterSimulation()
         {
             Client?.UpdateAfterSimulation();
-#if DEBUG
-            if (Client != null && !MyAPIGateway.Utilities.IsDedicated)
-            {
-                Adk.Gui.Markup.HotReload.Update();
-                if (LocalConfigManager.DebugSurface)
-                    ScreenAreaGeometry.DebugDraw();
-                else
-                    ScreenAreaGeometry.ClearDebugDraw();
-            }
-#endif
         }
 
         public override void BeforeStart()
@@ -226,30 +222,16 @@ namespace LcdMod
 
                 Server?.BeforeStart();
                 Client?.BeforeStart();
+                if (!IsDedicatedServer && Client == null)
+                {
+                    LogHelper.Log(MyLogSeverity.Error, "Acrux UI is not loaded; LCD apps are unavailable.");
+                    MyAPIGateway.Utilities.ShowMessage("lcdMod", "Acrux UI mod is required for LCD apps. Add it to this world.");
+                }
             }
             catch (Exception e)
             {
                 ErrorHandlerHelper.LogError(e, this);
             }
-        }
-
-        [NetworkCallback(typeof(PacketPlayerInputBlacklist), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
-        public void HandlePlayerInputBlacklist(PacketPlayerInputBlacklist packet)
-        {
-            ApplyPlayerUseInputEnabled(packet.PlayerId, packet.Enabled);
-        }
-        
-        static readonly List<string> UseInputControlIds = new List<string>
-        {
-            MyControlsSpace.PRIMARY_TOOL_ACTION.String,
-            MyControlsSpace.SECONDARY_TOOL_ACTION.String
-        };
-
-        public static void ApplyPlayerUseInputEnabled(long playerId, bool enabled)
-        {
-            // this "technically" is client side but needs to be done on the server too for some reason
-            foreach (var controlStringId in UseInputControlIds)
-                MyVisualScriptLogicProvider.SetPlayerInputBlacklistState(controlStringId, playerId, enabled);
         }
 
         static bool IsDedicatedServer =>

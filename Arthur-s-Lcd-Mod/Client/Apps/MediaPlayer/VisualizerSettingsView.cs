@@ -1,15 +1,19 @@
-using Adk.Gui.Controls;
-using Adk.Gui.Core;
+using Acrux.Controls;
+using Acrux.Core;
 
 namespace LcdMod.Client.Apps.MediaPlayer
 {
     internal sealed partial class VisualizerSettingsView : Window
     {
-        public VisualizerSettingsView(VisualizerSettingsViewModel model)
+        public VisualizerSettingsView()
         {
             Resources.Add("EnumEquals", new Views.EnumEqualsConverter());
-            DataContext = model;
             InitializeComponent();
+        }
+
+        public VisualizerSettingsView(VisualizerSettingsViewModel model) : this()
+        {
+            DataContext = model;
         }
     }
 

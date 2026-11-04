@@ -25,7 +25,7 @@ namespace LcdMod.Client.Apps
 {
     [LcdApp(3)]
     [ConfigComponent(Constants.BLOCKS, typeof(BlockSelectionConfigComponent), PropertyName = "BlockSelectionComponent")]
-    public sealed partial class GasApp : App
+    public sealed partial class GasApp : App, IGasHost
     {
 
         readonly Dictionary<string, string> _gasDisplayNameCache =
@@ -43,6 +43,11 @@ namespace LcdMod.Client.Apps
         internal bool NativeGridMode => GeneralComponent.DisplayMode == (int)DisplayMode.Grid;
         internal override float WindowRenderScaling => CardScale;
         internal string NativeEntryClasses => (NativeGridMode ? "card" : "row") + (GeneralComponent.DrawLines ? " lines" : string.Empty);
+
+        IReadOnlyList<GasEntry> IGasHost.Entries => Entries;
+        bool IGasHost.NativeGridMode => NativeGridMode;
+        string IGasHost.NativeEntryClasses => NativeEntryClasses;
+        Color IGasHost.NativeFill(float percentage) => NativeFill(percentage);
 
         // The usage color while the entry is critical, otherwise the card fill; readable against what is behind it.
         internal Color NativeFill(float percentage)

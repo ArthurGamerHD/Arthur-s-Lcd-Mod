@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using Adk.Gui.Core.Input;
+using Acrux.Core.Input;
 using LcdMod.Client.Apps.Dialogs;
 using LcdMod.Common.Config.Components;
-using LcdMod.Common.Mvvm;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.MediaPlayer
@@ -24,6 +24,21 @@ namespace LcdMod.Client.Apps.MediaPlayer
     /// The visualizer settings window: one tab per instance, each listing that instance's settings like the desktop
     /// visualizer's configuration window. Edits show on the screen right away and are saved to the block on close.
     /// </summary>
+    [PreviewWith("Title", "")]
+    [PreviewWith("Tabs", 3)]
+    [PreviewWith("SmallFontSize", 0.5525f)]
+    [PreviewWith("SelectedTabIndex", 0)]
+    [PreviewWith("RemoveText", "Remove")]
+    [PreviewWith("ManagedInstances", 2)]
+    [PreviewWith("ManageText", "Manage instances")]
+    [PreviewWith("IsRegular", true)]
+    [PreviewWith("IsManaging", true)]
+    [PreviewWith("IsEditing", false)]
+    [PreviewWith("IsCompact", false)]
+    [PreviewWith("InstanceEnabled", false)]
+    [PreviewWith("HasUserSettings", false)]
+    [PreviewWith("FontSize", 0.65f)]
+    [PreviewWith("AddTypes", 5)]
     internal sealed class VisualizerSettingsViewModel : DialogViewModel
     {
         readonly IVisualizerSettingsHost _host;
@@ -66,7 +81,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
         public bool HasUserSettings => _host.HasUserVisualizerSettings;
         public bool IsManaging => _selectedIndex < 0;
 
-        /// <summary>The selected tab: 0 is the manage tab, instance tabs follow in instance order.</summary>
+        // The selected tab: 0 is the manage tab, instance tabs follow in instance order.
         public int SelectedTabIndex
         {
             get { return _selectedIndex + 1; }
@@ -96,7 +111,6 @@ namespace LcdMod.Client.Apps.MediaPlayer
 
         VisualizerInstanceSchema SelectedSchema => Current == null ? null : VisualizerInstanceSchema.Get(Current.Type);
 
-        /// <summary>Re-reads the host's settings, e.g. after an import replaced them.</summary>
         internal void Reload()
         {
             int selectedIndex = _selectedIndex;
@@ -255,9 +269,12 @@ namespace LcdMod.Client.Apps.MediaPlayer
             RemoveCommand = removeCommand;
         }
 
+        [PreviewWith("Shader", "Circle")]
         public string Label { get; }
+        [PreviewWith("Remove")]
         public string RemoveText { get; }
         public ICommand RemoveCommand { get; }
+        [PreviewWith(0.65f)]
         public float FontSize
         {
             get { return _fontSize; }
@@ -266,7 +283,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
     }
 
     /// <summary>A tab of the settings window; every tab shows the window's page for the current selection.</summary>
-    internal sealed class VisualizerTabModel
+    internal sealed class VisualizerTabModel : ObservableObject
     {
         public VisualizerTabModel(string label, VisualizerSettingsViewModel owner)
         {
@@ -274,6 +291,7 @@ namespace LcdMod.Client.Apps.MediaPlayer
             Owner = owner;
         }
 
+        [PreviewWith("Manage instances", "Shader", "Circle")]
         public string Label { get; }
         public VisualizerSettingsViewModel Owner { get; }
 
@@ -293,9 +311,11 @@ namespace LcdMod.Client.Apps.MediaPlayer
             Command = command;
         }
 
+        [PreviewWith("Spectrum", "Waveform", "Triangle", "Circle", "Shader")]
         public string Label { get; }
         public ICommand Command { get; }
 
+        [PreviewWith(0.65f)]
         public float FontSize
         {
             get { return _fontSize; }

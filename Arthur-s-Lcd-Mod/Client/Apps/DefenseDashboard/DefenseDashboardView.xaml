@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<UserControl xmlns="https://github.com/ArthurGamerHD/Adk"
+<UserControl xmlns="https://github.com/ArthurGamerHD/AcruxUI"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:defense="using:LcdMod.Client.Apps.DefenseDashboard"
              xmlns:controls="using:LcdMod.Client.Apps.Controls"
              x:Class="LcdMod.Client.Apps.DefenseDashboard.DefenseDashboardView"
-             x:DataType="LcdMod.Client.Apps.DefenseDashboard.DefenseDashboardViewModel">
+             x:DataType="LcdMod.Client.Apps.DefenseDashboard.DefenseDashboardViewModel"
+             Design.DataContext="{x:Static defense:DefenseDashboardViewModelPreview.Default}">
   <UserControl.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/DefenseDashboard.xaml" />
   </UserControl.Styles>

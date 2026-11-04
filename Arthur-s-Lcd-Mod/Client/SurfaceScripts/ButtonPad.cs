@@ -39,7 +39,6 @@ namespace LcdMod.Client.SurfaceScripts
     {
         public override IApp App => _app;
         ButtonPadApp _app;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
 
         public const string ID = MOD_PREFIX + "ButtonPadApp";
         public const string TITLE = MOD_PREFIX + "ButtonPad";
@@ -85,8 +84,6 @@ namespace LcdMod.Client.SurfaceScripts
             RenderSprites();
         }
 
-
-        protected override bool RendersInParallel => true;
 
 
 

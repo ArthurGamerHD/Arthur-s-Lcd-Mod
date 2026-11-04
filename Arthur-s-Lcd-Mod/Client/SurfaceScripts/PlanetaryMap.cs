@@ -29,16 +29,9 @@ namespace LcdMod.Client.SurfaceScripts
         
         PlanetaryMapApp _app;
 
-        protected override string DefaultTitle
-        {
-            get { return TITLE; }
-        }
+        protected override string DefaultTitle => TITLE;
 
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
-        public override IApp App
-        {
-            get { return _app; }
-        }
+        public override IApp App => _app;
 
         public PlanetaryMapSurfaceScript(
             IMyTextSurface surface,
@@ -65,7 +58,6 @@ namespace LcdMod.Client.SurfaceScripts
 
             EnsureRetainedAppView(_app);
             _app.Update();
-            CursorType = ResolveRetainedCursorType();
             RenderSprites();
         }
 

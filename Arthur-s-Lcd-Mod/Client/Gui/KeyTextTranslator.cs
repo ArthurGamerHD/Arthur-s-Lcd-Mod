@@ -39,7 +39,7 @@ namespace LcdMod.Client.Gui
 
         public bool CapsLock { get; private set; }
 
-        /// <summary>Appends the characters typed this frame, given every key currently held down.</summary>
+        // Appends the characters typed this frame, given every key currently held down.
         public void Collect(IList<MyKeys> pressed, bool shift, bool ctrl, List<char> output)
         {
             UpdateCapsLock(shift, pressed.Contains(MyKeys.CapsLock));

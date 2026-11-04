@@ -21,7 +21,7 @@ namespace LcdMod.Client.Apps
 {
     [LcdApp(19)]
     [ConfigComponent(APP, typeof(NpcMarketConfigComponent), PropertyName = "NpcMarketComponent")]
-    internal sealed partial class NpcMarketApp : App, IApp
+    internal sealed partial class NpcMarketApp : App, IApp, NpcMarket.INpcMarketHost
     {
         public const string TITLE = MOD_PREFIX + "MarketApp";
         const string LOC_REFRESH = MOD_PREFIX + "MarketApp_Refresh";
@@ -61,6 +61,32 @@ namespace LcdMod.Client.Apps
         internal NpcMarketMode Mode => _mode;
         internal override float WindowRenderScaling => GetLayoutScale() > 0f ? GetLayoutScale() : 1f;
         internal IAppHost AppHost => Host;
+        internal float NativeFontScale => Host.Surface.FontSize > 0f ? Host.Surface.FontSize : 1f;
+        internal Color NativeForeground => Host.ForegroundColor;
+        NpcMarketMode NpcMarket.INpcMarketHost.Mode => Mode;
+        IReadOnlyList<NpcMarketRow> NpcMarket.INpcMarketHost.NativeRows => NativeRows;
+        string NpcMarket.INpcMarketHost.NativeUpdatedText => NativeUpdatedText;
+        string NpcMarket.INpcMarketHost.NativeNextTickText => NativeNextTickText;
+        string NpcMarket.INpcMarketHost.NativeRefreshText => NativeRefreshText;
+        string NpcMarket.INpcMarketHost.NativeSearchQuery => NativeSearchQuery;
+        string NpcMarket.INpcMarketHost.NativeEmptyText => NativeEmptyText;
+        string NpcMarket.INpcMarketHost.NativeNoTraderText => NativeNoTraderText;
+        bool NpcMarket.INpcMarketHost.NativeRefreshEnabled => NativeRefreshEnabled;
+        bool NpcMarket.INpcMarketHost.NativeModeEnabled => NativeModeEnabled;
+        NpcMarketSortColumn NpcMarket.INpcMarketHost.SortColumn => SortColumn;
+        bool NpcMarket.INpcMarketHost.SortDescending => SortDescending;
+        MarketContentState NpcMarket.INpcMarketHost.ContentState => ContentState;
+        string NpcMarket.INpcMarketHost.NativeSearchPlaceholder => NativeSearchPlaceholder;
+        float NpcMarket.INpcMarketHost.NativeFontScale => NativeFontScale;
+        Color NpcMarket.INpcMarketHost.NativeForeground => NativeForeground;
+        Color NpcMarket.INpcMarketHost.ResolveMarketColor(ResourceKey<Color> key, Color fallback) => ResolveMarketColor(key, fallback);
+        void NpcMarket.INpcMarketHost.SetNativeSearch(string value) { SetNativeSearch(value); }
+        void NpcMarket.INpcMarketHost.ClearNativeSearch() { ClearNativeSearch(); }
+        void NpcMarket.INpcMarketHost.SortNative(NpcMarketSortColumn column) { SortNative(column); }
+        void NpcMarket.INpcMarketHost.OpenNativeRow(string itemKey, NpcMarketMode mode) { OpenNativeRow(itemKey, mode); }
+        void NpcMarket.INpcMarketHost.OnNativePageChanged(int pageIndex) { OnNativePageChanged(pageIndex); }
+        void NpcMarket.INpcMarketHost.RefreshNativeMarket() { RefreshNativeMarket(); }
+        void NpcMarket.INpcMarketHost.SetMode(NpcMarketMode mode) { SetMode(mode); }
         NpcMarket.MarketItemDialogViewModel _itemDialog;
         internal IReadOnlyList<NpcMarketRow> NativeRows => _rows;
         internal string NativeModeText => GetModeLabel(_mode);
@@ -727,7 +753,7 @@ namespace LcdMod.Client.Apps
             var session = MyAPIGateway.Session;
             var framesPerStep = Math.Max(1, (int)Math.Round(seconds * 60f));
             var frame = session.GameplayFrameCounter;
-            var content = Content as Adk.Gui.Core.VisualElement;
+            var content = Content as Acrux.Core.VisualElement;
             if (content != null && content.IsPointerOver)
             {
                 if (_autoPagePauseStartedFrame == long.MinValue)

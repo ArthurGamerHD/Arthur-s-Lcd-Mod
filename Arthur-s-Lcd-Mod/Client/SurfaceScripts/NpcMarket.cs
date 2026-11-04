@@ -28,7 +28,6 @@ namespace LcdMod.Client.SurfaceScripts
         NpcMarketApp _app;
 
         public override IApp App => _app;
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         protected override string DefaultTitle => TITLE;
         public NpcMarketSurfaceScript(IMyTextSurface surface, IMyCubeBlock block, Vector2 size)
             : base(surface, block, size)
@@ -62,8 +61,6 @@ namespace LcdMod.Client.SurfaceScripts
             if (_app.IsDirty || InteractiveVisualsDirty)
                 RenderSprites();
         }
-
-        protected override bool RendersInParallel => true;
 
 
         public override List<MySprite> GetSprites()

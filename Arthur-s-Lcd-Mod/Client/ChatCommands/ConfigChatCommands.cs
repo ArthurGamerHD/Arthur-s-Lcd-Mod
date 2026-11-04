@@ -71,25 +71,6 @@ namespace LcdMod.Client.ChatCommands
         }
 
         /// <summary>
-        /// Enables, disables, or toggles debug surface mode.
-        /// </summary>
-        /// <loc>LcdMod_ChatCommand_DebugSurface_Summary</loc>
-        [ChatCommand("DebugSurface")]
-        public static void SetDebugSurface(bool? enabled)
-        {
-            var config = LocalConfigManager.EnsureConfig();
-
-            config.DebugSurface = enabled ?? !LocalConfigManager.DebugSurface;
-            LocalConfigManager.Save();
-
-            MyAPIGateway.Utilities.ShowMessage(
-                "lcdMod",
-                LocalConfigManager.DebugSurface
-                    ? LocHelper.GetLoc("LcdMod_ChatCommand_DebugSurface_Enabled_Message")
-                    : LocHelper.GetLoc("LcdMod_ChatCommand_DebugSurface_Disabled_Message"));
-        }
-
-        /// <summary>
         /// Enables, disables, or toggles the sprite-count debug overlay.
         /// </summary>
         /// <loc>LcdMod_ChatCommand_SpriteCountDebug_Summary</loc>

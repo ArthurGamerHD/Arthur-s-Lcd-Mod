@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Adk.Gui.Styling;
+using Acrux.Styling;
 using LcdMod.Client.Helpers;
 using Sandbox.ModAPI;
 using VRageMath;
@@ -19,27 +19,21 @@ namespace LcdMod.Client.Gui.Styling
         {
             StyleSheet.SourceLoader = LoadSource;
             StyleSheet.SourceLoadFailed = ReportStyleLoadFailure;
-            Adk.Gui.Lcd.LcdTextureResolver.IsTextureDefined = IsTextureDefined;
-            Adk.Gui.Lcd.LcdTextureResolver.TextureSize = GetTextureSize;
-#if DEBUG
-            Adk.Gui.Markup.HotReload.Log = ReportHotReload;
-#endif
+            Acrux.Lcd.LcdTextureResolver.IsTextureDefined = IsTextureDefined;
+            Acrux.Lcd.LcdTextureResolver.TextureSize = GetTextureSize;
         }
 
         internal static void Reset()
         {
-            Adk.Gui.Markup.HotReload.Reset();
-            Adk.Gui.Markup.HotReload.Log = null;
-            Adk.Gui.Lcd.LcdTextureResolver.IsTextureDefined = null;
-            Adk.Gui.Lcd.LcdTextureResolver.TextureSize = null;
+            Acrux.Lcd.LcdTextureResolver.IsTextureDefined = null;
+            Acrux.Lcd.LcdTextureResolver.TextureSize = null;
             lock (UnknownTextureSizes)
             {
                 TextureSizes.Clear();
                 UnknownTextureSizes.Clear();
             }
-            LcdMod.Client.Gui.UserControls.BSoDQrCode.Release();
-            Adk.Gui.Controls.Chrome.CaptionGlyphs.Release();
-            Adk.Gui.Controls.WindowPlatforms.CaptionButtons = Adk.Gui.Controls.CaptionButtonsPlacement.Right;
+            Acrux.Controls.Chrome.CaptionGlyphs.Release();
+            Acrux.Controls.WindowPlatforms.CaptionButtons = Acrux.Controls.CaptionButtonsPlacement.Right;
             StyleSheet.SourceLoader = null;
             StyleSheet.SourceLoadFailed = null;
         }
@@ -50,13 +44,6 @@ namespace LcdMod.Client.Gui.Styling
                 "Skipped style source '" + source + "': " + error.GetType().Name + ": " + error.Message);
         }
 
-#if DEBUG
-        static void ReportHotReload(string message)
-        {
-            LcdMod.Common.Helpers.LogHelper.Log(VRage.Utils.MyLogSeverity.Info, message);
-            MyAPIGateway.Utilities.ShowMessage("lcdMod", message);
-        }
-#endif
 
         static bool IsTextureDefined(string name)
         {

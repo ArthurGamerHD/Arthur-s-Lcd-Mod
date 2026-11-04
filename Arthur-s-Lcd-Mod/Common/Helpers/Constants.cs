@@ -37,6 +37,11 @@ namespace LcdMod.Common.Helpers
         public static Guid GridImageManifestGuid = new Guid("53382c89-f012-4593-a96c-12c3bb89dbac");
         public static Guid GridImagePayloadGuid = new Guid("965fd5b6-df4d-499d-9f2c-51602451416f");
 
+        // Grid snapshots (Integrity Monitor, Target Info), on the screen's block.
+        public static Guid GridSnapshotGuid = new Guid("b3f0c6d2-5a41-4e8f-9d27-6c1e8a4b7f15");
+        public const int MAX_GRID_SNAPSHOT_BYTES = 4 * 1024 * 1024;
+        public const int MAX_BLOCK_SNAPSHOT_BYTES = 12 * 1024 * 1024;
+
         public const ushort PORT = 46541;
         public const long WORKSHOP_ID = 3730092649L;
         public const string GITHUB = "https://github.com/ArthurGamerHD/Arthur-s-Lcd-Mod";
@@ -130,6 +135,7 @@ namespace LcdMod.Common.Helpers
 
         // The slot, not the component CLR type, identifies the semantic use of a reference.
         public const string PROJECTOR_REFERENCE = "reference.projector";
+        public const string CAMERA_REFERENCE = "reference.camera";
         public const string DOCKABLE_REFERENCE = "reference.dockable";
         public const string RENDER_PROXY_REFERENCE = "reference.render-proxy-source";
         public const string VISIBLE_TREE_REFERENCE = "reference.visible-tree";

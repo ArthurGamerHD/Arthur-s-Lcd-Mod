@@ -1,9 +1,9 @@
-using Adk.Gui.Controls;
-using Adk.Gui.Core;
-using Adk.Gui.Core.Invalidation;
-using Adk.Gui.Core.PropertySystem;
-using Adk.Gui.Styling;
-using LcdMod.Common.Mvvm;
+using Acrux.Controls;
+using Acrux.Core;
+using Acrux.Core.Invalidation;
+using Acrux.Core.PropertySystem;
+using Acrux.Styling;
+using Adk.Mvvm;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.NpcMarket

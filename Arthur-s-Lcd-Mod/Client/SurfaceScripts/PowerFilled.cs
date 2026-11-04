@@ -33,7 +33,6 @@ namespace LcdMod.Client.SurfaceScripts
             return DisplayModes.CompactAndCard;
         }
 
-        public override CursorType CursorType { get; protected set; } = CursorType.Default;
         public const string ID = "BatteryGraph";
         public const string TITLE = MOD_PREFIX + "PowerFilled";
 
@@ -64,8 +63,6 @@ namespace LcdMod.Client.SurfaceScripts
             _app.Update();
             RenderSprites();
         }
-
-        protected override bool RendersInParallel => true;
 
 
         public override List<MySprite> GetSprites()
