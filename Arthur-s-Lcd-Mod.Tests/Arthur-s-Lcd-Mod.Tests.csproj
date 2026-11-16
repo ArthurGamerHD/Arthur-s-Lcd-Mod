@@ -8,9 +8,6 @@
     <IsPackable>false</IsPackable>
     <Configurations>Release;Debug;Experimental</Configurations>
   </PropertyGroup>
-  <PropertyGroup>
-    <AcruxUiToolkitRoot Condition="'$(AcruxUiToolkitRoot)' == ''">$(MSBuildProjectDirectory)\..\External\AcruxUI</AcruxUiToolkitRoot>
-  </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' Or '$(Configuration)' == 'Experimental'">
     <DefineConstants>$(DefineConstants);EXPERIMENTAL</DefineConstants>
@@ -60,7 +57,6 @@
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Video\SubtitleMarkup.cs" LinkBase="VideoSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\Video\SubtitleTrack.cs" LinkBase="VideoSource" />
     <Compile Include="..\Arthur-s-Lcd-Mod\Client\GridData\InventoryEventTracker.cs" LinkBase="GridDataSource" />
-    <Compile Include="$(AcruxUiToolkitRoot)\Framework\Acrux\Styling\Transform.cs" LinkBase="AcruxSource" />
   </ItemGroup>
 
   <ItemGroup>
@@ -76,7 +72,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\External\AcruxUI\External\Adk\Adk.Analyzer\Adk.Analyzer.csproj"
+    <ProjectReference Include="..\External\Adk\Adk.Analyzer\Adk.Analyzer.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false">
       <SetPlatform>Platform=AnyCPU</SetPlatform>
@@ -88,10 +84,10 @@
     </ProjectReference>
   </ItemGroup>
 
-  <Import Project="..\External\AcruxUI\External\Adk\Adk.Mvvm\Adk.Mvvm.projitems" Label="Shared" />
-  <Import Project="..\External\AcruxUI\External\Adk\Adk.Audio\Adk.Audio.projitems" Label="Shared" />
-  <Import Project="..\External\AcruxUI\External\Adk\Adk.Compression\Adk.Compression.projitems" Label="Shared" />
-  <Import Project="..\External\AcruxUI\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
-  <Import Project="..\External\AcruxUI\External\Adk\Adk.Video\Adk.Video.projitems" Label="Shared" />
+  <Import Project="..\External\Adk\Adk.Mvvm\Adk.Mvvm.projitems" Label="Shared" />
+  <Import Project="..\External\Adk\Adk.Audio\Adk.Audio.projitems" Label="Shared" />
+  <Import Project="..\External\Adk\Adk.Compression\Adk.Compression.projitems" Label="Shared" />
+  <Import Project="..\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
+  <Import Project="..\External\Adk\Adk.Video\Adk.Video.projitems" Label="Shared" />
 
 </Project>

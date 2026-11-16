@@ -1,0 +1,7 @@
+<Project>
+  <!-- Acrux.Sdk restores from packages/; say how to get it instead of NuGet's "local source doesn't exist". -->
+  <Target Name="AcruxSdkCheckInstalled" BeforeTargets="Restore;_GenerateRestoreGraph;CollectPackageReferences"
+          Condition="'@(PackageReference->WithMetadataValue('Identity', 'Acrux.Sdk'))' != '' And !Exists('$(MSBuildThisFileDirectory)packages')">
+    <Error Text="The Acrux SDK is not installed: run update-acrux.sh (Linux) or update-acrux.bat (Windows) in $(MSBuildThisFileDirectory)" />
+  </Target>
+</Project>

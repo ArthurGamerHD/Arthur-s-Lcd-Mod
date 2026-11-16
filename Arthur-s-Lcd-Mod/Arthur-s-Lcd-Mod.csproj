@@ -87,7 +87,7 @@
       <Compile Remove="Client\Terminal\Controls\Generic\SliderImageChangeInterval.cs" />
       <Compile Remove="Client\Terminal\Controls\Groups\ColorsTerminalControlGroup.cs" />
       <Compile Remove="Client\Terminal\Controls\Groups\GpsDisplayTerminalControlGroup.cs" />
-      <Compile Include="..\External\AcruxUI\External\SE-Water\API\WaterModAPI.cs" Link="Client\Api\WaterModAPI.cs" />
+      <Compile Include="..\External\SE-Water\API\WaterModAPI.cs" Link="Client\Api\WaterModAPI.cs" />
     </ItemGroup>
 
     <Target Name="RemoveZhCnResxAlias" AfterTargets="MdkPack;MdkDidNotPack">
@@ -111,25 +111,23 @@ Do not edit it manually, use the mod source on 'https://github.com/ArthurGamerHD
         <Delete Files="$(MSBuildProjectDirectory)\readme.txt" />
     </Target>
     
-    <Import Project="..\External\AcruxUI\External\Adk\Adk.CodeGeneration.props" />
-    <Import Project="..\External\AcruxUI\External\Adk\Adk.Audio\Adk.Audio.projitems" Label="Shared" />
+    <Import Project="..\External\Adk\Adk.CodeGeneration.props" />
+    <Import Project="..\External\Adk\Adk.Audio\Adk.Audio.projitems" Label="Shared" />
     <Import Project="..\External\CAudioVisualizer.SE\CAudioVisualizer.Core\CAudioVisualizer.Core.projitems" Label="Shared" />
     <Import Project="..\External\CAudioVisualizer.SE\CAudioVisualizer.SpaceEngineers\CAudioVisualizer.SpaceEngineers.projitems" Label="Shared" />
-    <Import Project="..\External\AcruxUI\External\Adk\Adk.Compression\Adk.Compression.projitems" Label="Shared" />
-    <Import Project="..\External\AcruxUI\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
-    <!-- UI comes from Acrux UI mod: thin generated wrappers + bridge runtime. -->
-    <PropertyGroup>
-        <AcruxUiToolkitRoot Condition="'$(AcruxUiToolkitRoot)' == ''">$(MSBuildProjectDirectory)\..\External\AcruxUI</AcruxUiToolkitRoot>
-    </PropertyGroup>
-    <Import Project="$(AcruxUiToolkitRoot)\ClientApi\ClientApi.projitems" Label="Shared" />
-    <Import Project="$(AcruxUiToolkitRoot)\Framework\Acrux.Generator\Acrux.Generator.props" />
-    <!-- IDE preview of ADK .axaml views (dev-time only), themed as an app on a surface. -->
+    <Import Project="..\External\Adk\Adk.Compression\Adk.Compression.projitems" Label="Shared" />
+    <Import Project="..\External\Adk\Adk.Image\Adk.Image.projitems" Label="Shared" />
+    <!-- UI comes from the Acrux UI mod: ClientApi (thin generated wrappers + bridge runtime) and the Acrux / ADK
+         generators come from the Acrux.Sdk package in ../packages (update with ../update-acrux.sh / .bat). -->
+    <ItemGroup>
+        <PackageReference Include="Acrux.Sdk" Version="0.0.1" PrivateAssets="all" />
+    </ItemGroup>
+    <!-- IDE preview of Acrux views (dev-time only, needs ../acrux-ui.local), themed as an app on a surface. -->
     <PropertyGroup>
         <AcruxPreviewDesignResources>LcdMod.Client.Gui.Styling.DesignThemeResources</AcruxPreviewDesignResources>
         <!-- App views previewed as on the LCD: on the surface grid, inside the app shell (title, background layer, footer). -->
         <AcruxPreviewDesignHost>LcdMod.Client.Apps.Views.DesignAppHost</AcruxPreviewDesignHost>
     </PropertyGroup>
-    <Import Project="$(AcruxUiToolkitRoot)\Tools\AcruxPreviewHost\AcruxPreview.props" Condition="'$(Configuration)' == 'Debug' And Exists('$(AcruxUiToolkitRoot)\Tools\AcruxPreviewHost\AcruxPreview.props')" />
-    <Import Project="..\External\AcruxUI\External\Adk\Adk.Video\Adk.Video.projitems" Label="Shared" />
-    <Import Project="..\External\AcruxUI\External\SE-Procedural-Voxel-Cubemap-Api\ClientApi\ClientApi.projitems" Label="Shared" />
+    <Import Project="..\External\Adk\Adk.Video\Adk.Video.projitems" Label="Shared" />
+    <Import Project="..\External\SE-Procedural-Voxel-Cubemap-Api\ClientApi\ClientApi.projitems" Label="Shared" />
 </Project>

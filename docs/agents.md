@@ -63,7 +63,7 @@ Space engineers uses Sandbox.ModAPI.Ingame.IMyTextSurface for TextSurfaceScript:
 
 # Acrux / Avalonia Compatibility Instruction
 
-Acrux (`External/AcruxUI/Framework`) is intended to implement a **subset of Avalonia-compatible XAML**. Avalonia's XAML parser and source are the reference for supported syntax and behavior.
+Acrux (`Framework/` in the Acrux UI checkout named by `acrux-ui.local`) is intended to implement a **subset of Avalonia-compatible XAML**. Avalonia's XAML parser and source are the reference for supported syntax and behavior.
 
 Rules:
 
@@ -76,25 +76,28 @@ Rules:
 
 # Acrux UI Instruction
 
-The LCD mod does not compile Acrux itself. Its UI runs inside the separate **Acrux UI** mod
-(`External/AcruxUI`, see its README). This mod compiles the generated thin wrappers from
-`$(AcruxUiToolkitRoot)/ClientApi/ClientApi.projitems`: same `Acrux.*` names, but every member forwards to the toolkit.
+The LCD mod does not compile Acrux itself. Its UI runs inside the separate **Acrux UI** mod, developed in its own
+checkout (the path in the machine-local, untracked `acrux-ui.local`; see that repository's README). This mod references
+the signed `Acrux.Sdk` package from `packages/`: its generators emit ClientApi (thin wrappers with the same `Acrux.*`
+names, every member forwarding to the toolkit) into the build, plus the Acrux and ADK generators.
 
 Rules:
 
-1. Do not edit `ClientApi/` by hand; change Acrux (`External/AcruxUI/Framework`) or its generator
-   (`Framework/Acrux.Generator/AcruxUiToolkitMirrorGenerator.cs`) and rebuild the toolkit, which regenerates ClientApi.
+1. Do not edit ClientApi; change Acrux (`Framework/` in the Acrux checkout) or its generator
+   (`Framework/Acrux.Generator/AcruxUiToolkitMirrorGenerator.cs`), then in the Acrux checkout run `Tools/Acrux.Sdk/pack.sh`
+   and install the package here (`ACRUX_SDK_URL=file://<checkout>/Tools/Acrux.Sdk/out ./update-acrux.sh <version>`).
+   Re-packing a version that is already installed needs `~/.nuget/packages/acrux.sdk/<version>` deleted first.
 2. The client starts in `LcdModSessionComponent.LoadData` through `AcruxUiToolkitClient.Connect`; no UI type may be
    touched before that callback runs.
 3. Base theme styles (`/Data/Gui/Styles/Acrux/...`) come from the toolkit; LCD-specific styles stay in this mod.
-4. After changing the bridge, run `External/AcruxUI/Tests/run.sh` (two-assembly harness) before deploying.
+4. After changing the bridge, run `Tests/run.sh` in the Acrux checkout (two-assembly harness) before deploying.
 5. Mod scripts may use only Space Engineers-whitelisted language elements and members (no `#pragma`, `GC`, reflection,
-   ...), including generated code. After packing, run `External/AcruxUI/Tests/check-whitelist.sh`: it compiles the
+   ...), including generated code. After packing, run `Tests/check-whitelist.sh` from the Acrux checkout: it compiles the
    packed mods with the game's own compiler and whitelist. MDK's analyzer alone is not sufficient.
 
 # Comments and Documentation Instruction
 
-Applies to this repository and its submodules (`External/AcruxUI`, `External/AcruxUI/External/Adk`, ...).
+Applies to this repository, its submodules (`External/Adk`, ...) and the Acrux UI repository.
 
 Rules:
 
@@ -114,3 +117,10 @@ Rules:
    ``"\|<>,.:;?/-_+=*^~´`@#!$%&'()[]{}``. No other non-ASCII characters: no typographic dashes or quotes (`—`, `–`,
    `“”`, `’`), ellipsis (`…`), arrows (`→`), math or Greek symbols (`≈`, `×`, `°`, `π`), bullets or emoji. Write
    `-`, `"`, `'`, `...`, `->`, `~=`, `x`, `deg`, `pi` instead.
+
+# ADK and Acrux.Sdk Instruction
+
+`External/Adk` provides the ADK runtime libraries (Audio, Video, Image, Compression) as source. Its generators
+(`Adk.Analyzer`) and `Adk.Mvvm` types come from the `Acrux.Sdk` package instead: `Adk.CodeGeneration.props` and
+`Adk.Mvvm.projitems` add nothing while the package is referenced. Never reference `Adk.Analyzer` or `Adk.Mvvm` a second
+time in the mod project, or every generator runs twice.

@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <!-- The design-code rule every generator follows (files mdk.ini ignores). -->
-    <Compile Include="..\External\AcruxUI\External\Adk\Adk.Analyzer\DesignSources.cs" Link="Adk\DesignSources.cs" />
+    <Compile Include="..\External\Adk\Adk.Analyzer\DesignSources.cs" Link="Adk\DesignSources.cs" />
   </ItemGroup>
 
   <ItemGroup>
