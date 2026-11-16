@@ -6,14 +6,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LcdMod.CodeGenerator", "Lcd
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Arthur-s-Lcd-Mod.Tests", "Arthur-s-Lcd-Mod.Tests\Arthur-s-Lcd-Mod.Tests.csproj", "{14CA1271-9420-44F7-B3B1-8167F52675C2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Adk.Analyzer", "External\AcruxUI\External\Adk\Adk.Analyzer\Adk.Analyzer.csproj", "{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AcruxUiToolkit", "External\AcruxUI\AcruxUiToolkit\AcruxUiToolkit.csproj", "{3EECE890-ADFC-4A7D-8976-CBD102DC9529}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Acrux.Generator", "External\AcruxUI\Framework\Acrux.Generator\Acrux.Generator.csproj", "{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AcruxPreviewHost", "External\AcruxUI\Tools\AcruxPreviewHost\AcruxPreviewHost.csproj", "{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -39,30 +31,6 @@ Global
 		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Experimental|x64.Build.0 = Experimental|Any CPU
 		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Release|x64.ActiveCfg = Release|Any CPU
 		{14CA1271-9420-44F7-B3B1-8167F52675C2}.Release|x64.Build.0 = Release|Any CPU
-		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Debug|x64.Build.0 = Debug|Any CPU
-		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Experimental|x64.ActiveCfg = Experimental|Any CPU
-		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Experimental|x64.Build.0 = Experimental|Any CPU
-		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Release|x64.ActiveCfg = Release|Any CPU
-		{251D6409-8BBD-4B51-8E94-BAFB2E94D67A}.Release|x64.Build.0 = Release|Any CPU
-		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Debug|x64.ActiveCfg = Debug|x64
-		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Debug|x64.Build.0 = Debug|x64
-		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Experimental|x64.ActiveCfg = Release|x64
-		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Experimental|x64.Build.0 = Release|x64
-		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Release|x64.ActiveCfg = Release|x64
-		{3EECE890-ADFC-4A7D-8976-CBD102DC9529}.Release|x64.Build.0 = Release|x64
-		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Debug|x64.ActiveCfg = Debug|x64
-		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Debug|x64.Build.0 = Debug|x64
-		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Experimental|x64.ActiveCfg = Experimental|x64
-		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Experimental|x64.Build.0 = Experimental|x64
-		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Release|x64.ActiveCfg = Release|x64
-		{BEA6D51B-B803-46AD-8733-DAC39CB3CCE5}.Release|x64.Build.0 = Release|x64
-		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Debug|x64.Build.0 = Debug|Any CPU
-		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Experimental|x64.ActiveCfg = Debug|Any CPU
-		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Experimental|x64.Build.0 = Debug|Any CPU
-		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Release|x64.ActiveCfg = Release|Any CPU
-		{41A0CB14-DA4B-4191-ADEE-E5A0DA888C4A}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

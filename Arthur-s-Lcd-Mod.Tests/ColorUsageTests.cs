@@ -14,7 +14,7 @@ public class ColorUsageTests
         string repo = directory!.FullName;
         var pattern = new Regex(@"new Color\((?:[^,()]|\([^()]*\))+,\s*\d+\s*\)");
         var offenders = new List<string>();
-        foreach (string folder in new[] { "Arthur-s-Lcd-Mod/Client", "Arthur-s-Lcd-Mod/Common", "External/AcruxUI/External/Adk" })
+        foreach (string folder in new[] { "Arthur-s-Lcd-Mod/Client", "Arthur-s-Lcd-Mod/Common", "External/Adk" })
         {
             foreach (string file in Directory.EnumerateFiles(Path.Combine(repo, folder), "*.cs", SearchOption.AllDirectories))
             {
