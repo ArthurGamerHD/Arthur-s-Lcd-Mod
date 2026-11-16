@@ -8,7 +8,7 @@ namespace LcdMod.Client.Apps.ButtonPad
     internal sealed partial class TargetPickerView : Window
     {
         readonly TargetPickerViewModel _model;
-        readonly ComboBox<PickActionTargetKind> _kind;
+        readonly ComboBox _kind;
 
         // Any view model with the bound members works (the IDE preview's clone, for one); the kind picker needs the
         // app's model, so it is there only with the typed constructor.
@@ -21,11 +21,12 @@ namespace LcdMod.Client.Apps.ButtonPad
         {
             _model = model;
             DataContext = model;
-            _kind = new ComboBox<PickActionTargetKind>(TargetPickerViewModel.Kinds, TargetPickerViewModel.KindLabel, model.SelectKind)
+            _kind = new ComboBox(TargetPickerViewModel.Kinds, item => TargetPickerViewModel.KindLabel((PickActionTargetKind)item),
+                item => model.SelectKind((PickActionTargetKind)item))
             {
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
-            _kind.SetSelectedValue(model.Kind);
+            _kind.SelectedItem = model.Kind;
             KindHost.Child = _kind;
         }
 

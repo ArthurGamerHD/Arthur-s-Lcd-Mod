@@ -8,7 +8,7 @@ namespace LcdMod.Client.Apps.NpcMarket
     internal sealed partial class MarketItemDialogView : Window
     {
         readonly MarketItemDialogViewModel _model;
-        readonly ComboBox<NpcMarketMode> _mode;
+        readonly ComboBox _mode;
 
         // Any view model with the bound members works (the IDE preview's clone, for one); the mode picker needs the
         // app's model, so it is there only with the typed constructor.
@@ -21,12 +21,12 @@ namespace LcdMod.Client.Apps.NpcMarket
         {
             _model = model;
             DataContext = model;
-            _mode = new ComboBox<NpcMarketMode>(new[] { NpcMarketMode.Buy, NpcMarketMode.Sell }, mode => model.ModeLabel(mode),
-                model.SelectMode)
+            _mode = new ComboBox(new[] { NpcMarketMode.Buy, NpcMarketMode.Sell }, item => model.ModeLabel((NpcMarketMode)item),
+                item => model.SelectMode((NpcMarketMode)item))
             {
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
-            _mode.SetSelectedValue(model.Mode);
+            _mode.SelectedItem = model.Mode;
             ModeHost.Child = _mode;
         }
 

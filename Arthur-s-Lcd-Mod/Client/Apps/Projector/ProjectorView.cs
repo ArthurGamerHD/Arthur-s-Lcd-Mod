@@ -11,7 +11,7 @@ namespace LcdMod.Client.Apps.Projector
     {
         ProjectorViewModel _model;
         Inventory.InventoryView _inventory;
-        ComboBox<ProjectorListMode> _modeComboBox;
+        ComboBox _modeComboBox;
 
         public ProjectorView()
         {
@@ -40,13 +40,13 @@ namespace LcdMod.Client.Apps.Projector
             if (_model == null) return;
             if (_modeComboBox == null)
             {
-                _modeComboBox = new ComboBox<ProjectorListMode>(_model.Modes, mode => _model.ModeLabel(mode),
-                    mode => { if (_model.SelectMode != null) _model.SelectMode(mode); })
+                _modeComboBox = new ComboBox(_model.Modes, item => _model.ModeLabel((ProjectorListMode)item),
+                    item => { if (_model.SelectMode != null) _model.SelectMode((ProjectorListMode)item); })
                 {
                     OpenDirection = ComboBoxOpenDirection.Up,
                     HorizontalAlignment = HorizontalAlignment.Stretch
                 };
-                _modeComboBox.SetSelectedValue(_model.Mode);
+                _modeComboBox.SelectedItem = _model.Mode;
             }
             ModeHost.Child = _modeComboBox;
         }
@@ -54,7 +54,7 @@ namespace LcdMod.Client.Apps.Projector
         void OnModelChanged(ObservableObject sender, string property)
         {
             if (property == nameof(ProjectorViewModel.Mode) && _modeComboBox != null)
-                _modeComboBox.SetSelectedValue(_model.Mode);
+                _modeComboBox.SelectedItem = _model.Mode;
         }
 
         protected override Vector2 MeasureOverride(Vector2 availableSize)

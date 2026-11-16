@@ -13,7 +13,7 @@ namespace LcdMod.Client.Apps.Generators
         const float RANGE_MIN_HEIGHT = 28f;
         static readonly int[] RangeTiers = { 0, 1, 2, 3, 4, 5 };
 
-        ComboBox<int> _rangeComboBox;
+        ComboBox _rangeComboBox;
         GeneratorsViewModel _observed;
 
         public GeneratorsFooterView()
@@ -61,14 +61,14 @@ namespace LcdMod.Client.Apps.Generators
                 return;
             if (_rangeComboBox == null)
             {
-                _rangeComboBox = new ComboBox<int>(RangeTiers, EnergyDashboardApp.GetScaleLabel,
-                    viewModel.SetRangeTier)
+                _rangeComboBox = new ComboBox(RangeTiers, item => EnergyDashboardApp.GetScaleLabel((int)item),
+                    item => viewModel.SetRangeTier((int)item))
                 {
                     OpenDirection = ComboBoxOpenDirection.Up
                 };
                 RangeHost.Child = _rangeComboBox;
             }
-            _rangeComboBox.SetSelectedValue(viewModel.RangeTier);
+            _rangeComboBox.SelectedItem = viewModel.RangeTier;
             float fontSize = viewModel.FontScale * 0.72f;
             RangeLabel.FontSize = fontSize;
             _rangeComboBox.TextScale = fontSize;

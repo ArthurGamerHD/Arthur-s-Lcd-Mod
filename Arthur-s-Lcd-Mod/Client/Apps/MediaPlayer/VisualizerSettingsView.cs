@@ -20,30 +20,30 @@ namespace LcdMod.Client.Apps.MediaPlayer
     /// <summary>Hosts the typed ADK combo box in a settings row's data template.</summary>
     internal sealed class VisualizerColorModePicker : UserControl
     {
-        readonly ComboBox<VisualizerColorMode> _combo;
+        readonly ComboBox _combo;
 
         public VisualizerColorModePicker()
         {
-            _combo = new ComboBox<VisualizerColorMode>(
+            _combo = new ComboBox(
                 new[] { VisualizerColorMode.Fixed, VisualizerColorMode.Rgb, VisualizerColorMode.TimeBased },
-                mode => mode == VisualizerColorMode.Fixed ? "Fixed" :
-                    mode == VisualizerColorMode.Rgb ? "RGB" : "Time-Based",
-                mode =>
+                item => (VisualizerColorMode)item == VisualizerColorMode.Fixed ? "Fixed" :
+                    (VisualizerColorMode)item == VisualizerColorMode.Rgb ? "RGB" : "Time-Based",
+                item =>
                 {
                     var row = DataContext as VisualizerSettingRow;
                     if (row != null)
-                        row.ColorMode = mode;
+                        row.ColorMode = (VisualizerColorMode)item;
                 })
             {
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
             Content = _combo;
             Bind<VisualizerSettingRow, VisualizerColorMode>(row => row.ColorMode,
-                mode => _combo.SetSelectedValue(mode), nameof(VisualizerSettingRow.ColorMode));
+                mode => _combo.SelectedItem = mode, nameof(VisualizerSettingRow.ColorMode));
             Bind<VisualizerSettingRow, float>(row => row.FontSize,
                 size => _combo.TextScale = size, nameof(VisualizerSettingRow.FontSize));
         }
 
-        internal ComboBox<VisualizerColorMode> ComboBox => _combo;
+        internal ComboBox ComboBox => _combo;
     }
 }

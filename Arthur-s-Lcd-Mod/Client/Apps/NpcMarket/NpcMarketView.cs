@@ -12,7 +12,7 @@ namespace LcdMod.Client.Apps.NpcMarket
         const float MODE_TEXT_PADDING = 34f;
         const float MODE_MIN_HEIGHT = 28f;
 
-        ComboBox<NpcMarketMode> _modeComboBox;
+        ComboBox _modeComboBox;
         NpcMarketViewModel _observed;
 
         public NpcMarketView()
@@ -71,14 +71,14 @@ namespace LcdMod.Client.Apps.NpcMarket
                 return;
             if (_modeComboBox == null)
             {
-                _modeComboBox = new ComboBox<NpcMarketMode>(NpcMarketApp.MarketModes, NpcMarketApp.GetModeLabel,
-                    mode => viewModel.App.SetMode(mode))
+                _modeComboBox = new ComboBox(NpcMarketApp.MarketModes, item => NpcMarketApp.GetModeLabel((NpcMarketMode)item),
+                    item => viewModel.App.SetMode((NpcMarketMode)item))
                 {
                     OpenDirection = ComboBoxOpenDirection.Up
                 };
                 ModeHost.Child = _modeComboBox;
             }
-            _modeComboBox.SetSelectedValue(viewModel.App.Mode);
+            _modeComboBox.SelectedItem = viewModel.App.Mode;
             _modeComboBox.Enabled = viewModel.ModeEnabled;
             _modeComboBox.TextScale = viewModel.FontScale * 0.72f;
             SizeModeComboBox(viewModel.FontScale * 0.72f);
