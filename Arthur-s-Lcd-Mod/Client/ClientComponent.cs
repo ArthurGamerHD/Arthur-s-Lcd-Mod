@@ -9,7 +9,6 @@ using LcdMod.Client.Ftue;
 using LcdMod.Client.Modules.Power;
 using LcdMod.Client.Modules.Defense;
 using Acrux.Cartography;
-using LcdMod.Client.Modules.Cartography;
 using LcdMod.Client.Modules.RoomEnvironment;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using LcdMod.Client.Config;
@@ -21,6 +20,7 @@ using ManagedDoom.SE;
 using LcdMod.Client.Terminal;
 #if DEBUG
 using LcdMod.Client.Debugging;
+using LcdMod.Client.Modules.Cartography;
 #endif
 using LcdMod.Common.Helpers;
 using LcdMod.Common.Networking;
@@ -54,10 +54,14 @@ namespace LcdMod.Client
 
         readonly LcdModSessionComponent _session;
         readonly TerminalManager _terminalManager;
+#if DEBUG
         readonly AudioPocService _audioPoc = new AudioPocService();
+#endif
         readonly AudioImportService _audioImport = new AudioImportService();
         readonly AudioBroadcastClientService _audioBroadcast = new AudioBroadcastClientService();
+#if DEBUG
         readonly GameAudioTestReportService _audioTestReport = new GameAudioTestReportService();
+#endif
         readonly GridImageClientService _images = new GridImageClientService();
         readonly LocalImageLibrary _imageLibrary = new LocalImageLibrary();
 #if DEBUG
@@ -84,10 +88,14 @@ namespace LcdMod.Client
         public CartographyModule Cartography { get; private set; }
         public GridRoomEnvironmentClientModule RoomEnvironment { get; }
         internal FtueService Ftue { get; }
+#if DEBUG
         internal AudioPocService AudioPoc { get { return _audioPoc; } }
+#endif
         internal AudioImportService AudioImport { get { return _audioImport; } }
         internal AudioBroadcastClientService AudioBroadcast { get { return _audioBroadcast; } }
+#if DEBUG
         internal GameAudioTestReportService AudioTestReport { get { return _audioTestReport; } }
+#endif
         internal void RefreshDoomAudioTerminalControls() { _terminalManager.RefreshDoomAudioControls(); }
 #if DEBUG
         internal CartographyDebugReportService CartographyDebugReport { get { return _cartographyDebugReport; } }
@@ -152,7 +160,9 @@ namespace LcdMod.Client
             Acrux.Core.Control.ChangeTrace = null;
 #endif
 #endif
+#if DEBUG
             _audioPoc.Unload();
+#endif
             _audioBroadcast.Unload();
             Modules.Wristpad.WristpadLink.Unload();
             LocalConfigManager.Save();
@@ -337,7 +347,9 @@ namespace LcdMod.Client
                 RunNextFrameActions();
                 InventoryWorkScheduler.RunFrame();
                 RunOnePerFrameAction();
+#if DEBUG
                 _audioPoc.Update();
+#endif
                 _audioBroadcast.Update();
             }
         }

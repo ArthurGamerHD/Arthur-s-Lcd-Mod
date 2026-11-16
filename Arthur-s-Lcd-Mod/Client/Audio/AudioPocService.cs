@@ -1,3 +1,4 @@
+#if DEBUG
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -333,3 +334,4 @@ namespace LcdMod.Client.Audio
         }
     }
 }
+#endif

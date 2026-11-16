@@ -32,6 +32,7 @@ namespace LcdMod.Client.ChatCommands
             client.AudioImport.ImportAudios();
         }
 
+#if DEBUG
         /// <summary>
         /// Plays a local WAV file for the current player.
         /// </summary>
@@ -59,6 +60,7 @@ namespace LcdMod.Client.ChatCommands
 
             client.AudioPoc.PlayGameAudio(subtype);
         }
+#endif
 
         /// <summary>
         /// Broadcasts an imported audio asset to LCD media players.
@@ -74,6 +76,7 @@ namespace LcdMod.Client.ChatCommands
             client.AudioBroadcast.StreamAudio(query);
         }
 
+#if DEBUG
         /// <summary>
         /// Tests referenced game audio files and writes a compatibility report.
         /// </summary>
@@ -87,5 +90,6 @@ namespace LcdMod.Client.ChatCommands
 
             client.AudioTestReport.TestAllGameAudio();
         }
+#endif
     }
 }
