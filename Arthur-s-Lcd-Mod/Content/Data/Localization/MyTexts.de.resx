@@ -1780,4 +1780,52 @@ Wir warten einen Moment und starten sie dann für dich neu.</value>
   <data name="LcdMod_PreparingAutomaticRepair" xml:space="preserve">
     <value>Automatische Reparatur wird vorbereitet</value>
   </data>
+  <data name="LcdMod_Market_Delivery_NotDeliverable" xml:space="preserve">
+    <value>Dropline kann dieses Angebot nicht liefern.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Ordered" xml:space="preserve">
+    <value>Bestellung an Dropline gesendet. Verfolge sie auf der Bestellseite des Shops.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Destination" xml:space="preserve">
+    <value>Ziel-Pad</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_ChooseDestination" xml:space="preserve">
+    <value>Wähle ein Ziel-Pad.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_NoPads" xml:space="preserve">
+    <value>Dieser Shop hat kein Pad für Lieferungen.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_PadBusy" xml:space="preserve">
+    <value>{0} (belegt)</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_PickStation" xml:space="preserve">
+    <value>Station wählen</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Summary" xml:space="preserve">
+    <value>Lieferung {0} SC, {1}</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Button_AddToCart" xml:space="preserve">
+    <value>In den Warenkorb</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Button_BuyNow" xml:space="preserve">
+    <value>Jetzt kaufen</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Button" xml:space="preserve">
+    <value>Warenkorb: {0}</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Title" xml:space="preserve">
+    <value>Liefer-Warenkorb</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Empty" xml:space="preserve">
+    <value>Dein Warenkorb ist leer.</value>
+  </data>
+  <data name="LcdMod_Market_Cart_PickStore" xml:space="preserve">
+    <value>Händler wählen</value>
+  </data>
+  <data name="LcdMod_Market_Cart_RemoveStore" xml:space="preserve">
+    <value>Händler entfernen</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_AddedToCart" xml:space="preserve">
+    <value>Zum Warenkorb hinzugefügt.</value>
+  </data>
 </root>

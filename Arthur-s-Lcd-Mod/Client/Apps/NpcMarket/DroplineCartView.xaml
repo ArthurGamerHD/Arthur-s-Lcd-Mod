@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window xmlns="https://github.com/ArthurGamerHD/AcruxUI"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:market="using:LcdMod.Client.Apps.NpcMarket"
+        xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
+        x:Class="LcdMod.Client.Apps.NpcMarket.DroplineCartView"
+        x:DataType="market:DroplineCartViewModel"
+        Design.DataContext="{x:Static market:DroplineCartViewModelPreview.Default}"
+        Title="{Binding Title}" Width="600" Height="480" MinWidth="360" MinHeight="300"
+        Padding="14 4 14 14">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Toolkit/Dialogs.xaml" />
+  </Window.Styles>
+  <Grid RowDefinitions="*,Auto">
+    <Border Classes="dialog-panel">
+      <Grid>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding Branches}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="market:DroplineCartBranchModel">
+                <StackPanel Margin="0 0 0 6">
+                  <Button Classes="dialog-row" Command="{Binding SelectCommand}" Height="32" HorizontalContentAlignment="Stretch">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <Border Margin="-6 -2" Width="4" HorizontalAlignment="Left" CornerRadius="2"
+                              Background="{DynamicResource accentColor}" IsVisible="{Binding IsSelected}" />
+                      <TextBlock Classes="dialog-text" Text="{Binding StationName}" FontSize="{Binding FontSize}" Margin="6 0"
+                                 TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Classes="dialog-text" Text="{Binding SubtotalText}" FontSize="{Binding FontSize}"
+                                 VerticalAlignment="Center" />
+                    </Grid>
+                  </Button>
+                  <ItemsControl ItemsSource="{Binding Lines}" Margin="28 2 6 0">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="market:DroplineCartLineModel">
+                        <Grid ColumnDefinitions="28,*,8,64,8,110,8,28" Height="32">
+                          <Image Source="{Binding Icon}" Width="22" Height="22" HorizontalAlignment="Left" />
+                          <TextBlock Grid.Column="1" Classes="dialog-text" Text="{Binding Name}" FontSize="{Binding FontSize}"
+                                     TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                          <TextBox Grid.Column="3" Text="{Binding Quantity, Mode=TwoWay}" MaxLength="4" Height="28" />
+                          <TextBlock Grid.Column="5" Classes="dialog-text" Text="{Binding SubtotalText}" FontSize="{Binding FontSize}"
+                                     HorizontalAlignment="Right" VerticalAlignment="Center" />
+                          <Button Grid.Column="7" Classes="dialog-button" MinWidth="0" MinHeight="0" Width="28" Height="28" Padding="0"
+                                  Command="{Binding RemoveCommand}">
+                            <TextBlock Classes="dialog-text" Text="×" FontSize="{Binding FontSize}" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                          </Button>
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+        <TextBlock Classes="dialog-muted" Text="{Binding EmptyText}" FontSize="{Binding FontSize}" IsVisible="{Binding IsEmpty}" />
+      </Grid>
+    </Border>
+    <Border Grid.Row="1" Classes="dialog-panel" Margin="0 10 0 0" Padding="10 8">
+      <Grid ColumnDefinitions="*,8,*,8,Auto" RowDefinitions="Auto,Auto,6,Auto">
+        <TextBlock Grid.ColumnSpan="5" Margin="0 0 0 6" Classes="dialog-text" Foreground="{DynamicResource errorColor}"
+                   Text="{Binding ErrorText}" FontSize="{Binding SmallFontSize}" TextWrapping="Wrap" IsVisible="{Binding HasError}" />
+        <TextBlock Grid.ColumnSpan="5" Margin="0 0 0 6" Classes="dialog-text" Foreground="{DynamicResource accentColor}"
+                   Text="{Binding InfoText}" FontSize="{Binding SmallFontSize}" TextWrapping="Wrap" IsVisible="{Binding HasInfo}" />
+        <TextBlock Grid.Row="1" Classes="dialog-text" Text="{Binding TotalText}" FontSize="{Binding LargeFontSize}"
+                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        <TextBlock Grid.Row="1"  Grid.Column="2" Classes="dialog-text" Text="{Binding SelectedText}" FontSize="{Binding SmallFontSize}"
+                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        <Button Grid.Row="1" Grid.Column="4" Classes="dialog-button danger" HorizontalAlignment="Stretch"
+                Command="{Binding RemoveBranchCommand}" IsEnabled="{Binding CanRemoveBranch}">
+          <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Market_Cart_RemoveStore}" FontSize="{Binding FontSize}" />
+        </Button>
+        <TextBlock Grid.Row="3" Classes="dialog-text" Text="{Binding DeliveryText}" FontSize="{Binding SmallFontSize}"
+                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        <ComboBox x:Name="Destination" Grid.Row="3" Grid.Column="2" ItemsSource="{Binding Destinations}"
+                  SelectedIndex="{Binding SelectedDestinationIndex, Mode=TwoWay}"
+                  PlaceholderText="{ext:loc LcdMod_Market_Delivery_Destination}" HorizontalAlignment="Stretch" Height="34" Margin="0" />
+        <Button Grid.Row="3" Grid.Column="4" Classes="dialog-button primary" HorizontalAlignment="Stretch"
+                Command="{Binding BuyCommand}" IsEnabled="{Binding CanBuy}" PointerEntered="OnBuyNowEntered">
+          <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Market_Delivery_Button_BuyNow}" FontSize="{Binding FontSize}" />
+        </Button>
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

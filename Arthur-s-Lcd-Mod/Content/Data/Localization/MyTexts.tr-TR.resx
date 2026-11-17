@@ -1779,4 +1779,52 @@ Bir süre bekleyeceğiz ve ardından sizin için yeniden başlatacağız.</value
   <data name="LcdMod_PreparingAutomaticRepair" xml:space="preserve">
     <value>Otomatik Onarım hazırlanıyor</value>
   </data>
+  <data name="LcdMod_Market_Delivery_NotDeliverable" xml:space="preserve">
+    <value>Dropline bu teklifi teslim edemez.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Ordered" xml:space="preserve">
+    <value>Sipariş Dropline'a gönderildi. Mağazanın Siparişler sayfasından takip edin.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Destination" xml:space="preserve">
+    <value>Hedef Pad</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_ChooseDestination" xml:space="preserve">
+    <value>Bir hedef Pad seçin.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_NoPads" xml:space="preserve">
+    <value>Bu mağazanın teslimat yapılacak Pad'i yok.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_PadBusy" xml:space="preserve">
+    <value>{0} (dolu)</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_PickStation" xml:space="preserve">
+    <value>Bir istasyon seçin</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Summary" xml:space="preserve">
+    <value>Teslimat {0} SC, {1}</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Button_AddToCart" xml:space="preserve">
+    <value>Sepete ekle</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Button_BuyNow" xml:space="preserve">
+    <value>Hemen al</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Button" xml:space="preserve">
+    <value>Sepet: {0}</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Title" xml:space="preserve">
+    <value>Teslimat sepeti</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Empty" xml:space="preserve">
+    <value>Sepetiniz boş.</value>
+  </data>
+  <data name="LcdMod_Market_Cart_PickStore" xml:space="preserve">
+    <value>Bir mağaza seçin</value>
+  </data>
+  <data name="LcdMod_Market_Cart_RemoveStore" xml:space="preserve">
+    <value>Mağazayı kaldır</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_AddedToCart" xml:space="preserve">
+    <value>Sepete eklendi.</value>
+  </data>
 </root>

@@ -30,10 +30,19 @@ namespace LcdMod.Client.Apps.NpcMarket
             ModeHost.Child = _mode;
         }
 
+        void OnBuyNowEntered(object sender, Acrux.Core.Input.PointerEventArgs e)
+        {
+            var model = DataContext as MarketItemDialogViewModel;
+            if (model != null)
+                model.PrepareBuy();
+        }
+
         protected override Vector2 MeasureOverride(Vector2 availableSize)
         {
             if (_mode != null)
                 _mode.TextScale = _model.FontSize;
+            if (_model != null)
+                Destination.TextScale = _model.FontSize;
             return base.MeasureOverride(availableSize);
         }
     }

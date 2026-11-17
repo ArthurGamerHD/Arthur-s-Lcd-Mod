@@ -1779,4 +1779,52 @@ We wachten even en starten het daarna voor je opnieuw op.</value>
   <data name="LcdMod_PreparingAutomaticRepair" xml:space="preserve">
     <value>Automatisch herstel voorbereiden</value>
   </data>
+  <data name="LcdMod_Market_Delivery_NotDeliverable" xml:space="preserve">
+    <value>Dropline kan dit aanbod niet leveren.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Ordered" xml:space="preserve">
+    <value>Bestelling naar Dropline verzonden. Volg haar op de bestelpagina van de winkel.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Destination" xml:space="preserve">
+    <value>Bestemmingspad</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_ChooseDestination" xml:space="preserve">
+    <value>Kies een bestemmingspad.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_NoPads" xml:space="preserve">
+    <value>Deze winkel heeft geen pad om naar te leveren.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_PadBusy" xml:space="preserve">
+    <value>{0} (bezet)</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_PickStation" xml:space="preserve">
+    <value>Kies een station</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Summary" xml:space="preserve">
+    <value>Levering {0} SC, {1}</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Button_AddToCart" xml:space="preserve">
+    <value>In winkelwagen</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Button_BuyNow" xml:space="preserve">
+    <value>Nu kopen</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Button" xml:space="preserve">
+    <value>Winkelwagen: {0}</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Title" xml:space="preserve">
+    <value>Leveringswinkelwagen</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Empty" xml:space="preserve">
+    <value>Je winkelwagen is leeg.</value>
+  </data>
+  <data name="LcdMod_Market_Cart_PickStore" xml:space="preserve">
+    <value>Kies een winkel</value>
+  </data>
+  <data name="LcdMod_Market_Cart_RemoveStore" xml:space="preserve">
+    <value>Winkel verwijderen</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_AddedToCart" xml:space="preserve">
+    <value>Toegevoegd aan de winkelwagen.</value>
+  </data>
 </root>

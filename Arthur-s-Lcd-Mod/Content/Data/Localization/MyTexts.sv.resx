@@ -1779,4 +1779,52 @@ Vi väntar en stund och startar sedan om den åt dig.</value>
   <data name="LcdMod_PreparingAutomaticRepair" xml:space="preserve">
     <value>Förbereder automatisk reparation</value>
   </data>
+  <data name="LcdMod_Market_Delivery_NotDeliverable" xml:space="preserve">
+    <value>Dropline kan inte leverera det här erbjudandet.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Ordered" xml:space="preserve">
+    <value>Beställningen skickad till Dropline. Följ den på butikens beställningssida.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Destination" xml:space="preserve">
+    <value>Målplatta</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_ChooseDestination" xml:space="preserve">
+    <value>Välj en målplatta.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_NoPads" xml:space="preserve">
+    <value>Butiken har ingen platta att leverera till.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_PadBusy" xml:space="preserve">
+    <value>{0} (upptagen)</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_PickStation" xml:space="preserve">
+    <value>Välj en station</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Summary" xml:space="preserve">
+    <value>Leverans {0} SC, {1}</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Button_AddToCart" xml:space="preserve">
+    <value>Lägg i varukorgen</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Button_BuyNow" xml:space="preserve">
+    <value>Köp nu</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Button" xml:space="preserve">
+    <value>Varukorg: {0}</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Title" xml:space="preserve">
+    <value>Leveransvarukorg</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Empty" xml:space="preserve">
+    <value>Varukorgen är tom.</value>
+  </data>
+  <data name="LcdMod_Market_Cart_PickStore" xml:space="preserve">
+    <value>Välj en butik</value>
+  </data>
+  <data name="LcdMod_Market_Cart_RemoveStore" xml:space="preserve">
+    <value>Ta bort butik</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_AddedToCart" xml:space="preserve">
+    <value>Tillagd i varukorgen.</value>
+  </data>
 </root>

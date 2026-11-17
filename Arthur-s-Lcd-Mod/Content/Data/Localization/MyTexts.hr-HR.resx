@@ -1779,4 +1779,52 @@ Pričekat ćemo neko vrijeme, a zatim je ponovno pokrenuti za vas.</value>
   <data name="LcdMod_PreparingAutomaticRepair" xml:space="preserve">
     <value>Priprema automatskog popravka</value>
   </data>
+  <data name="LcdMod_Market_Delivery_NotDeliverable" xml:space="preserve">
+    <value>Dropline ne može dostaviti ovu ponudu.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Ordered" xml:space="preserve">
+    <value>Narudžba poslana Droplineu. Prati je na stranici narudžbi trgovine.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Destination" xml:space="preserve">
+    <value>Odredišna platforma</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_ChooseDestination" xml:space="preserve">
+    <value>Odaberi odredišnu platformu.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_NoPads" xml:space="preserve">
+    <value>Ova trgovina nema platformu za dostavu.</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_PadBusy" xml:space="preserve">
+    <value>{0} (zauzeto)</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_PickStation" xml:space="preserve">
+    <value>Odaberi stanicu</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Summary" xml:space="preserve">
+    <value>Dostava {0} SC, {1}</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Button_AddToCart" xml:space="preserve">
+    <value>Dodaj u košaricu</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_Button_BuyNow" xml:space="preserve">
+    <value>Kupi odmah</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Button" xml:space="preserve">
+    <value>Košarica: {0}</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Title" xml:space="preserve">
+    <value>Košarica za dostavu</value>
+  </data>
+  <data name="LcdMod_Market_Cart_Empty" xml:space="preserve">
+    <value>Košarica je prazna.</value>
+  </data>
+  <data name="LcdMod_Market_Cart_PickStore" xml:space="preserve">
+    <value>Odaberi trgovinu</value>
+  </data>
+  <data name="LcdMod_Market_Cart_RemoveStore" xml:space="preserve">
+    <value>Ukloni trgovinu</value>
+  </data>
+  <data name="LcdMod_Market_Delivery_AddedToCart" xml:space="preserve">
+    <value>Dodano u košaricu.</value>
+  </data>
 </root>

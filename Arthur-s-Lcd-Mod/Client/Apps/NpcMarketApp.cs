@@ -88,6 +88,7 @@ namespace LcdMod.Client.Apps
         void NpcMarket.INpcMarketHost.RefreshNativeMarket() { RefreshNativeMarket(); }
         void NpcMarket.INpcMarketHost.SetMode(NpcMarketMode mode) { SetMode(mode); }
         NpcMarket.MarketItemDialogViewModel _itemDialog;
+        NpcMarket.DroplineCartViewModel _cartDialog;
         internal IReadOnlyList<NpcMarketRow> NativeRows => _rows;
         internal string NativeModeText => GetModeLabel(_mode);
         internal string NativeUpdatedText => _footerUpdatedValue;
@@ -170,6 +171,8 @@ namespace LcdMod.Client.Apps
         {
             if (_itemDialog != null)
                 _itemDialog.Refresh();
+            if (_cartDialog != null)
+                _cartDialog.Tick();
             var key = CacheKey;
             if (IsLocallyAccessDenied())
             {
@@ -458,7 +461,8 @@ namespace LcdMod.Client.Apps
                 MyTexts.GetString("MarketWatchTab_SearchMessage_NoResults"),
                 selected => LoadItemQuotes(itemKey, selected),
                 quote => CreateTemporaryGps((NpcMarketStationQuote)quote.Source, itemName),
-                selected => { if (Mode != NpcMarketMode.Both) SetMode(selected); })
+                selected => { if (Mode != NpcMarketMode.Both) SetMode(selected); },
+                DroplineClient.IsPresent ? CreateDroplineDelivery() : null)
             {
                 ModeLabel = selected => MyTexts.GetString(selected == NpcMarketMode.Buy ? "StoreScreenBuyHeader" : "StoreScreenSellHeader")
             };
@@ -466,6 +470,122 @@ namespace LcdMod.Client.Apps
             dialog.Closed += () => { if (ReferenceEquals(_itemDialog, model)) _itemDialog = null; };
             if (ShowDialog(dialog))
                 _itemDialog = model;
+        }
+
+        NpcMarket.MarketDelivery CreateDroplineDelivery()
+        {
+            var delivery = new NpcMarket.MarketDelivery
+            {
+                CanDeliver = quote =>
+                {
+                    var source = quote.Source as NpcMarketStationQuote;
+                    return source != null && source.ItemType == ItemTypes.PhysicalItem && source.StoreItemType == StoreItemTypes.Offer;
+                },
+                LoadDestinations = done => DroplineClient.RequestDestinations(CacheKey.HostBlockEntityId,
+                    reply => done(ToDestinations(reply), reply.Error)),
+                SelectDestination = (padId, done) => DroplineClient.SelectDestination(CacheKey.HostBlockEntityId, padId,
+                    reply => done(ToDestinations(reply), reply.Error)),
+                RequestQuote = (quote, quantity, padId, done) =>
+                {
+                    var source = (NpcMarketStationQuote)quote.Source;
+                    DroplineClient.RequestQuote(CacheKey.HostBlockEntityId, padId, source.StationId, source.TypeId, source.SubtypeId, quantity,
+                        reply => done(ToQuote(reply)));
+                },
+                Submit = (quoteId, done) => DroplineClient.Submit(CacheKey.HostBlockEntityId, quoteId, reply => done(reply.Error)),
+                LoadCart = done => DroplineClient.RequestCart(CacheKey.HostBlockEntityId, reply => done(ToCartLines(reply), reply.Error)),
+                AddToCart = (quote, quantity, done) =>
+                {
+                    var source = (NpcMarketStationQuote)quote.Source;
+                    DroplineClient.AddToCart(CacheKey.HostBlockEntityId, source.StationId, source.TypeId, source.SubtypeId, quantity,
+                        reply => done(ToCartLines(reply), reply.Error));
+                },
+                SetCartQuantity = (line, quantity, done) => DroplineClient.SetCartQuantity(CacheKey.HostBlockEntityId, line.StationId,
+                    line.TypeId, line.SubtypeId, quantity, reply => done(ToCartLines(reply), reply.Error)),
+                ClearCart = (stationId, done) => DroplineClient.ClearCart(CacheKey.HostBlockEntityId, stationId,
+                    reply => done(ToCartLines(reply), reply.Error)),
+                QuoteCart = (stationId, padId, done) => DroplineClient.QuoteCart(CacheKey.HostBlockEntityId, stationId, padId,
+                    reply => done(ToQuote(reply))),
+                FormatCredits = FormatingHelper.FormatSpaceCredits,
+                FormatDuration = FormatDuration,
+                Now = () => MyAPIGateway.Session.ElapsedPlayTime.TotalSeconds,
+                IsGpsModifierPressed = () => MyAPIGateway.Input.IsAnyCtrlKeyPressed()
+            };
+            delivery.OpenCart = () => OpenCart(delivery);
+            return delivery;
+        }
+
+        void OpenCart(NpcMarket.MarketDelivery delivery)
+        {
+            if (_cartDialog != null)
+                return;
+            var model = new NpcMarket.DroplineCartViewModel(delivery, count =>
+            {
+                if (_itemDialog != null)
+                    _itemDialog.SetCartCount(count);
+            });
+            var dialog = new NpcMarket.DroplineCartView(model);
+            dialog.Closed += () => { if (ReferenceEquals(_cartDialog, model)) _cartDialog = null; };
+            if (ShowDialog(dialog))
+                _cartDialog = model;
+        }
+
+        static NpcMarket.MarketDeliveryQuote ToQuote(Common.Networking.PacketDroplineReply reply)
+        {
+            return new NpcMarket.MarketDeliveryQuote
+            {
+                Id = reply.QuoteId,
+                Error = reply.Error,
+                Subtotal = reply.Subtotal,
+                Fee = reply.Fee,
+                Total = reply.Total,
+                EtaSeconds = reply.EtaSeconds
+            };
+        }
+
+        IList<NpcMarket.MarketCartLine> ToCartLines(Common.Networking.PacketDroplineReply reply)
+        {
+            if (reply.Error != null || reply.CartLines == null)
+                return null;
+            var result = new List<NpcMarket.MarketCartLine>(reply.CartLines.Count);
+            foreach (var line in reply.CartLines)
+                result.Add(new NpcMarket.MarketCartLine
+                {
+                    StationId = line.StationId,
+                    StationName = line.StationName,
+                    TypeId = line.TypeId,
+                    SubtypeId = line.SubtypeId,
+                    Icon = TextureHelper.ResolveItemSprite(new VRage.Game.ModAPI.Ingame.MyItemType(line.TypeId, line.SubtypeId), Host.Surface),
+                    Name = line.Name,
+                    Quantity = line.Quantity,
+                    UnitPrice = line.UnitPrice
+                });
+            return result;
+        }
+
+        static IList<NpcMarket.MarketDestination> ToDestinations(Common.Networking.PacketDroplineReply reply)
+        {
+            if (reply.Error != null || reply.Destinations == null)
+                return null;
+            var result = new List<NpcMarket.MarketDestination>(reply.Destinations.Count);
+            foreach (var pad in reply.Destinations)
+            {
+                var name = string.IsNullOrWhiteSpace(pad.Name) ? pad.PadId.ToString() : pad.Name;
+                result.Add(new NpcMarket.MarketDestination
+                {
+                    PadId = pad.PadId,
+                    Label = (pad.Flags & DroplineDestinationDto.BusyFlag) != 0
+                        ? string.Format(MyTexts.GetString("LcdMod_Market_Delivery_PadBusy"), name)
+                        : name,
+                    IsSelected = (pad.Flags & DroplineDestinationDto.SelectedFlag) != 0
+                });
+            }
+            return result;
+        }
+
+        static string FormatDuration(int seconds)
+        {
+            seconds = Math.Max(0, seconds);
+            return (seconds / 3600).ToString("00") + ":" + (seconds / 60 % 60).ToString("00") + ":" + (seconds % 60).ToString("00");
         }
 
         List<NpcMarket.MarketQuote> LoadItemQuotes(string itemKey, NpcMarketMode mode)

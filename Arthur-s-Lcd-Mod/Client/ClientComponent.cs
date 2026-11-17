@@ -203,6 +203,7 @@ namespace LcdMod.Client
 
             ListBoxItemHelper.PerTypeCache.Clear();
             NpcMarketClientCache.Reset();
+            DroplineClient.Unload();
             RunNextFrame.Clear();
             RunThisFrame.Clear();
             Blocker.Clear();
@@ -418,6 +419,12 @@ namespace LcdMod.Client
         public void HandleLocalGridImageData(PacketGridImageData packet)
         {
             _images.HandleImageData(packet);
+        }
+
+        [NetworkCallback(typeof(PacketDroplineReply), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]
+        public void HandleLocalDroplineReply(PacketDroplineReply packet)
+        {
+            DroplineClient.HandleReply(packet);
         }
 
         [NetworkCallback(typeof(PacketSyncNpcMarket), NetworkCallbackFilter.FromServer | NetworkCallbackFilter.IsClient)]

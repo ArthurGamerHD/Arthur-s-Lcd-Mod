@@ -30,6 +30,7 @@ namespace LcdMod.Server
         readonly NpcMarketService _npcMarket;
         readonly AudioBroadcastServerService _audioBroadcast;
         readonly GridImageServerService _images;
+        readonly DroplineBridge _dropline = new DroplineBridge();
 
         public LcdModServerComponent(LcdModSessionComponent session)
         {
@@ -43,12 +44,17 @@ namespace LcdMod.Server
 
         public GridRoomEnvironmentServerModule RoomEnvironment { get; }
 
-        public void LoadData() => MyAPIGateway.Entities.OnEntityAdd += EntityAdded;
+        public void LoadData()
+        {
+            MyAPIGateway.Entities.OnEntityAdd += EntityAdded;
+            _dropline.LoadData();
+        }
 
         public void UnloadData()
         {
             _audioBroadcast.Unload();
             _npcMarket.UnloadData();
+            _dropline.UnloadData();
             RoomEnvironment.Unload();
             MyAPIGateway.Entities.OnEntityAdd -= EntityAdded;
 
@@ -149,6 +155,7 @@ namespace LcdMod.Server
         public void SaveData()
         {
             _npcMarket.SaveData();
+            _dropline.SaveData();
             _images.Prune();
         }
 
@@ -163,6 +170,18 @@ namespace LcdMod.Server
         {
             var player = MyAPIGateway.Session.Player;
             _npcMarket.HandleRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
+        }
+
+        [NetworkCallback(typeof(PacketDroplineRequest), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
+        public void HandleDroplineRequest(ReceivedPacketEventArgs args)
+        {
+            _dropline.HandleRequest(args.SenderId, args.UnWrap<PacketDroplineRequest>());
+        }
+
+        public void HandleLocalDroplineRequest(PacketDroplineRequest packet)
+        {
+            var player = MyAPIGateway.Session.Player;
+            _dropline.HandleRequest(player?.SteamUserId ?? MyAPIGateway.Multiplayer.MyId, packet);
         }
 
         [NetworkCallback(typeof(PacketRequestBroadcastAudio), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]

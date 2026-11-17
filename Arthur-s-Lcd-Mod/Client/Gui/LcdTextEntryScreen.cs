@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Acrux.Controls;
 using Acrux.Lcd;
+using Acrux.ScreenSpace;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.SurfaceScripts.Abstract;
 using Sandbox.ModAPI;
@@ -45,6 +46,10 @@ namespace LcdMod.Client.Gui
         // True while an entry owns the keyboard and the LCD cursor; eye tracking stands aside.
         public static bool IsActive => _current != null && _current.IsOpen;
 
+        // Tells other Acrux mods (map hotkeys...) that the keyboard is ours while the entry is open: this screen
+        // hides the cursor, so they cannot see it any other way.
+        const string KeyboardOwner = "LcdMod.LcdTextEntry";
+
         public static void TrackFocus(InteractiveSurfaceScript surface, LcdGuiHost host)
         {
             if (surface == null || host == null || !(host.VisualTree.FocusedElement is TextBox))
@@ -62,6 +67,7 @@ namespace LcdMod.Client.Gui
         protected override void OnOpened()
         {
             _host.Input.KeyboardEnabled = false;
+            KeyboardCapture.Acquire(KeyboardOwner);
         }
 
         protected override void OnHandleInput()
@@ -134,7 +140,10 @@ namespace LcdMod.Client.Gui
                 _box.CapsLockShown = false;
             _host.Input.KeyboardEnabled = true;
             if (ReferenceEquals(_current, this))
+            {
                 _current = null;
+                KeyboardCapture.Release(KeyboardOwner);
+            }
         }
 
         void End(bool releaseFocus)

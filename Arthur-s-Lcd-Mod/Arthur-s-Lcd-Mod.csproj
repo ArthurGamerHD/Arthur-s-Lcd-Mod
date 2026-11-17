@@ -120,7 +120,7 @@ Do not edit it manually, use the mod source on 'https://github.com/ArthurGamerHD
     <!-- UI comes from the Acrux UI mod: ClientApi (thin generated wrappers + bridge runtime) and the Acrux / ADK
          generators come from the Acrux.Sdk package in ../packages (update with ../update-acrux.sh / .bat). -->
     <ItemGroup>
-        <PackageReference Include="Acrux.Sdk" Version="0.0.2" PrivateAssets="all" />
+        <PackageReference Include="Acrux.Sdk" Version="0.0.4" PrivateAssets="all" />
     </ItemGroup>
     <!-- IDE preview of Acrux views (dev-time only, needs ../acrux-ui.local), themed as an app on a surface. -->
     <PropertyGroup>

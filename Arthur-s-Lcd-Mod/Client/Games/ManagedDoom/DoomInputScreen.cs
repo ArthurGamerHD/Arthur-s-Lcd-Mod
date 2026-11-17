@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Acrux.ScreenSpace;
 using LcdMod.Client.Gui;
 using LcdMod.Client.SurfaceScripts;
 using ManagedDoom.SE;
@@ -13,6 +14,10 @@ namespace LcdMod.Client.Games.ManagedDoom
     internal sealed class DoomInputScreen : MyModScreen
     {
         static DoomInputScreen _current;
+
+        // Tells other Acrux mods (map hotkeys...) that the keyboard is ours while Doom holds the controls: this
+        // screen hides the cursor, so they cannot see it any other way.
+        const string KeyboardOwner = "LcdMod.DoomInput";
         readonly GameSurfaceScript _surface;
         readonly DoomGame _game;
         readonly SEDoomUserInput _input;
@@ -43,6 +48,11 @@ namespace LcdMod.Client.Games.ManagedDoom
                 return;
             _current = new DoomInputScreen(surface, game, input);
             _current.Open();
+        }
+
+        protected override void OnOpened()
+        {
+            KeyboardCapture.Acquire(KeyboardOwner);
         }
 
         public static void CloseFor(DoomGame game)
@@ -108,7 +118,10 @@ namespace LcdMod.Client.Games.ManagedDoom
                 _surface.HideDoomCursor();
             _input.ClearCapturedInput();
             if (ReferenceEquals(_current, this))
+            {
                 _current = null;
+                KeyboardCapture.Release(KeyboardOwner);
+            }
         }
     }
 }

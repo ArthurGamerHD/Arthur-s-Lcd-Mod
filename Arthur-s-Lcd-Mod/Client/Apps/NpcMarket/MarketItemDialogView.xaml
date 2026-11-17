@@ -2,6 +2,7 @@
 <Window xmlns="https://github.com/ArthurGamerHD/AcruxUI"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:market="using:LcdMod.Client.Apps.NpcMarket"
+        xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
         x:Class="LcdMod.Client.Apps.NpcMarket.MarketItemDialogView"
         x:DataType="market:MarketItemDialogViewModel"
         Design.DataContext="{x:Static market:MarketItemDialogViewModelPreview.Default}"
@@ -10,10 +11,13 @@
   <Window.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Toolkit/Dialogs.xaml" />
   </Window.Styles>
-  <Grid RowDefinitions="Auto,Auto,*">
-    <Grid ColumnDefinitions="Auto,*,160" Margin="0 0 0 10">
+  <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Grid ColumnDefinitions="Auto,*,Auto,8,160" Margin="0 0 0 10">
       <Image Source="{Binding Icon}" Width="40" Height="40" />
-      <Border x:Name="ModeHost" Grid.Column="2" Height="34" />
+      <Button Grid.Column="2" Classes="dialog-button" Height="34" Command="{Binding OpenCartCommand}" IsVisible="{Binding ShowCart}">
+        <TextBlock Classes="dialog-text" Text="{Binding CartLabel}" FontSize="{Binding FontSize}" />
+      </Button>
+      <Border x:Name="ModeHost" Grid.Column="4" Height="34" />
     </Grid>
     <Grid Grid.Row="1" ColumnDefinitions="80,*,120,90" Height="30" Margin="4 0 14 4">
       <Button Classes="dialog-header" Command="{Binding SortDistanceCommand}">
@@ -54,6 +58,8 @@
               <DataTemplate x:DataType="market:MarketQuoteRow">
                 <Button Margin="0 0 0 2" Classes="dialog-row" Command="{Binding Command}" Height="32" HorizontalContentAlignment="Stretch">
                   <Grid ColumnDefinitions="80,*,120,90">
+                    <Border Margin="-6 -3" Width="4" HorizontalAlignment="Left" CornerRadius="2"
+                            Background="{DynamicResource accentColor}" IsVisible="{Binding IsSelected}" />
                     <TextBlock Classes="dialog-text" Text="{Binding Distance}" FontSize="{Binding FontSize}" HorizontalAlignment="Right" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1" Classes="dialog-text" Text="{Binding Station}" FontSize="{Binding FontSize}" Margin="10 0" VerticalAlignment="Center" />
                     <TextBlock Grid.Column="2" Classes="dialog-text" Text="{Binding Price}" FontSize="{Binding FontSize}" HorizontalAlignment="Right" VerticalAlignment="Center" />
@@ -68,6 +74,30 @@
           </ItemsControl>
         </ScrollViewer>
         <TextBlock Classes="dialog-muted" Text="{Binding EmptyText}" FontSize="{Binding FontSize}" IsVisible="{Binding IsEmpty}" />
+      </Grid>
+    </Border>
+    <Border Grid.Row="3" Classes="dialog-panel" Margin="0 10 0 0" Padding="10 8" IsVisible="{Binding ShowDelivery}">
+      <Grid ColumnDefinitions="*,8,*,8,Auto" RowDefinitions="Auto,Auto,6,Auto">
+        <TextBlock Grid.ColumnSpan="5" Margin="0 0 0 6" Classes="dialog-text" Foreground="{DynamicResource errorColor}"
+                   Text="{Binding ErrorText}" FontSize="{Binding SmallFontSize}" TextWrapping="Wrap" IsVisible="{Binding HasError}" />
+        <TextBlock Grid.ColumnSpan="5" Margin="0 0 0 6" Classes="dialog-text" Foreground="{DynamicResource accentColor}"
+                   Text="{Binding InfoText}" FontSize="{Binding SmallFontSize}" TextWrapping="Wrap" IsVisible="{Binding HasInfo}" />
+        <TextBlock Grid.Row="1"  Classes="dialog-text" Text="{Binding PriceText}" FontSize="{Binding LargeFontSize}"
+                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        <ComboBox x:Name="Destination" Grid.Row="3" Grid.Column="2" ItemsSource="{Binding Destinations}"
+                  SelectedIndex="{Binding SelectedDestinationIndex, Mode=TwoWay}"
+                  PlaceholderText="{ext:loc LcdMod_Market_Delivery_Destination}" HorizontalAlignment="Stretch" Height="34" Margin="0" />
+        <Button Grid.Row="1" Grid.Column="4" Classes="dialog-button" HorizontalAlignment="Stretch"
+                Command="{Binding AddToCartCommand}" IsEnabled="{Binding CanAddToCart}">
+          <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Market_Delivery_Button_AddToCart}" FontSize="{Binding FontSize}" />
+        </Button>
+        <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding DeliveryQuantity, Mode=TwoWay}" MaxLength="4" Height="34" />
+        <TextBlock Grid.Row="3" Classes="dialog-text" Text="{Binding DeliveryText}" FontSize="{Binding SmallFontSize}"
+                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+        <Button Grid.Row="3" Grid.Column="4" Classes="dialog-button primary" HorizontalAlignment="Stretch"
+                Command="{Binding BuyCommand}" IsEnabled="{Binding CanOrder}" PointerEntered="OnBuyNowEntered">
+          <TextBlock Classes="dialog-text" Text="{ext:loc LcdMod_Market_Delivery_Button_BuyNow}" FontSize="{Binding FontSize}" />
+        </Button>
       </Grid>
     </Border>
   </Grid>

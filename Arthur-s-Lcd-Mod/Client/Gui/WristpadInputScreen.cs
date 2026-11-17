@@ -1,3 +1,4 @@
+using Acrux.ScreenSpace;
 using LcdMod.Client.Gui.ControlsTemplates;
 using LcdMod.Client.Modules.Wristpad;
 using LcdMod.Client.SurfaceScripts.Abstract;
@@ -43,6 +44,10 @@ namespace LcdMod.Client.Gui
         // True while the screen owns the pad's cursor; eye tracking stands aside.
         public static bool IsActive => _current != null && _current.IsOpen;
 
+        // Tells other Acrux mods (map hotkeys...) that the keyboard is ours while the pad is raised: this screen
+        // hides the cursor, so they cannot see it any other way.
+        const string KeyboardOwner = "LcdMod.WristpadInput";
+
         public static void TryOpenFor(IMyTerminalBlock panel)
         {
             if (IsActive)
@@ -74,6 +79,7 @@ namespace LcdMod.Client.Gui
         protected override void OnOpened()
         {
             WristpadLink.CaptureInput(_panel.EntityId);
+            KeyboardCapture.Acquire(KeyboardOwner);
         }
 
         protected override void OnUpdate(bool hasFocus)
@@ -149,7 +155,10 @@ namespace LcdMod.Client.Gui
             if (!isUnloading)
                 WristpadLink.ReleaseInput(_panel.EntityId);
             if (ReferenceEquals(_current, this))
+            {
                 _current = null;
+                KeyboardCapture.Release(KeyboardOwner);
+            }
         }
 
         void OpenTerminal()

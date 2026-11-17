@@ -83,8 +83,8 @@ namespace LcdMod.Client.Apps
         readonly List<long> _toRemove = new List<long>();
         readonly List<ContactRecord> _sortedContacts = new List<ContactRecord>();
         readonly List<IMyCubeGrid> _tempGroupGrids = new List<IMyCubeGrid>();
-        readonly List<IMySlimBlock> _tempSlimBlocks = new List<IMySlimBlock>();
         readonly List<IMyEntity> _tempEntities = new List<IMyEntity>();
+        readonly RadarSignalBlockCache _signalBlocks = new RadarSignalBlockCache();
         readonly RadarViewModel _viewModel = new RadarViewModel();
 
         sealed class MissileTrack
@@ -152,6 +152,12 @@ namespace LcdMod.Client.Apps
             return new List<MySprite>();
         }
 
+        public override void Close()
+        {
+            _signalBlocks.Clear();
+            base.Close();
+        }
+
         void CollectContacts()
         {
             _seenThisFrame.Clear();
@@ -192,7 +198,8 @@ namespace LcdMod.Client.Apps
 
                 _tempEntities.Clear();
                 var sphere = new BoundingSphereD(shipPos, range);
-                var entitiesInSphere = MyAPIGateway.Entities.GetEntitiesInSphere(ref sphere);
+                // Top-most only: GetEntitiesInSphere also returns every fat block of every grid in range.
+                var entitiesInSphere = MyAPIGateway.Entities.GetTopMostEntitiesInSphere(ref sphere);
                 if (entitiesInSphere != null)
                 {
                     _tempEntities.AddRange(entitiesInSphere);
@@ -200,12 +207,25 @@ namespace LcdMod.Client.Apps
                 }
 
                 _processedGroupGridIds.Clear();
+                _signalBlocks.BeginScan();
                 foreach (var entity in _tempEntities)
                 {
-                    if (TryCollectSignalProxyContact(entity, shipPos, ownGrid, ownGridOwnerId, lockedTargetGridId,
-                            lockedTargetEntityId, normalizedLockPercent))
+                    var grid = entity as IMyCubeGrid;
+                    if (grid == null || grid.Closed)
+                        continue;
+                    if (grid.EntityId == ownGridId)
                         continue;
 
+                    foreach (var signalBlock in _signalBlocks.Get(grid))
+                    {
+                        if (!signalBlock.Closed)
+                            TryCollectSignalProxyContact(signalBlock, shipPos, ownGrid, ownGridOwnerId,
+                                lockedTargetGridId, lockedTargetEntityId, normalizedLockPercent);
+                    }
+                }
+
+                foreach (var entity in _tempEntities)
+                {
                     var grid = entity as IMyCubeGrid;
                     if (grid == null || grid.Physics == null)
                         continue;
@@ -288,6 +308,8 @@ namespace LcdMod.Client.Apps
                     rec.IsLockCandidate = groupHasCandidate;
                     rec.MissedFrames = 0;
                 }
+
+                _signalBlocks.EndScan();
             }
             catch (Exception ex)
             {
@@ -506,48 +528,19 @@ namespace LcdMod.Client.Apps
 
             try
             {
-                _tempSlimBlocks.Clear();
-                grid.GetBlocks(_tempSlimBlocks,
-                    slimBlock => IsLongRangeSignalBlockInRange(slimBlock, receiverPosition, receiverGrid));
-                return _tempSlimBlocks.Count > 0;
+                foreach (var block in _signalBlocks.Get(grid))
+                {
+                    if (!block.Closed && IsLongRangeSignalEntityInRange(block, receiverPosition, receiverGrid))
+                        return true;
+                }
+
+                return false;
             }
             catch (Exception e)
             {
                 ErrorHandlerHelper.LogError(e, this);
                 return false;
             }
-            finally
-            {
-                _tempSlimBlocks.Clear();
-            }
-        }
-
-        static bool IsLongRangeSignalBlockInRange(
-            IMySlimBlock slimBlock,
-            Vector3D receiverPosition,
-            IMyCubeGrid receiverGrid)
-        {
-            var block = slimBlock?.FatBlock;
-            var functional = block as IMyFunctionalBlock;
-            if (functional == null || !functional.IsFunctional || !functional.Enabled)
-                return false;
-
-            var radio = block as IMyRadioAntenna;
-            if (radio != null)
-                return radio.IsBroadcasting && BroadcastRangeReaches(radio.WorldMatrix.Translation, radio.Radius,
-                    receiverPosition);
-
-            var beacon = block as IMyBeacon;
-            if (beacon != null)
-                return BroadcastRangeReaches(beacon.WorldMatrix.Translation, beacon.Radius, receiverPosition);
-
-            var laser = block as IMyLaserAntenna;
-            if (laser == null || laser.Other == null || receiverGrid == null)
-                return false;
-
-            return laser.Other.CubeGrid != null &&
-                   laser.Other.CubeGrid.EntityId == receiverGrid.EntityId &&
-                   laser.IsInRange(laser.Other);
         }
 
         static bool BroadcastRangeReaches(Vector3D broadcastPosition, float radius, Vector3D receiverPosition)
