@@ -25,6 +25,18 @@ namespace LcdMod.Client.Gui.Styling
         public static readonly ResourceKey<Color> CardFillColor =
             ResourceKey.Register<Color>("cardFillColor");
 
+        /// <summary>Gradient behind panels: windows and dialogs, flyouts, dialog panes and detail panes.</summary>
+        public static readonly ResourceKey<Acrux.Styling.BackgroundBrush> PanelBackground =
+            ResourceKey.Register<Acrux.Styling.BackgroundBrush>("panelBackground");
+
+        /// <summary>Gradient behind header-colored cards, derived from <see cref="HeaderColor"/>.</summary>
+        public static readonly ResourceKey<Acrux.Styling.BackgroundBrush> CardBackground =
+            ResourceKey.Register<Acrux.Styling.BackgroundBrush>("cardBackground");
+
+        /// <summary>Gradient behind item cards, derived from <see cref="AccentContainerColor"/>.</summary>
+        public static readonly ResourceKey<Acrux.Styling.BackgroundBrush> ItemCardBackground =
+            ResourceKey.Register<Acrux.Styling.BackgroundBrush>("itemCardBackground");
+
         /// <summary>The block's configured header color, which the theme is generated from.</summary>
         public static readonly ResourceKey<Color> HeaderColor =
             ResourceKey.Register<Color>("headerColor");

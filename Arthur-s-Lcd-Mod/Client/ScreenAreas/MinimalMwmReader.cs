@@ -249,6 +249,63 @@ namespace LcdMod.Client.ScreenAreas
             return lodPaths.Count > 0;
         }
 
+        /// <summary>The model's dummies (name and local matrix) in file order, which is the order the game iterates them.</summary>
+        public static bool TryReadDummies(BinaryReader reader, out List<KeyValuePair<string, Matrix>> dummies)
+        {
+            dummies = null;
+            if (reader == null || !reader.BaseStream.CanSeek)
+                return false;
+
+            try
+            {
+                if (!string.Equals(reader.ReadString(), "Debug", StringComparison.Ordinal))
+                    return false;
+                if (ReadVersion(ReadStringArray(reader)) < INDEXED_TAG_VERSION)
+                    return false;
+
+                int offset;
+                if (!ReadIndexDictionary(reader).TryGetValue("Dummies", out offset) || !SeekTag(reader, offset, "Dummies"))
+                    return false;
+
+                var count = reader.ReadInt32();
+                if (count < 0)
+                    return false;
+
+                var result = new List<KeyValuePair<string, Matrix>>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    var name = reader.ReadString();
+                    var matrix = ReadMatrix(reader);
+                    var customDataCount = reader.ReadInt32();
+                    for (int j = 0; j < customDataCount; j++)
+                    {
+                        reader.ReadString();
+                        reader.ReadString();
+                    }
+
+                    result.Add(new KeyValuePair<string, Matrix>(name, matrix));
+                }
+
+                dummies = result;
+                return true;
+            }
+            catch
+            {
+                dummies = null;
+                return false;
+            }
+        }
+
+        static Matrix ReadMatrix(BinaryReader reader)
+        {
+            var m = new Matrix();
+            m.M11 = reader.ReadSingle(); m.M12 = reader.ReadSingle(); m.M13 = reader.ReadSingle(); m.M14 = reader.ReadSingle();
+            m.M21 = reader.ReadSingle(); m.M22 = reader.ReadSingle(); m.M23 = reader.ReadSingle(); m.M24 = reader.ReadSingle();
+            m.M31 = reader.ReadSingle(); m.M32 = reader.ReadSingle(); m.M33 = reader.ReadSingle(); m.M34 = reader.ReadSingle();
+            m.M41 = reader.ReadSingle(); m.M42 = reader.ReadSingle(); m.M43 = reader.ReadSingle(); m.M44 = reader.ReadSingle();
+            return m;
+        }
+
         static bool TryRead(BinaryReader reader, string targetMaterial, out MinimalMwmModel model)
         {
             model = null;

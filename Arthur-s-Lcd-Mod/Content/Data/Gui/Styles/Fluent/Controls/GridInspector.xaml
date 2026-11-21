@@ -23,7 +23,7 @@
     <Setter Property="Padding" Value="1" />
     <Setter Property="CornerRadius" Value="32" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+    <Setter Property="Background" Value="{DynamicResource panelBackground}" />
     <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
   </Style>
   <Style Selector="Border.legend-flyout">
@@ -32,7 +32,7 @@
     <Setter Property="Padding" Value="16 8 2 8" />
     <Setter Property="CornerRadius" Value="20" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+    <Setter Property="Background" Value="{DynamicResource panelBackground}" />
     <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
   </Style>
   <Style Selector="ToggleButton.axis-option">

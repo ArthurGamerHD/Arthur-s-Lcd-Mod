@@ -10,6 +10,7 @@
         Padding="14 4 14 14">
   <Window.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Toolkit/Dialogs.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Panels.xaml" />
   </Window.Styles>
   <Grid RowDefinitions="Auto,*">
     <!-- Like the pre-migration compact dialog, a very short screen shows only the list. -->

@@ -10,6 +10,7 @@
         Padding="14 4 14 14">
   <Window.Styles>
     <StyleInclude Source="/Data/Gui/Styles/Toolkit/Dialogs.xaml" />
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/Panels.xaml" />
   </Window.Styles>
   <StackPanel Spacing="8">
     <TextBlock Classes="dialog-text" Text="{Binding Prompt}" FontSize="{Binding SmallFontSize}" TextWrapping="Wrap"

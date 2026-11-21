@@ -31,7 +31,7 @@
     <Setter Property="Background" Value="{DynamicResource inventoryTableStripe}" />
   </Style>
   <Style Selector="inventory|InventoryItemControl:card">
-    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
+    <Setter Property="Background" Value="{DynamicResource itemCardBackground}" />
     <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
     <Setter Property="Template">
       <ControlTemplate>

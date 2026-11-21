@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="using:LcdMod.Client.Apps.Controls">
   <Style Selector="Border.clock-card">
-    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
+    <Setter Property="Background" Value="{DynamicResource itemCardBackground}" />
   </Style>
   <Style Selector="TextBlock.clock-text">
     <Setter Property="FontFamily" Value="{DynamicResource textFont}" />

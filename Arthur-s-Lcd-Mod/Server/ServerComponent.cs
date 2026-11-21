@@ -91,11 +91,23 @@ namespace LcdMod.Server
         }
 
         [NetworkCallback(typeof(NetworkPackageSyncComponentConfig), NetworkCallbackFilter.FromClient | NetworkCallbackFilter.IsServer)]
-        internal void HandleSyncConfig(NetworkPackageSyncComponentConfig packet)
+        public void HandleSyncConfig(ReceivedPacketEventArgs args)
         {
-            var block = MyEntities.GetEntityById(packet.BlockId) as IMyFunctionalBlock;
+            var packet = args.UnWrap<NetworkPackageSyncComponentConfig>();
+            if (packet?.Config == null)
+                return;
+            // Cockpits and other screen providers are terminal blocks but not functional blocks.
+            var block = MyEntities.GetEntityById(packet.BlockId) as IMyTerminalBlock;
             if (block == null)
                 return;
+            long identity = MyAPIGateway.Players.TryGetIdentityId(args.SenderId);
+            if (MyAPIGateway.Multiplayer.MultiplayerActive &&
+                (identity == 0 || block.GetUserRelationToOwner(identity) > MyRelationsBetweenPlayerAndBlock.FactionShare))
+            {
+                LogHelper.Log(MyLogSeverity.Warning, "Rejected screen config for block " + block.EntityId + " from " +
+                                                     args.SenderId + ": not owner or faction share");
+                return;
+            }
 
             RemapHelper.PinBlocks(packet.Config);
             ScreenProviderConfigStorage.Save(block, packet.Config);

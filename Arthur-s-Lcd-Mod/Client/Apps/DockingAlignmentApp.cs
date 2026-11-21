@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Helpers;
+using LcdMod.Client.ScreenAreas;
 using LcdMod.Client.Terminal.Controls;
 using Sandbox.Definitions;
 using Sandbox.ModAPI;
@@ -361,7 +362,7 @@ namespace LcdMod.Client.Apps
 
             var inverseReferenceRotation = MatrixD.Transpose(referenceRotation);
             positionOffset = Vector3D.Transform(
-                GetBlockForwardEdgePosition(target) - GetBlockForwardEdgePosition(reference),
+                GetConnectionPoint(target) - GetConnectionPoint(reference),
                 inverseReferenceRotation);
 
             targetRotation *= MatrixD.CreateFromAxisAngle(targetRotation.Up, Math.PI);
@@ -380,6 +381,16 @@ namespace LcdMod.Client.Apps
                 MathHelper.ToDegrees(relativeRadians.X),
                 MathHelper.ToDegrees(relativeRadians.Y),
                 MathHelper.ToDegrees(relativeRadians.Z));
+        }
+
+        // Connectors lock where their model's connector dummies meet; the block edge is only an estimate of that.
+        static Vector3D GetConnectionPoint(IMyTerminalBlock block)
+        {
+            Vector3 localPoint;
+            if (block is IMyShipConnector && ScreenAreaGeometry.TryGetConnectorLocalPoint(block, out localPoint))
+                return Vector3D.Transform(localPoint, block.WorldMatrix);
+
+            return GetBlockForwardEdgePosition(block);
         }
 
         static Vector3D GetBlockForwardEdgePosition(IMyTerminalBlock block)

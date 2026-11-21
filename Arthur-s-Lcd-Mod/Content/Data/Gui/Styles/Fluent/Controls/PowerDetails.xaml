@@ -13,7 +13,7 @@
     <Setter Property="VerticalContentAlignment" Value="Stretch" />
   </Style>
   <Style Selector="Border.power-details">
-    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+    <Setter Property="Background" Value="{DynamicResource panelBackground}" />
     <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
     <Setter Property="BorderThickness" Value="1" />
     <Setter Property="CornerRadius" Value="6" />

@@ -237,7 +237,7 @@ namespace LcdMod
         static bool IsDedicatedServer =>
             MyAPIGateway.Utilities.IsDedicated && MyAPIGateway.Session.IsServer;
 
-        internal static void ApplySyncedConfig(IMyFunctionalBlock block, ScreenProviderConfig settings, ScreenProviderConfig source)
+        internal static void ApplySyncedConfig(IMyTerminalBlock block, ScreenProviderConfig settings, ScreenProviderConfig source)
         {
             settings.CopyFrom(source);
 

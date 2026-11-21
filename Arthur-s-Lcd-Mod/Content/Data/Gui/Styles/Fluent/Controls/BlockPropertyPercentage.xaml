@@ -33,7 +33,7 @@
     </Setter>
     <Setter Property="MinHeight" Value="0" />
     <Setter Property="Cursor" Value="Arrow" />
-    <Setter Property="Background" Value="{DynamicResource headerColor}" />
+    <Setter Property="Background" Value="{DynamicResource cardBackground}" />
     <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
     <Setter Property="BorderBrush" Value="{DynamicResource fontColor}" />
     <Setter Property="BorderThickness" Value="0" />
@@ -96,13 +96,13 @@
 
   <!-- Cards are buttons only so Cargo entries can be clicked; keep the card colors instead of Fluent's button states. -->
   <Style Selector="controls|BlockPropertyPercentage:pointerover">
-    <Setter Property="Background" Value="{DynamicResource headerColor}" />
+    <Setter Property="Background" Value="{DynamicResource cardBackground}" />
     <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
     <Setter Property="BorderBrush" Value="{DynamicResource fontColor}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
   <Style Selector="controls|BlockPropertyPercentage:pressed">
-    <Setter Property="Background" Value="{DynamicResource headerColor}" />
+    <Setter Property="Background" Value="{DynamicResource cardBackground}" />
     <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
     <Setter Property="BorderBrush" Value="{DynamicResource fontColor}" />
     <Setter Property="BorderThickness" Value="1" />

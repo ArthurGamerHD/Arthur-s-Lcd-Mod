@@ -10,6 +10,7 @@
   <StyleInclude Source="./Controls/ItemDisplay.xaml" />
   <StyleInclude Source="./Controls/ThrustLegendCellControl.xaml" />
   <StyleInclude Source="./Controls/ThrustTelemetryControl.xaml" />
+  <StyleInclude Source="./Controls/Panels.xaml" />
   <Style Selector="TextBlock">
     <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
   </Style>

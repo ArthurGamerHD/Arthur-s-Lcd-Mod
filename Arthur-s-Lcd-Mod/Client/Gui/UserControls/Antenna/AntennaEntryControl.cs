@@ -32,9 +32,9 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             StyledProperty.Register<AntennaEntryControl, Color>(
                 nameof(Foreground), Color.White, UiInvalidation.Render);
 
-        public static readonly StyledProperty<Color> CardBackgroundProperty =
-            StyledProperty.Register<AntennaEntryControl, Color>(
-                nameof(CardBackground), Color.Transparent, UiInvalidation.Render);
+        public static readonly StyledProperty<BackgroundBrush> CardBackgroundProperty =
+            StyledProperty.Register<AntennaEntryControl, BackgroundBrush>(
+                nameof(CardBackground), null, UiInvalidation.Render);
 
         public static readonly StyledProperty<Color> CardShadowProperty =
             StyledProperty.Register<AntennaEntryControl, Color>(
@@ -100,7 +100,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             set { SetValue(ForegroundProperty, value); }
         }
 
-        public Color CardBackground
+        public BackgroundBrush CardBackground
         {
             get { return GetValue(CardBackgroundProperty); }
             set { SetValue(CardBackgroundProperty, value); }

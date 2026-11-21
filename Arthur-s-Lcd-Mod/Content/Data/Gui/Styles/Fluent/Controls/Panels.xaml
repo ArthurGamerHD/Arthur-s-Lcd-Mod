@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Panel surfaces draw the theme's panel gradient. Dialogs include this after the toolkit's Dialogs.xaml, whose
+     dialog-panel style would otherwise win from their own Window.Styles. -->
+<Styles xmlns="https://github.com/ArthurGamerHD/AcruxUI"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource panelBackground}" />
+  </Style>
+  <Style Selector="Border.flyout-presenter">
+    <Setter Property="Background" Value="{DynamicResource panelBackground}" />
+  </Style>
+  <Style Selector="Border.dialog-panel">
+    <Setter Property="Background" Value="{DynamicResource panelBackground}" />
+  </Style>
+</Styles>

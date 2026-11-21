@@ -20,6 +20,7 @@ namespace LcdMod.Client.Gui.Styling
             resources.Set(ThemeResources.FontColor, foregroundColor);
             resources.Set(ThemeResources.HeaderColor, headerColor);
             resources.Set(ThemeResources.CardShadowColor, headerColor.MulValue(.2f));
+            resources.Set(ThemeResources.CardBackground, HeaderCardBrush(headerColor));
             Color accent;
             if (resources.TryGet(ThemeResources.AccentColor, out accent))
                 resources.Set(ThemeResources.CardFillColor, accent.EnsureMinimalContrast(headerColor));
@@ -70,6 +71,10 @@ namespace LcdMod.Client.Gui.Styling
             resources.Set(ThemeResources.BorderColor, theme[Constants.OUTLINE]);
             resources.Set(ThemeResources.BorderVariantColor, theme[Constants.OUTLINE_VARIANT]);
             resources.Set(ThemeResources.ShadowColor, theme[Constants.SHADOW]);
+            resources.Set(ThemeResources.PanelBackground,
+                VerticalGradient(theme[Constants.SURFACE_CONTAINER_HIGHEST], theme[Constants.SURFACE_CONTAINER_HIGH]));
+            resources.Set(ThemeResources.ItemCardBackground,
+                VerticalGradient(Shade(theme[Constants.PRIMARY_CONTAINER], 1.12), Shade(theme[Constants.PRIMARY_CONTAINER], .82)));
             var scrollBarThumbColor = new Color(theme[Constants.PRIMARY], 250 / 255f);
             resources.Set(ThemeResources.ScrollBarTrackColor, new Color(theme[Constants.OUTLINE_VARIANT], 127 / 255f));
             resources.Set(ThemeResources.ScrollBarThumbColor, scrollBarThumbColor);
@@ -84,6 +89,32 @@ namespace LcdMod.Client.Gui.Styling
             resources.Set(MarketThemeResources.PriceTrendNeutralColor, theme[Constants.ON_SURFACE_VARIANT]);
 
             return resources;
+        }
+
+        /// <summary>The gradient of a card drawn in the header color (the theme's <c>cardBackground</c>).</summary>
+        public static Acrux.Styling.BackgroundBrush HeaderCardBrush(Color headerColor)
+        {
+            return VerticalGradient(Shade(headerColor, 1.18), Shade(headerColor, .78));
+        }
+
+        static Acrux.Styling.LinearGradientBrush VerticalGradient(Color top, Color bottom)
+        {
+            var brush = new Acrux.Styling.LinearGradientBrush
+            {
+                StartPoint = new Acrux.Styling.RelativePoint(0f, 0f, Acrux.Styling.RelativeUnit.Relative),
+                EndPoint = new Acrux.Styling.RelativePoint(0f, 1f, Acrux.Styling.RelativeUnit.Relative)
+            };
+            brush.GradientStops.Add(top, 0f);
+            brush.GradientStops.Add(bottom, 1f);
+            return brush;
+        }
+
+        // MulValue goes through HSV, which drops alpha; header colors can be translucent.
+        static Color Shade(Color color, double value)
+        {
+            Color shaded = color.MulValue(value);
+            shaded.A = color.A;
+            return shaded;
         }
     }
 }

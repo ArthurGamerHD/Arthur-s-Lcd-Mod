@@ -1,3 +1,5 @@
+using Acrux.Styling;
+using LcdMod.Client.Gui.Styling;
 using Adk.Mvvm;
 using LcdMod.Client.Extensions;
 using VRageMath;
@@ -48,7 +50,10 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
         const float LaserIconBottomPadding = 22f;
         const float IconSize = 110f;
         static readonly Color Transparent = new Color(0, 0, 0, 0);
-        Color _cardBackground;
+        BackgroundBrush _cardBackground;
+        // What _cardBackground was made from, so an unchanged card keeps its brush instead of a new one per layout.
+        Color _cardColor;
+        bool _cardGradient;
         Color _cardShadow;
         Color _textColor;
         Color _lineColor;
@@ -56,7 +61,7 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
         Vector4 _iconMargin;
 
         [PreviewWith("#3A203F", "#3A203F", "#3A203F", "#602020")]
-        public Color CardBackground { get { return _cardBackground; } }
+        public BackgroundBrush CardBackground { get { return _cardBackground; } }
         [PreviewWith("#0C060D", "#0C060D", "#0C060D", "#130606")]
         public Color CardShadow { get { return _cardShadow; } }
         [PreviewWith("#C5EDFF")]
@@ -72,7 +77,15 @@ namespace LcdMod.Client.Gui.UserControls.Antenna
             Color background = drawAsCard ? (_isFunctional ? headerColor : errorColor) : Transparent;
             Vector3 hsv = background.ColorToHSV();
             hsv.Z *= 0.2f;
-            Set(ref _cardBackground, background, nameof(CardBackground));
+            bool gradient = drawAsCard && _isFunctional;
+            if (_cardBackground == null || _cardColor != background || _cardGradient != gradient)
+            {
+                _cardColor = background;
+                _cardGradient = gradient;
+                Set(ref _cardBackground, gradient
+                    ? ThemeResourceBuilder.HeaderCardBrush(background)
+                    : new SolidColorBrush(background), nameof(CardBackground));
+            }
             Set(ref _cardShadow, drawAsCard ? hsv.HSVtoColor() : Transparent, nameof(CardShadow));
             Set(ref _textColor, drawAsCard ? foreground : _statusColor, nameof(TextColor));
             Set(ref _lineColor, gridLines ? new Color(headerColor.R, headerColor.G, headerColor.B) : foreground,

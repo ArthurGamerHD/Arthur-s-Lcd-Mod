@@ -28,9 +28,9 @@ namespace LcdMod.Client.Apps.Generators
             StyledProperty.Register<PowerCardControl, Color>(nameof(Foreground), Color.White, UiInvalidation.Render);
         public Color Foreground { get { return GetValue(ForegroundProperty); } set { SetValue(ForegroundProperty, value); } }
 
-        public static readonly StyledProperty<Color> CardBackgroundProperty =
-            StyledProperty.Register<PowerCardControl, Color>(nameof(CardBackground), Color.Transparent, UiInvalidation.Render);
-        public Color CardBackground { get { return GetValue(CardBackgroundProperty); } set { SetValue(CardBackgroundProperty, value); } }
+        public static readonly StyledProperty<BackgroundBrush> CardBackgroundProperty =
+            StyledProperty.Register<PowerCardControl, BackgroundBrush>(nameof(CardBackground), null, UiInvalidation.Render);
+        public BackgroundBrush CardBackground { get { return GetValue(CardBackgroundProperty); } set { SetValue(CardBackgroundProperty, value); } }
 
         public static readonly StyledProperty<Color> CardShadowProperty =
             StyledProperty.Register<PowerCardControl, Color>(nameof(CardShadow), Color.Transparent, UiInvalidation.Render);

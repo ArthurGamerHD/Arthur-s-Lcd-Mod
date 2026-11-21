@@ -3,6 +3,7 @@ using LcdMod.Client.Apps.Abstract;
 using LcdMod.Client.Helpers;
 using Adk.Mvvm;
 using Acrux.Styling;
+using LcdMod.Client.Gui.Styling;
 using VRageMath;
 
 namespace LcdMod.Client.Apps.Generators
@@ -89,7 +90,10 @@ namespace LcdMod.Client.Apps.Generators
         float _usage;
         BackgroundBrush _usageBrush;
         Color _textColor;
-        Color _cardBackground;
+        BackgroundBrush _cardBackground;
+        // What _cardBackground was made from, so an unchanged card keeps its brush instead of a new one per update.
+        Color _cardColor;
+        bool _cardGradient;
         Color _cardShadow;
         Color _lineColor;
         Vector4 _lineThickness;
@@ -107,7 +111,7 @@ namespace LcdMod.Client.Apps.Generators
         [PreviewWith("#C5EDFF")]
         public Color TextColor => _textColor;
         [PreviewWith("#3A203F", "#3A203F", "#3A203F", "#602020")]
-        public Color CardBackground => _cardBackground;
+        public BackgroundBrush CardBackground => _cardBackground;
         [PreviewWith("#0C060D", "#0C060D", "#0C060D", "#130606")]
         public Color CardShadow => _cardShadow;
         [PreviewWith("#C5EDFF")]
@@ -133,7 +137,16 @@ namespace LcdMod.Client.Apps.Generators
             Color background = drawAsCard ? (idle ? error : header) : Transparent;
             Vector3 hsv = background.ColorToHSV();
             hsv.Z *= 0.2f;
-            RaiseAndSetIfChanged(ref _cardBackground, background, nameof(CardBackground));
+            bool gradient = drawAsCard && !idle;
+            if (_cardBackground == null || _cardColor != background || _cardGradient != gradient)
+            {
+                _cardColor = background;
+                _cardGradient = gradient;
+                _cardBackground = gradient
+                    ? ThemeResourceBuilder.HeaderCardBrush(background)
+                    : new SolidColorBrush(background);
+                RaisePropertyChanged<BackgroundBrush>(nameof(CardBackground));
+            }
             RaiseAndSetIfChanged(ref _cardShadow, drawAsCard ? hsv.HSVtoColor() : Transparent, nameof(CardShadow));
             RaiseAndSetIfChanged(ref _textColor, idle && !drawAsCard ? error : foreground, nameof(TextColor));
             RaiseAndSetIfChanged(ref _lineColor, gridLines ? new Color(header.R, header.G, header.B) : foreground, nameof(LineColor));

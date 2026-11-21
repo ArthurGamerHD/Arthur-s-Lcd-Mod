@@ -398,7 +398,7 @@ namespace LcdMod.Client
         [NetworkCallback(typeof(NetworkPackageSyncComponentConfig), NetworkCallbackFilter.IsClient)]
         internal void HandleSyncConfig(NetworkPackageSyncComponentConfig packet)
         {
-            var block = MyEntities.GetEntityById(packet.BlockId) as IMyFunctionalBlock;
+            var block = MyEntities.GetEntityById(packet.BlockId) as IMyTerminalBlock;
             if (block == null)
                 return;
 

@@ -44,7 +44,7 @@
     <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
   </Style>
   <Style Selector="ItemDisplay:card">
-    <Setter Property="Background" Value="{DynamicResource accentContainerColor}" />
+    <Setter Property="Background" Value="{DynamicResource itemCardBackground}" />
     <Setter Property="Foreground" Value="{DynamicResource onAccentContainerColor}" />
   </Style>
   <Style Selector="ItemDisplay:grid">
