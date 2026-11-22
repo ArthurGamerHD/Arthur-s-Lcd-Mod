@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/ArthurGamerHD/AcruxUI"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:LcdMod.Client.Apps.Thrust"
+             xmlns:ext="using:LcdMod.Client.Apps.Views.Extensions"
              x:Class="LcdMod.Client.Apps.Thrust.ThrustView"
              x:DataType="local:ThrustViewModel"
              Design.DataContext="{x:Static local:ThrustViewModelPreview.Default}">
@@ -22,12 +23,12 @@
     </Grid>
     <Border Grid.Row="1" Height="{Binding LegendHeight}" Background="{Binding LegendBackground}">
       <Grid ColumnDefinitions="*,*,*" RowDefinitions="*,*">
-        <local:ThrustLegendCellControl x:Name="ForwardCell" />
-        <local:ThrustLegendCellControl x:Name="LeftCell" Grid.Column="1" />
-        <local:ThrustLegendCellControl x:Name="UpCell" Grid.Column="2" />
-        <local:ThrustLegendCellControl x:Name="BackwardCell" Grid.Row="1" />
-        <local:ThrustLegendCellControl x:Name="RightCell" Grid.Row="1" Grid.Column="1" />
-        <local:ThrustLegendCellControl x:Name="DownCell" Grid.Row="1" Grid.Column="2" />
+        <local:ThrustLegendCellControl x:Name="ForwardCell" Classes="forward" Label="{ext:loc Thrust_Forward}" />
+        <local:ThrustLegendCellControl x:Name="LeftCell" Classes="left" Label="{ext:loc Thrust_Left}" Grid.Column="1" />
+        <local:ThrustLegendCellControl x:Name="UpCell" Classes="up" Label="{ext:loc Thrust_Up}" Grid.Column="2" />
+        <local:ThrustLegendCellControl x:Name="BackwardCell" Classes="backward" Label="{ext:loc Thrust_Back}" Grid.Row="1" />
+        <local:ThrustLegendCellControl x:Name="RightCell" Classes="right" Label="{ext:loc Thrust_Right}" Grid.Row="1" Grid.Column="1" />
+        <local:ThrustLegendCellControl x:Name="DownCell" Classes="down" Label="{ext:loc Thrust_Down}" Grid.Row="1" Grid.Column="2" />
       </Grid>
     </Border>
     <TextBlock Grid.RowSpan="2" Text="{Binding Warning}" Foreground="{Binding WarningColor}"

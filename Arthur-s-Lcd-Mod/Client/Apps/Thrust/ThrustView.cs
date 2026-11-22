@@ -51,11 +51,10 @@ namespace LcdMod.Client.Apps.Thrust
 
         static void BindCell(ThrustLegendCellControl control, ThrustLegendEntry model)
         {
-            control.Bind<ThrustLegendEntry, string>(source => source.Label, value => control.Label = value, nameof(ThrustLegendEntry.Label));
+            control.Bind<ThrustLegendEntry, string>(source => source.LabelSuffix, value => control.LabelSuffix = value, nameof(ThrustLegendEntry.LabelSuffix));
             control.Bind<ThrustLegendEntry, string>(source => source.Value, value => control.Value = value, nameof(ThrustLegendEntry.Value));
             control.Bind<ThrustLegendEntry, string>(source => source.FontFamily, value => control.FontFamily = value, nameof(ThrustLegendEntry.FontFamily));
             control.Bind<ThrustLegendEntry, Color>(source => source.Foreground, value => control.Foreground = value, nameof(ThrustLegendEntry.Foreground));
-            control.Bind<ThrustLegendEntry, BackgroundBrush>(source => source.Marker, value => control.Marker = value, nameof(ThrustLegendEntry.Marker));
             control.Bind<ThrustLegendEntry, float>(source => source.MarkerSize, value => control.MarkerSize = value, nameof(ThrustLegendEntry.MarkerSize));
             control.Bind<ThrustLegendEntry, Vector4>(source => source.MarkerMargin, value => control.MarkerMargin = value, nameof(ThrustLegendEntry.MarkerMargin));
             control.Bind<ThrustLegendEntry, Vector4>(source => source.LabelMargin, value => control.LabelMargin = value, nameof(ThrustLegendEntry.LabelMargin));

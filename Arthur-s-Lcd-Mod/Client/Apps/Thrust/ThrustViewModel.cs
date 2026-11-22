@@ -8,21 +8,15 @@ namespace LcdMod.Client.Apps.Thrust
     // Layout and localized labels are refreshed explicitly. Telemetry keeps the
     // same models and only notifies bindings whose values actually changed.
     [PreviewWith("Up.Value", "2.88 MN")]
-    [PreviewWith("Up.Label", "Up:")]
     [PreviewWith("StopTime.Value", "5.6 s")]
     [PreviewWith("StopForce.Value", "1.9 g")]
     [PreviewWith("StopDistance.Value", "118 m")]
     [PreviewWith("Speed.Value", "42")]
     [PreviewWith("Right.Value", "1.44 MN")]
-    [PreviewWith("Right.Label", "Right:")]
     [PreviewWith("Left.Value", "1.44 MN")]
-    [PreviewWith("Left.Label", "Left:")]
     [PreviewWith("Forward.Value", "4.32 MN")]
-    [PreviewWith("Forward.Label", "Forward:")]
     [PreviewWith("Down.Value", "1.44 MN")]
-    [PreviewWith("Down.Label", "Down:")]
     [PreviewWith("Backward.Value", "1.44 MN")]
-    [PreviewWith("Backward.Label", "Back:")]
     internal sealed class ThrustViewModel : ObservableObject
     {
         Vector2 _viewport;
@@ -31,12 +25,12 @@ namespace LcdMod.Client.Apps.Thrust
         Color _gravityColor, _warningColor;
         string _warning;
 
-        public ThrustLegendEntry Forward { get; } = new ThrustLegendEntry(Color.Blue);
-        public ThrustLegendEntry Backward { get; } = new ThrustLegendEntry(Color.Blue);
-        public ThrustLegendEntry Left { get; } = new ThrustLegendEntry(Color.Red);
-        public ThrustLegendEntry Right { get; } = new ThrustLegendEntry(Color.Red);
-        public ThrustLegendEntry Up { get; } = new ThrustLegendEntry(Color.Green);
-        public ThrustLegendEntry Down { get; } = new ThrustLegendEntry(Color.Green);
+        public ThrustLegendEntry Forward { get; } = new ThrustLegendEntry();
+        public ThrustLegendEntry Backward { get; } = new ThrustLegendEntry();
+        public ThrustLegendEntry Left { get; } = new ThrustLegendEntry();
+        public ThrustLegendEntry Right { get; } = new ThrustLegendEntry();
+        public ThrustLegendEntry Up { get; } = new ThrustLegendEntry();
+        public ThrustLegendEntry Down { get; } = new ThrustLegendEntry();
         public ThrustTelemetryEntry Speed { get; } = new ThrustTelemetryEntry();
         public ThrustTelemetryEntry StopDistance { get; } = new ThrustTelemetryEntry();
         public ThrustTelemetryEntry StopTime { get; } = new ThrustTelemetryEntry();
@@ -88,15 +82,14 @@ namespace LcdMod.Client.Apps.Thrust
         }
 
         public void RefreshLayout(float scale, float fontScale, string font, Color foreground,
-            Color legendBackground, string[] labels)
+            Color legendBackground, string labelSuffix)
         {
             _scale = scale;
             _layoutScale = scale * fontScale;
             FontFamily = font;
             LegendBackground = new SolidColorBrush(legendBackground);
-            var legends = new[] { Forward, Backward, Left, Right, Up, Down };
-            for (int i = 0; i < legends.Length; i++)
-                legends[i].RefreshLayout(scale, _layoutScale, font, foreground, labels[i]);
+            foreach (var legend in new[] { Forward, Backward, Left, Right, Up, Down })
+                legend.RefreshLayout(scale, _layoutScale, font, foreground, labelSuffix);
             foreach (var entry in new[] { Speed, StopDistance, StopTime, StopForce })
                 entry.RefreshLayout(_layoutScale, font, foreground);
             RaisePropertyChanged<object>(string.Empty);
@@ -129,9 +122,8 @@ namespace LcdMod.Client.Apps.Thrust
     internal sealed class ThrustLegendEntry : ObservableObject
     {
         string _value;
-        public ThrustLegendEntry(Color marker) { Marker = new SolidColorBrush(marker); }
-        public BackgroundBrush Marker { get; }
-        public string Label { get; private set; }
+        [PreviewWith(":")]
+        public string LabelSuffix { get; private set; }
         public string Value => _value;
         [PreviewWith("White")]
         public string FontFamily { get; private set; }
@@ -148,9 +140,9 @@ namespace LcdMod.Client.Apps.Thrust
         [PreviewWith("0 10.78 6 0")]
         public Vector4 ValueMargin { get; private set; }
 
-        public void RefreshLayout(float scale, float layoutScale, string font, Color foreground, string label)
+        public void RefreshLayout(float scale, float layoutScale, string font, Color foreground, string labelSuffix)
         {
-            Label = label;
+            LabelSuffix = labelSuffix;
             FontFamily = font;
             Foreground = foreground;
             FontSize = 0.46f * layoutScale;

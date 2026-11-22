@@ -145,13 +145,13 @@ namespace LcdMod.Client.Apps
 
         void RefreshPresentationLayout()
         {
-            string[] keys = { "Thrust_Forward", "Thrust_Back", "Thrust_Left", "Thrust_Right", "Thrust_Up", "Thrust_Down" };
-            var labels = new string[keys.Length];
+            // The footer names come from the view; only the localized colon is passed, kept apart so a trimmed
+            // name still shows it. Every shipped format puts the name first.
             string labelFormat = LocHelper.GetLoc(MOD_PREFIX + "Common_Label_WithColon");
-            for (int i = 0; i < keys.Length; i++)
-                labels[i] = string.Format(FormatingHelper.Culture, labelFormat, LocHelper.GetLoc(keys[i]));
+            int nameIndex = labelFormat.IndexOf("{0}", StringComparison.Ordinal);
+            string labelSuffix = nameIndex < 0 ? labelFormat : labelFormat.Substring(nameIndex + 3);
             _viewModel.RefreshLayout(1f, FontScale, TextFont, ForegroundColor,
-                new Color(BackgroundColor.MulValue(0.8f), 0.5f), labels);
+                new Color(BackgroundColor.MulValue(0.8f), 0.5f), labelSuffix);
             string gravityLabel = LocHelper.GetLoc(MOD_PREFIX + "Thrust_GravityLoad");
             _gravityWarning = string.Format(LocHelper.GetLoc(MOD_PREFIX + "Warning"), gravityLabel);
             _gravityCritical = string.Format(LocHelper.GetLoc(MOD_PREFIX + "Critical"), gravityLabel);

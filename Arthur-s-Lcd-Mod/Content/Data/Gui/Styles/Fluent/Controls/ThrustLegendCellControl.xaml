@@ -6,18 +6,40 @@
     <Setter Property="FontSize" Value="{DynamicResource fontScale}" />
     <Setter Property="Template">
       <ControlTemplate>
-        <Grid>
+        <Grid ColumnDefinitions="*,Auto">
           <Border Background="{TemplateBinding Marker}"
                   Width="{TemplateBinding MarkerSize}" Height="{TemplateBinding MarkerSize}"
                   Margin="{TemplateBinding MarkerMargin}" HorizontalAlignment="Left" VerticalAlignment="Top" />
-          <TextBlock Text="{TemplateBinding Label}" FontFamily="{TemplateBinding FontFamily}"
-                     FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.46, ConverterCulture=en-US}" Foreground="{TemplateBinding Foreground}"
-                     Margin="{TemplateBinding LabelMargin}" VerticalAlignment="Top" />
-          <TextBlock Text="{TemplateBinding Value}" FontFamily="{TemplateBinding FontFamily}"
+          <Grid ColumnDefinitions="*,Auto" Margin="{TemplateBinding LabelMargin}" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <TextBlock Text="{TemplateBinding Label}" FontFamily="{TemplateBinding FontFamily}"
+                       FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.46, ConverterCulture=en-US}" Foreground="{TemplateBinding Foreground}"
+                       TextTrimming="CharacterEllipsis" TextAlignment="Right" />
+            <TextBlock Grid.Column="1" Text="{TemplateBinding LabelSuffix}" FontFamily="{TemplateBinding FontFamily}"
+                       FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.46, ConverterCulture=en-US}" Foreground="{TemplateBinding Foreground}" />
+          </Grid>
+          <TextBlock Grid.Column="1" Text="{TemplateBinding Value}" FontFamily="{TemplateBinding FontFamily}"
                      FontSize="{TemplateBinding FontSize, Converter={StaticResource FontSizeMultiplier}, ConverterParameter=0.46, ConverterCulture=en-US}" Foreground="{TemplateBinding Foreground}"
                      Margin="{TemplateBinding ValueMargin}" TextAlignment="Right" VerticalAlignment="Top" />
         </Grid>
       </ControlTemplate>
     </Setter>
+  </Style>
+  <Style Selector="thrust|ThrustLegendCellControl.forward">
+    <Setter Property="Marker" Value="#FF0000FF" />
+  </Style>
+  <Style Selector="thrust|ThrustLegendCellControl.backward">
+    <Setter Property="Marker" Value="#FF0000FF" />
+  </Style>
+  <Style Selector="thrust|ThrustLegendCellControl.left">
+    <Setter Property="Marker" Value="#FFFF0000" />
+  </Style>
+  <Style Selector="thrust|ThrustLegendCellControl.right">
+    <Setter Property="Marker" Value="#FFFF0000" />
+  </Style>
+  <Style Selector="thrust|ThrustLegendCellControl.up">
+    <Setter Property="Marker" Value="#FF008000" />
+  </Style>
+  <Style Selector="thrust|ThrustLegendCellControl.down">
+    <Setter Property="Marker" Value="#FF008000" />
   </Style>
 </Styles>

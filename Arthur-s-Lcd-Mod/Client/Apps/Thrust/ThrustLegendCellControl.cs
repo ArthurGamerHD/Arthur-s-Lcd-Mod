@@ -17,6 +17,14 @@ namespace LcdMod.Client.Apps.Thrust
             set { SetValue(LabelProperty, value); }
         }
 
+        public static readonly StyledProperty<string> LabelSuffixProperty =
+            StyledProperty.Register<ThrustLegendCellControl, string>(nameof(LabelSuffix), string.Empty, UiInvalidation.Measure);
+        public string LabelSuffix
+        {
+            get { return GetValue(LabelSuffixProperty); }
+            set { SetValue(LabelSuffixProperty, value); }
+        }
+
         public static readonly StyledProperty<string> ValueProperty =
             StyledProperty.Register<ThrustLegendCellControl, string>(nameof(Value), string.Empty, UiInvalidation.Measure);
         public string Value
