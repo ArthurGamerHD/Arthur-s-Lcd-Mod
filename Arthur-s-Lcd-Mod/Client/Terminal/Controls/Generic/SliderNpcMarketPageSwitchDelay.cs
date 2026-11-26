@@ -22,7 +22,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(0f, MAX_SECONDS);
+            SetSliderLimits(slider, 0f, MAX_SECONDS);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute("Page switch delay");
 

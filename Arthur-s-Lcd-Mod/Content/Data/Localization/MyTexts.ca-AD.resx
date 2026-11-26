@@ -1828,4 +1828,43 @@ Esperarem una estona i després la reiniciarem per tu.</value>
   <data name="LcdMod_Market_Delivery_AddedToCart" xml:space="preserve">
     <value>Afegit al carretó.</value>
   </data>
+  <data name="LcdMod_MultiFunctionDisplay" xml:space="preserve">
+    <value>Pantalla multifunció (experimental)</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode" xml:space="preserve">
+    <value>Mode de pantalla</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode_Pages" xml:space="preserve">
+    <value>Pantalla multifunció</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode_Windows" xml:space="preserve">
+    <value>Finestres</value>
+  </data>
+  <data name="LcdMod_MultiFunction_MenuPlacement" xml:space="preserve">
+    <value>Posició del menú</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Bottom" xml:space="preserve">
+    <value>A baix</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Top" xml:space="preserve">
+    <value>A dalt</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Left" xml:space="preserve">
+    <value>Esquerra</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Right" xml:space="preserve">
+    <value>Dreta</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Applications" xml:space="preserve">
+    <value>Aplicacions</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Settings" xml:space="preserve">
+    <value>Configuració de {0}</value>
+  </data>
+  <data name="LcdMod_MultiFunction_NoSettings" xml:space="preserve">
+    <value>Aquesta aplicació no té cap configuració per canviar aquí.</value>
+  </data>
+  <data name="LcdMod_MultiFunction_CloseApp" xml:space="preserve">
+    <value>Tanca l'aplicació</value>
+  </data>
 </root>

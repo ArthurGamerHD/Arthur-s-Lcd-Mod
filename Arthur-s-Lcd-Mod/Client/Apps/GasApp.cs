@@ -24,6 +24,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(3)]
+    [MultiFunction(SurfaceScripts.GasSurfaceScript.TITLE, "IconHydrogen")]
     [ConfigComponent(Constants.BLOCKS, typeof(BlockSelectionConfigComponent), PropertyName = "BlockSelectionComponent")]
     public sealed partial class GasApp : App, IGasHost
     {

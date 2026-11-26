@@ -18,6 +18,7 @@ using static LcdMod.Common.Helpers.Constants;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(17)]
+    [MultiFunction(TITLE, "MyObjectBuilder_Projector/LargeProjector")]
     [ConfigComponent(PROJECTOR_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "ProjectorReferenceComponent")]
     [ConfigComponent(ITEM_DISPLAY, typeof(ItemDisplayConfigComponent), PropertyName = "ItemDisplayComponent")]
     internal sealed partial class ProjectorApp : ItemsApp

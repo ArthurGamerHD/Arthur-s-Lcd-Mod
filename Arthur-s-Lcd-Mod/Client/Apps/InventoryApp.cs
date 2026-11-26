@@ -17,6 +17,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(4)]
+    [MultiFunction(NAME, "MyObjectBuilder_CargoContainer/LargeBlockSmallContainer")]
     [ConfigComponent(Constants.ITEM_DISPLAY, typeof(ItemDisplayConfigComponent), PropertyName = "ItemDisplayComponent")]
     // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class InventoryApp : ItemsApp

@@ -13,6 +13,7 @@ using LcdMod.Common.Helpers;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(1)]
+    [MultiFunction(SurfaceScripts.AntennaSurfaceScript.TITLE, "BeaconBroadcast")]
     [ConfigComponent(Constants.BLOCKS, typeof(BlockSelectionConfigComponent), PropertyName = "BlockSelectionComponent")]
     public sealed partial class AntennaApp : App, IApp, IAntennaHost
     {

@@ -20,6 +20,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(19)]
+    [MultiFunction(TITLE, "MyObjectBuilder_StoreBlock/StoreBlock")]
     [ConfigComponent(APP, typeof(NpcMarketConfigComponent), PropertyName = "NpcMarketComponent")]
     internal sealed partial class NpcMarketApp : App, IApp, NpcMarket.INpcMarketHost
     {

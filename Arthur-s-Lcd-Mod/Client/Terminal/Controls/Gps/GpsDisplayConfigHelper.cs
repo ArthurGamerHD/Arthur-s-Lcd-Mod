@@ -47,7 +47,7 @@ namespace LcdMod.Client.Terminal.Controls.Gps
             if (provider == null || !provider.CanWrite)
                 return false;
 
-            var surface = provider.GetSurfaceConfig(ConfigManager.GetThisSurfaceIndex(block));
+            var surface = ConfigManager.GetTerminalConfig(provider, block, ConfigManager.GetThisSurfaceIndex(block));
             if (!provider.CanWriteConfig(surface))
                 return false;
 
@@ -260,7 +260,7 @@ namespace LcdMod.Client.Terminal.Controls.Gps
             return false;
         }
 
-        static IGpsDisplayConfig GetConfig(SurfaceConfig surface)
+        static IGpsDisplayConfig GetConfig(IComponentContainer surface)
         {
             if (surface == null)
                 return null;

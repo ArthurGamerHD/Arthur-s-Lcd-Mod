@@ -64,9 +64,13 @@ namespace LcdMod.Client.Terminal
             "Alignment",
             "TextPadding"
         };
+        /// <summary>The manager whose controls the terminal shows; the multi-function display reuses them for hosted apps.</summary>
+        public static TerminalManager Current { get; private set; }
+
         public TerminalManager(LcdModSessionComponent session)
         {
             _session = session;
+            Current = this;
         }
 
         public void Initialize()
@@ -114,6 +118,8 @@ namespace LcdMod.Client.Terminal
             AddRegistration(registrations, 3315, new SliderDoomKeyboardTurnSensitivity());
             AddRegistration(registrations, 3320, new SwitchDoomMouseTurning());
             AddRegistration(registrations, 3325, new ComboboxItemDisplayMode());
+            AddRegistration(registrations, 3330, new ComboboxMultiFunctionMode());
+            AddRegistration(registrations, 3335, new ComboboxMenuPlacement());
             AddRegistration(registrations, 3350, new ComboboxPlanetTextureQuality());
             AddRegistration(registrations, 3400, new ComboboxReferenceMode());
             AddRegistration(registrations, 3500, new ComboboxGraphWindow());

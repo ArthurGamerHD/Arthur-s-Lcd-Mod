@@ -23,6 +23,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(11)]
+    [MultiFunction(SurfaceScripts.DockingAlignment.TITLE, "MyObjectBuilder_ShipConnector/Connector")]
     [ConfigComponent(DOCKABLE_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "DockableReferenceComponent")]
     internal sealed partial class DockingAlignmentApp : App
     {

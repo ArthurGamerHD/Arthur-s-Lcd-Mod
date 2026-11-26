@@ -22,7 +22,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(0f, 1f);
+            SetSliderLimits(slider, 0f, 1f);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute(LcdMod.Common.Helpers.Constants.MOD_PREFIX + "ButtonPad_ButtonCount");
             slider.Tooltip = MyStringId.GetOrCompute(

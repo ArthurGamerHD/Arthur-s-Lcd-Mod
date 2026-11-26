@@ -1828,4 +1828,43 @@ Vi venter et øjeblik og genstarter den derefter for dig.</value>
   <data name="LcdMod_Market_Delivery_AddedToCart" xml:space="preserve">
     <value>Lagt i kurven.</value>
   </data>
+  <data name="LcdMod_MultiFunctionDisplay" xml:space="preserve">
+    <value>Multifunktionsskærm (eksperimentel)</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode" xml:space="preserve">
+    <value>Visningstilstand</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode_Pages" xml:space="preserve">
+    <value>Multifunktionsskærm</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode_Windows" xml:space="preserve">
+    <value>Vinduer</value>
+  </data>
+  <data name="LcdMod_MultiFunction_MenuPlacement" xml:space="preserve">
+    <value>Menuplacering</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Bottom" xml:space="preserve">
+    <value>Nederst</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Top" xml:space="preserve">
+    <value>Øverst</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Left" xml:space="preserve">
+    <value>Venstre</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Right" xml:space="preserve">
+    <value>Højre</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Applications" xml:space="preserve">
+    <value>Programmer</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Settings" xml:space="preserve">
+    <value>Indstillinger for {0}</value>
+  </data>
+  <data name="LcdMod_MultiFunction_NoSettings" xml:space="preserve">
+    <value>Dette program har ingen indstillinger, der kan ændres her.</value>
+  </data>
+  <data name="LcdMod_MultiFunction_CloseApp" xml:space="preserve">
+    <value>Luk program</value>
+  </data>
 </root>

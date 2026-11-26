@@ -1827,4 +1827,43 @@ Chvíľu počkáme a potom ju za vás reštartujeme.</value>
   <data name="LcdMod_Market_Delivery_AddedToCart" xml:space="preserve">
     <value>Pridané do košíka.</value>
   </data>
+  <data name="LcdMod_MultiFunctionDisplay" xml:space="preserve">
+    <value>Multifunkčný displej (experimentálny)</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode" xml:space="preserve">
+    <value>Režim zobrazenia</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode_Pages" xml:space="preserve">
+    <value>Multifunkčný displej</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode_Windows" xml:space="preserve">
+    <value>Okná</value>
+  </data>
+  <data name="LcdMod_MultiFunction_MenuPlacement" xml:space="preserve">
+    <value>Umiestnenie ponuky</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Bottom" xml:space="preserve">
+    <value>Dole</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Top" xml:space="preserve">
+    <value>Hore</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Left" xml:space="preserve">
+    <value>Vľavo</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Right" xml:space="preserve">
+    <value>Vpravo</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Applications" xml:space="preserve">
+    <value>Aplikácie</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Settings" xml:space="preserve">
+    <value>Nastavenia: {0}</value>
+  </data>
+  <data name="LcdMod_MultiFunction_NoSettings" xml:space="preserve">
+    <value>Táto aplikácia tu nemá žiadne nastavenia.</value>
+  </data>
+  <data name="LcdMod_MultiFunction_CloseApp" xml:space="preserve">
+    <value>Zavrieť aplikáciu</value>
+  </data>
 </root>

@@ -38,6 +38,7 @@ namespace LcdMod.Common.Config.Components
     [ProtoInclude(122, typeof(MediaPlayerConfigComponent))]
     [ProtoInclude(123, typeof(PlanetaryMapConfigComponent))]
     [ProtoInclude(124, typeof(ItemDisplayConfigComponent))]
+    [ProtoInclude(125, typeof(MultiFunctionConfigComponent))]
     [XmlInclude(typeof(GeneralConfigComponent))]
     [XmlInclude(typeof(ColorConfigComponent))]
     [XmlInclude(typeof(InteractiveConfigComponent))]
@@ -62,6 +63,7 @@ namespace LcdMod.Common.Config.Components
     [XmlInclude(typeof(MediaPlayerConfigComponent))]
     [XmlInclude(typeof(PlanetaryMapConfigComponent))]
     [XmlInclude(typeof(ItemDisplayConfigComponent))]
+    [XmlInclude(typeof(MultiFunctionConfigComponent))]
     public abstract class ConfigComponent
     {
         public abstract ConfigComponent Clone();
@@ -218,16 +220,18 @@ namespace LcdMod.Common.Config.Components
     }
 
     /// <summary>
-    /// Deferred nested-app data. Its legacy AppKind is intentionally preserved until nested app
-    /// identity and factories are designed in a later migration.
+    /// One app hosted inside another app's surface (a multi-function display page or window). AppTypeId is its
+    /// concrete identity; the legacy AppKind is kept for data written before nested apps existed.
     /// </summary>
     [ProtoContract]
-    public sealed class AppInstanceConfig : IComponentContainer
+    public sealed class AppInstanceConfig : IAppConfig
     {
         [ProtoMember(1)] public ulong InstanceId { get; set; }
         [ProtoMember(2)] public int AppKind { get; set; }
         [ProtoMember(3)] public string Title { get; set; }
         [ProtoMember(4)] public List<ConfigComponentEntry> Components { get; set; } = new List<ConfigComponentEntry>();
+        [ProtoMember(5)] public int AppTypeId { get; set; }
+        [ProtoMember(6)] public AppWindowPlacement Window { get; set; }
 
         public AppInstanceConfig Clone()
         {
@@ -236,8 +240,98 @@ namespace LcdMod.Common.Config.Components
                 InstanceId = InstanceId,
                 AppKind = AppKind,
                 Title = Title,
-                Components = this.CloneComponents()
+                Components = this.CloneComponents(),
+                AppTypeId = AppTypeId,
+                Window = Window == null ? null : Window.Clone()
             };
+        }
+    }
+
+    /// <summary>Where a hosted app's window sits, in units of its display's work area (0..1).</summary>
+    [ProtoContract]
+    public sealed class AppWindowPlacement
+    {
+        [ProtoMember(1)] public float X { get; set; }
+        [ProtoMember(2)] public float Y { get; set; }
+        [ProtoMember(3)] public float Width { get; set; }
+        [ProtoMember(4)] public float Height { get; set; }
+        [ProtoMember(5)] public bool Minimized { get; set; }
+        [ProtoMember(6)] public bool Maximized { get; set; }
+
+        public AppWindowPlacement Clone()
+        {
+            return new AppWindowPlacement
+            {
+                X = X, Y = Y, Width = Width, Height = Height, Minimized = Minimized, Maximized = Maximized
+            };
+        }
+    }
+
+    public enum MultiFunctionMode : byte
+    {
+        Pages,
+        Windows
+    }
+
+    public enum MenuPlacement : byte
+    {
+        Bottom,
+        Top,
+        Left,
+        Right
+    }
+
+    [ProtoContract]
+    public sealed class MultiFunctionConfigComponent : ConfigComponent
+    {
+        [ProtoMember(1)] public MultiFunctionMode Mode { get; set; }
+        [ProtoMember(2)] public MenuPlacement MenuPlacement { get; set; }
+
+        /// <summary>The settings of apps that were closed, at most one per app type, restored when the app is opened again.</summary>
+        [ProtoMember(3)] public List<AppInstanceConfig> ClosedApps { get; set; } = new List<AppInstanceConfig>();
+
+        public override ConfigComponent Clone()
+        {
+            return new MultiFunctionConfigComponent
+            {
+                Mode = Mode,
+                MenuPlacement = MenuPlacement,
+                ClosedApps = ClosedApps == null
+                    ? new List<AppInstanceConfig>()
+                    : ClosedApps.Where(app => app != null).Select(app => app.Clone()).ToList()
+            };
+        }
+
+        public bool HasClosedApp(int appTypeId)
+        {
+            return ClosedApps != null && ClosedApps.Any(app => app != null && app.AppTypeId == appTypeId);
+        }
+
+        /// <summary>Removes and returns the saved settings of an app type, or null.</summary>
+        public AppInstanceConfig TakeClosedApp(int appTypeId)
+        {
+            if (ClosedApps == null)
+                return null;
+            for (int i = 0; i < ClosedApps.Count; i++)
+            {
+                var app = ClosedApps[i];
+                if (app == null || app.AppTypeId != appTypeId)
+                    continue;
+                ClosedApps.RemoveAt(i);
+                return app;
+            }
+            return null;
+        }
+
+        /// <summary>Keeps the settings of a closed app, replacing older ones of the same type.</summary>
+        public void StoreClosedApp(AppInstanceConfig app)
+        {
+            if (app == null)
+                return;
+            if (ClosedApps == null)
+                ClosedApps = new List<AppInstanceConfig>();
+            ClosedApps.RemoveAll(saved => saved == null || saved.AppTypeId == app.AppTypeId);
+            ClosedApps.Add(app);
         }
     }
 

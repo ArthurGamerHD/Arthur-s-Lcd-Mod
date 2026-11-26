@@ -8,6 +8,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(6)]
+    [MultiFunction(SurfaceScripts.GeneratorsSurfaceScript.TITLE, "MyObjectBuilder_Reactor/LargeBlockLargeGenerator")]
     // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class GeneratorsApp : PowerApp, Generators.IGeneratorsHost
     {

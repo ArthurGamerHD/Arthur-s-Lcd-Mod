@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A hosted app's settings: the terminal controls its own surface would show, editing the app's config. -->
+<Window
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mfd="using:LcdMod.Client.Apps.MultiFunction"
+    x:Class="LcdMod.Client.Apps.MultiFunction.AppSettingsView"
+    x:DataType="mfd:AppSettingsViewModel"
+    Design.DataContext="{x:Static mfd:AppSettingsViewModelPreview.Default}"
+    Classes="mfd-window mfd-settings"
+    Title="{Binding Title}"
+    CanMaximize="False"
+    Padding="10 4 10 10">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/MultiFunction.xaml" />
+  </Window.Styles>
+  <Grid RowDefinitions="*,Auto">
+    <TextBlock Classes="mfd-text" Text="{Binding EmptyText}" IsVisible="{Binding IsEmpty}"
+               TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center" />
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <ItemsControl ItemsSource="{Binding Rows}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="mfd:TerminalSettingRow">
+            <StackPanel Margin="0 3" IsEnabled="{Binding IsEnabled}">
+              <TextBlock Classes="mfd-text mfd-setting-header" Text="{Binding Title}"
+                         IsVisible="{Binding IsHeader}" Margin="0 6 0 0" />
+              <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsSwitch}">
+                <TextBlock Classes="mfd-text" Text="{Binding Title}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsOn, Mode=TwoWay}" />
+              </Grid>
+              <Grid ColumnDefinitions="2*,3*,Auto" IsVisible="{Binding IsSlider}">
+                <TextBlock Classes="mfd-text" Text="{Binding Title}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <Slider Grid.Column="1" Minimum="{Binding Minimum}" Maximum="{Binding Maximum}"
+                        Value="{Binding Value, Mode=TwoWay}" Margin="8 0" />
+                <TextBox Grid.Column="2" Classes="mfd-value" Text="{Binding ValueInput, Mode=TwoWay}" VerticalAlignment="Center"
+                         MaxLength="12" />
+              </Grid>
+              <Grid ColumnDefinitions="2*,3*" IsVisible="{Binding IsCombo}">
+                <TextBlock Classes="mfd-text" Text="{Binding Title}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Options}" SelectedIndex="{Binding SelectedOption, Mode=TwoWay}" />
+              </Grid>
+              <Grid ColumnDefinitions="2*,Auto,*,*,*" IsVisible="{Binding IsColor}">
+                <TextBlock Classes="mfd-text" Text="{Binding Title}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <Border Grid.Column="1" Classes="mfd-swatch" Background="{Binding Swatch}" Width="18" Height="18" Margin="6 0" />
+                <Slider Grid.Column="2" Minimum="0" Maximum="255" Value="{Binding Red, Mode=TwoWay}" />
+                <Slider Grid.Column="3" Minimum="0" Maximum="255" Value="{Binding Green, Mode=TwoWay}" />
+                <Slider Grid.Column="4" Minimum="0" Maximum="255" Value="{Binding Blue, Mode=TwoWay}" />
+              </Grid>
+              <Button Classes="mfd-setting-button" IsVisible="{Binding IsButton}" Command="{Binding PressCommand}" HorizontalAlignment="Left">
+                <TextBlock Classes="mfd-text" Text="{Binding Title}" Margin="10 3" />
+              </Button>
+              <StackPanel IsVisible="{Binding IsList}">
+                <TextBlock Classes="mfd-text" Text="{Binding Title}" />
+                <Border Classes="mfd-list">
+                  <ItemsControl ItemsSource="{Binding Entries}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="mfd:TerminalListEntry">
+                        <Button Classes="{Binding Classes}" Command="{Binding ToggleCommand}" HorizontalAlignment="Stretch">
+                          <TextBlock Classes="mfd-text" Text="{Binding Text}" Margin="6 2"
+                                     TextTrimming="CharacterEllipsis" />
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Border>
+              </StackPanel>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+    <Button Grid.Row="1" Classes="mfd-setting-button" Command="{Binding CloseAppCommand}" HorizontalAlignment="Right" Margin="0 8 0 0">
+      <TextBlock Classes="mfd-text" Text="{Binding CloseAppText}" Margin="10 4" />
+    </Button>
+  </Grid>
+</Window>

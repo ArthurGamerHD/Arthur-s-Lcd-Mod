@@ -1828,4 +1828,43 @@ Attenderemo un momento e poi la riavvieremo per te.</value>
   <data name="LcdMod_Market_Delivery_AddedToCart" xml:space="preserve">
     <value>Aggiunto al carrello.</value>
   </data>
+  <data name="LcdMod_MultiFunctionDisplay" xml:space="preserve">
+    <value>Display multifunzione (sperimentale)</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode" xml:space="preserve">
+    <value>Modalità di visualizzazione</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode_Pages" xml:space="preserve">
+    <value>Display multifunzione</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode_Windows" xml:space="preserve">
+    <value>Finestre</value>
+  </data>
+  <data name="LcdMod_MultiFunction_MenuPlacement" xml:space="preserve">
+    <value>Posizione del menu</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Bottom" xml:space="preserve">
+    <value>In basso</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Top" xml:space="preserve">
+    <value>In alto</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Left" xml:space="preserve">
+    <value>Sinistra</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Right" xml:space="preserve">
+    <value>Destra</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Applications" xml:space="preserve">
+    <value>Applicazioni</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Settings" xml:space="preserve">
+    <value>Impostazioni di {0}</value>
+  </data>
+  <data name="LcdMod_MultiFunction_NoSettings" xml:space="preserve">
+    <value>Questa applicazione non ha impostazioni modificabili qui.</value>
+  </data>
+  <data name="LcdMod_MultiFunction_CloseApp" xml:space="preserve">
+    <value>Chiudi applicazione</value>
+  </data>
 </root>

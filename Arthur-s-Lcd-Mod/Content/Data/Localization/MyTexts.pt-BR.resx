@@ -1828,4 +1828,43 @@ Vamos aguardar um pouco e então reiniciá-la para você.</value>
   <data name="LcdMod_Market_Delivery_AddedToCart" xml:space="preserve">
     <value>Adicionado ao carrinho.</value>
   </data>
+  <data name="LcdMod_MultiFunctionDisplay" xml:space="preserve">
+    <value>Painel Multifunção (experimental)</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode" xml:space="preserve">
+    <value>Modo de exibição</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode_Pages" xml:space="preserve">
+    <value>Painel Multifunção</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Mode_Windows" xml:space="preserve">
+    <value>Janelas</value>
+  </data>
+  <data name="LcdMod_MultiFunction_MenuPlacement" xml:space="preserve">
+    <value>Posição do menu</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Bottom" xml:space="preserve">
+    <value>Embaixo</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Top" xml:space="preserve">
+    <value>Em cima</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Left" xml:space="preserve">
+    <value>Esquerda</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Placement_Right" xml:space="preserve">
+    <value>Direita</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Applications" xml:space="preserve">
+    <value>Aplicativos</value>
+  </data>
+  <data name="LcdMod_MultiFunction_Settings" xml:space="preserve">
+    <value>Configurações de {0}</value>
+  </data>
+  <data name="LcdMod_MultiFunction_NoSettings" xml:space="preserve">
+    <value>Este aplicativo não tem configurações para alterar aqui.</value>
+  </data>
+  <data name="LcdMod_MultiFunction_CloseApp" xml:space="preserve">
+    <value>Fechar aplicativo</value>
+  </data>
 </root>

@@ -19,7 +19,7 @@ namespace LcdMod.Client.Terminal.Controls.Scale
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(.1f, 1);
+            SetSliderLimits(slider, .1f, 1);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute(MOD_PREFIX + "RenderScale");
 

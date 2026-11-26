@@ -16,6 +16,7 @@ using VRage.Game.ModAPI;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(7)]
+    [MultiFunction(SurfaceScripts.EnergyDashboardSurfaceScript.TITLE, "IconEnergy")]
     [ConfigComponent(Constants.APP, typeof(PowerConfigComponent), PropertyName = "PowerComponent")]
     internal sealed partial class EnergyDashboardApp : App, IApp
     {

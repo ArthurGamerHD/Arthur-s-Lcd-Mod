@@ -22,6 +22,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(2)]
+    [MultiFunction(SurfaceScripts.CargoFilledSurfaceScript.TITLE, "MyObjectBuilder_CargoContainer/LargeBlockLargeContainer")]
     [ConfigComponent(Constants.BLOCKS, typeof(BlockSelectionConfigComponent), PropertyName = "BlockSelectionComponent")]
     public sealed partial class CargoFilledApp : App, IApp, ICargoFilledHost
     {
@@ -55,7 +56,7 @@ namespace LcdMod.Client.Apps
         {
             _nativeViewModel = new CargoFilled.CargoFilledViewModel(this);
             SetContent(new CargoFilled.CargoFilledView { DataContext = _nativeViewModel });
-            _interactiveHost = host as InteractiveSurfaceScript;
+            _interactiveHost = InteractiveSurface;
             if (_interactiveHost == null)
                 throw new ArgumentException("CargoFilledApp requires an InteractiveSurfaceScript host.", "host");
 

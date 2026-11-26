@@ -40,6 +40,8 @@ namespace LcdMod.Client.Apps
 
     [LcdApp(12)]
 
+    [MultiFunction(SurfaceScripts.RadarSurfaceScript.TITLE, "GpsArrow")]
+
     [ConfigComponent(APP, typeof(RadarConfigComponent), PropertyName = "RadarComponent")]
 
     public partial class RadarApp : App, IApp, IRadarCamera
@@ -715,7 +717,7 @@ namespace LcdMod.Client.Apps
                 grid = candidate;
             if (!_targetLock.RequestLock(grid))
                 return;
-            var interactive = Host as InteractiveSurfaceScript;
+            var interactive = InteractiveSurface;
             if (interactive != null)
                 interactive.PlaySounds(AudioHelper.HudClick, true);
         }

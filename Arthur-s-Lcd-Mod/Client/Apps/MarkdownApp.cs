@@ -10,6 +10,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(14)]
+    [MultiFunction(SurfaceScripts.MarkdownSurfaceScript.TITLE, "FileBlank")]
     [ConfigComponent(Constants.APP, typeof(MarkdownConfigComponent), PropertyName = "MarkdownComponent")]
     public sealed partial class MarkdownApp : App, Markdown.IMarkdownHost
     {

@@ -25,7 +25,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(MIN_STEP, MAX_STEP);
+            SetSliderLimits(slider, MIN_STEP, MAX_STEP);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute(MOD_PREFIX + "AutoScroll");
             slider.Tooltip = MyStringId.GetOrCompute(MOD_PREFIX + "AutoScroll_Tooltip");

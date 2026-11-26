@@ -27,6 +27,7 @@ namespace LcdMod.Client.Apps
     /// Sensors: a screen still set to it is moved there.
     /// </summary>
     [LcdApp(13)]
+    [MultiFunction(SurfaceScripts.StarMapSurfaceScript.TITLE, "Map3D")]
     [ConfigComponent(APP, typeof(StarMapConfigComponent), PropertyName = "StarMapComponent")]
     public partial class StarMapApp : App, IApp, IStarMapHost
     {
@@ -147,7 +148,7 @@ namespace LcdMod.Client.Apps
 
         void Play(Sandbox.Game.Entities.MySoundPair sound)
         {
-            var interactive = Host as InteractiveSurfaceScript;
+            var interactive = InteractiveSurface;
             if (interactive != null)
                 interactive.PlaySounds(sound, true);
         }

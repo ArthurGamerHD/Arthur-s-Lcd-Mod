@@ -15,7 +15,6 @@ namespace LcdMod.Client.Apps.PowerFilled
         bool IsGridDisplay { get; }
         float SurfaceFontSize { get; }
         Color NativeForeground { get; }
-        Color NativeBackground { get; }
         IReadOnlyList<PowerEntry> NativeEntries { get; }
         IReadOnlyList<PowerCollector> NativeCollectors { get; }
         void NotifyEntryDetailsOpened();
@@ -46,7 +45,6 @@ namespace LcdMod.Client.Apps.PowerFilled
         readonly Dictionary<PowerCollector, PowerFooterRow> _rowsByCollector = new Dictionary<PowerCollector, PowerFooterRow>();
         bool _isCompact = true;
         bool _hasFooter;
-        Color _footerBackground;
         int _entryCount;
 
         public PowerFilledViewModel(IPowerFilledHost app)
@@ -63,7 +61,6 @@ namespace LcdMod.Client.Apps.PowerFilled
         public bool IsCard => !_isCompact;
         public bool HasFooter => _hasFooter;
         [PreviewWith("#80004679")]
-        public Color FooterBackground => _footerBackground;
 
         protected override float MinimumColumnWidth => _isCompact ? 100f : 220f;
         protected override float RowHeight => _isCompact ? 100f : 72f;
@@ -117,8 +114,6 @@ namespace LcdMod.Client.Apps.PowerFilled
             }
 
             RaiseAndSetIfChanged(ref _hasFooter, _footerRows.Count > 0, nameof(HasFooter));
-            RaiseAndSetIfChanged(ref _footerBackground, new Color(_app.NativeBackground.MulValue(.8f), .5f),
-                nameof(FooterBackground));
             RaisePropertyChanged<IReadOnlyList<PowerFooterRow>>(nameof(FooterRows));
         }
     }

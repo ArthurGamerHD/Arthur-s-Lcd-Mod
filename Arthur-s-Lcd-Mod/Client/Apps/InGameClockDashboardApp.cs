@@ -15,6 +15,7 @@ using LcdMod.Common.Helpers;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(20, Name = "ClockDashboard")]
+    [MultiFunction(SurfaceScripts.InGameClockDashboardSurfaceScript.TITLE, "WeatherSun")]
     [ConfigComponent(Constants.APP, typeof(ClockDashboardConfigComponent), PropertyName = "ClockDashboardComponent")]
     internal sealed partial class InGameClockDashboardApp : App, IApp
     {

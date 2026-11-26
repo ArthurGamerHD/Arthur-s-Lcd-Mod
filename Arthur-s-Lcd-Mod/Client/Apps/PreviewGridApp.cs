@@ -15,6 +15,7 @@ namespace LcdMod.Client.Apps
     // The screen's own grid compared with a projector's projection or, without one, with a snapshot of the grid the
     // screen took earlier (kept relative to the screen's block, so it still lines up after the grid changed).
     [LcdApp(10)]
+    [MultiFunction(TITLE, "MyObjectBuilder_CubeBlock/LargeBlockArmorBlock")]
     [ConfigComponent(APP, typeof(DiagnosticConfigComponent), PropertyName = "DiagnosticComponent")]
     [ConfigComponent(PROJECTOR_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "ProjectorReferenceComponent")]
     internal sealed partial class PreviewGridApp : GridInspectorApp

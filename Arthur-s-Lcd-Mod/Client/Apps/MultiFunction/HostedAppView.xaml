@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- An app opened by a multi-function display: its usual shell, framed as a window or shown frameless as a page. -->
+<Window
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:views="using:LcdMod.Client.Apps.Views"
+    x:Class="LcdMod.Client.Apps.MultiFunction.HostedAppView"
+    x:DataType="LcdMod.Client.Apps.Abstract.App"
+    Classes="mfd-window"
+    Title="{Binding Title}">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/MultiFunction.xaml" />
+  </Window.Styles>
+  <LayoutTransformControl x:Name="ScaleHost">
+    <views:AppShellView />
+  </LayoutTransformControl>
+</Window>

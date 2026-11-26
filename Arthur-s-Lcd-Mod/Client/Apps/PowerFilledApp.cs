@@ -13,6 +13,7 @@ using LcdMod.Common.Helpers;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(8)]
+    [MultiFunction(SurfaceScripts.PowerFilledSurfaceScript.TITLE, "Battery")]
     [ConfigComponent(Constants.APP, typeof(PowerConfigComponent), PropertyName = "PowerComponent")]
     internal sealed partial class PowerFilledApp : App, IApp, PowerFilled.IPowerFilledHost
     {
@@ -26,10 +27,8 @@ namespace LcdMod.Client.Apps
         internal IReadOnlyList<PowerEntry> NativeEntries => _entries;
         internal IReadOnlyList<PowerCollector> NativeCollectors => _collectors;
         internal Color NativeForeground => _surfaceHost.Surface.ScriptForegroundColor;
-        internal Color NativeBackground => _surfaceHost.BackgroundColor;
         bool PowerFilled.IPowerFilledHost.IsGridDisplay => IsGridDisplay;
         Color PowerFilled.IPowerFilledHost.NativeForeground => NativeForeground;
-        Color PowerFilled.IPowerFilledHost.NativeBackground => NativeBackground;
         IReadOnlyList<PowerEntry> PowerFilled.IPowerFilledHost.NativeEntries => NativeEntries;
         IReadOnlyList<PowerCollector> PowerFilled.IPowerFilledHost.NativeCollectors => NativeCollectors;
         void PowerFilled.IPowerFilledHost.NotifyEntryDetailsOpened() { NotifyEntryDetailsOpened(); }

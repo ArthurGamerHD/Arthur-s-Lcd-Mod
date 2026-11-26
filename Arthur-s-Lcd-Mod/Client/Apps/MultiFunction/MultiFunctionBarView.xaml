@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  The display's bar on the configured side. MFD: [menu] [<] [open apps] [>] [settings].
+  Windows: [menu] [apps...] [tray: settings] [clock].
+-->
+<Window
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mfd="using:LcdMod.Client.Apps.MultiFunction"
+    x:Class="LcdMod.Client.Apps.MultiFunction.MultiFunctionBarView"
+    x:DataType="mfd:MultiFunctionViewModel"
+    Design.DataContext="{x:Static mfd:MultiFunctionViewModelPreview.Default}"
+    Classes="mfd-bar"
+    WindowDecorations="None"
+    Topmost="True"
+    CanResize="False"
+    CanMinimize="False"
+    CanMaximize="False">
+    <Window.Styles>
+        <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/MultiFunction.xaml" />
+    </Window.Styles>
+    <Border Classes="mfd-bar-panel" >
+        <Grid>
+            <Grid IsVisible="{Binding IsHorizontal}">
+                <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding IsPagesMode}">
+                    <Button Grid.Column="0" Classes="{Binding StartClasses}" Command="{Binding StartCommand}">
+                        <Image Classes="mfd-icon" Source="{DynamicResource factionIcon}" />
+                    </Button>
+                    <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto,Auto" HorizontalAlignment="Center">
+                       <Button Grid.Column="0" Classes="mfd-bar-button mfd-square mfd-distinct" Command="{Binding PreviousPageCommand}"
+                            IsEnabled="{Binding CanSwitchPage}">
+                        <Border Classes="mfd-glyph">
+                            <Border.OpacityMask>
+                                <ImageBrush Source="LeftArrow" />
+                            </Border.OpacityMask>
+                        </Border>
+                    </Button>
+                    <ComboBox Grid.Column="1" Classes="mfd-pages" ItemsSource="{Binding OpenApps}"
+                              SelectedIndex="{Binding CurrentPageIndex, Mode=TwoWay}"
+                              IsEnabled="{Binding HasPages}"
+                              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="mfd:HostedApp">
+                                <StackPanel Classes="mfd-item-content" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Image Classes="mfd-icon" Source="{Binding Icon}" VerticalAlignment="Center" />
+                                    <TextBlock Classes="mfd-text" Text="{Binding Title}"
+                                               VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <Button Grid.Column="2" Classes="mfd-bar-button mfd-square mfd-distinct" Command="{Binding NextPageCommand}"
+                            IsEnabled="{Binding CanSwitchPage}">
+                        <Border Classes="mfd-glyph">
+                            <Border.OpacityMask>
+                                <ImageBrush Source="RightArrow" />
+                            </Border.OpacityMask>
+                        </Border>
+                    </Button>
+                    </Grid>
+                    <Button Grid.Column="2" Classes="mfd-bar-button mfd-square mfd-distinct" Command="{Binding SettingsCommand}"
+                            IsEnabled="{Binding HasSettingsTarget}">
+                        <Border Classes="mfd-glyph">
+                            <Border.OpacityMask>
+                                <ImageBrush Source="SettingsIcon" />
+                            </Border.OpacityMask>
+                        </Border>
+                    </Button>
+                </Grid>
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" IsVisible="{Binding IsWindowsMode}">
+                    <Button Grid.Column="0" Classes="{Binding StartClasses}" Command="{Binding StartCommand}">
+                        <Image Classes="mfd-icon" Source="{DynamicResource factionIcon}" />
+                    </Button>
+                    <ItemsControl Grid.Column="1" ItemsSource="{Binding OpenApps}" ClipToBounds="True" Margin="0 0 5 0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <!-- Equal buttons packed to the left; once they no longer fit, they shrink and trim their labels. -->
+                                <UniformGrid Rows="1" ColumnSpacing="5" HorizontalAlignment="Left" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="mfd:HostedApp">
+                                <Button Classes="{Binding TaskClasses}" Command="{Binding TaskCommand}">
+                                    <Grid Classes="mfd-task-content" ColumnDefinitions="Auto,*">
+                                        <Image Classes="mfd-icon" Source="{Binding Icon}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Classes="mfd-text mfd-task-label" Text="{Binding Title}"
+                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    </Grid>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Classes="mfd-bar-items"
+                                VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <Button Classes="mfd-bar-button mfd-square" Command="{Binding SettingsCommand}"
+                                IsEnabled="{Binding HasSettingsTarget}">
+                            <Border Classes="mfd-glyph">
+                                <Border.OpacityMask>
+                                    <ImageBrush Source="SettingsIcon" />
+                                </Border.OpacityMask>
+                            </Border>
+                        </Button>
+                    </StackPanel>
+                    <TextBlock Grid.Column="3" Classes="mfd-text mfd-clock" Text="{Binding ClockText}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" Margin="6 0" />
+                </Grid>
+            </Grid>
+            <Grid IsVisible="{Binding IsVertical}">
+                <Grid RowDefinitions="Auto,*" IsVisible="{Binding IsPagesMode}">
+                    <Button Grid.Row="0" Classes="{Binding StartClasses}" Command="{Binding StartCommand}">
+                        <Image Classes="mfd-icon" Source="{DynamicResource factionIcon}" />
+                    </Button>
+                    <StackPanel Grid.Row="1" Orientation="Vertical" Classes="mfd-bar-items"
+                                VerticalAlignment="Bottom" HorizontalAlignment="Center">
+                        <Button HorizontalAlignment="Right" Classes="mfd-bar-button mfd-square mfd-distinct"
+                                Command="{Binding PreviousPageCommand}" IsEnabled="{Binding CanSwitchPage}">
+                            <Border Classes="mfd-glyph">
+                                <Border.OpacityMask>
+                                    <ImageBrush Source="LeftArrow" />
+                                </Border.OpacityMask>
+                            </Border>
+                        </Button>
+                        <Button Classes="mfd-bar-button mfd-square mfd-distinct" Command="{Binding NextPageCommand}"
+                                IsEnabled="{Binding CanSwitchPage}">
+                            <Border Classes="mfd-glyph">
+                                <Border.OpacityMask>
+                                    <ImageBrush Source="RightArrow" />
+                                </Border.OpacityMask>
+                            </Border>
+                        </Button>
+                        <Button Classes="mfd-bar-button mfd-square mfd-distinct" Command="{Binding SettingsCommand}"
+                                IsEnabled="{Binding HasSettingsTarget}">
+                            <Border Classes="mfd-glyph">
+                                <Border.OpacityMask>
+                                    <ImageBrush Source="SettingsIcon" />
+                                </Border.OpacityMask>
+                            </Border>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+                <Grid RowDefinitions="Auto,*,Auto,Auto" IsVisible="{Binding IsWindowsMode}">
+                    <Button Grid.Row="0" Classes="{Binding StartClasses}" Command="{Binding StartCommand}">
+                        <Image Classes="mfd-icon" Source="{DynamicResource factionIcon}" />
+                    </Button>
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding OpenApps}" ClipToBounds="True" Margin="0 0 0 5">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="1" RowSpacing="5" VerticalAlignment="Top" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="mfd:HostedApp">
+                                <Button Classes="{Binding TaskClasses}" Command="{Binding TaskCommand}">
+                                    <Image Classes="mfd-icon" Source="{Binding Icon}" VerticalAlignment="Center" />
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Grid.Row="2" Orientation="Vertical" Classes="mfd-bar-items"
+                                VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <Button Classes="mfd-bar-button mfd-square" Command="{Binding SettingsCommand}"
+                                IsEnabled="{Binding HasSettingsTarget}">
+                            <Border Classes="mfd-glyph">
+                                <Border.OpacityMask>
+                                    <ImageBrush Source="SettingsIcon" />
+                                </Border.OpacityMask>
+                            </Border>
+                        </Button>
+                    </StackPanel>
+                    <TextBlock Grid.Row="3" Classes="mfd-text mfd-clock" Text="{Binding ClockText}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" Margin="6 0" />
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

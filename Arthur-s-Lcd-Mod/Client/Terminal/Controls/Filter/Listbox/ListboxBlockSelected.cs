@@ -25,13 +25,13 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
             List<MyTerminalControlListBoxItem> selected)
         {
             var settings = ConfigManager.GetConfigForBlock(b);
-            var surface = settings == null ? null : settings.GetSurfaceConfig(GetThisSurfaceIndex(b));
+            var surface = settings == null ? null : ConfigManager.GetTerminalConfig(settings, b, GetThisSurfaceIndex(b));
             var screenSettings = surface == null ? null : surface.TryGet<BlockSelectionConfigComponent>(Constants.BLOCKS);
 
             if (screenSettings == null)
                 return;
             
-            var script = ((IMyTextSurfaceProvider)b).GetSurface(GetThisSurfaceIndex(b)).Script;
+            var script = ConfigManager.GetTerminalScript(b, GetThisSurfaceIndex(b));
             var selectedGroups = screenSettings.SelectedGroups ?? Array.Empty<string>();
             var selectedBlocks = screenSettings.SelectedBlocks ?? Array.Empty<long>();
 

@@ -19,7 +19,7 @@ namespace LcdMod.Client.Terminal.Controls.Scale
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(GeneralConfigComponentExtensions.MIN_SCALE, GeneralConfigComponentExtensions.MAX_SCALE);
+            SetSliderLimits(slider, GeneralConfigComponentExtensions.MIN_SCALE, GeneralConfigComponentExtensions.MAX_SCALE);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute("BlockPropertyTitle_Scale");
 

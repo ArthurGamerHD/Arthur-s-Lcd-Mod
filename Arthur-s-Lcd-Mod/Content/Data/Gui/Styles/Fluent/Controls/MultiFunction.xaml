@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The multi-function display: its bars, start menu, page dots, snap preview and the frames of hosted app windows. -->
+<Styles xmlns="https://github.com/ArthurGamerHD/AcruxUI"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Window.mfd-window">
+    <Setter Property="Background" Value="{DynamicResource panelBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Window.mfd-window[IsActive=True]">
+    <Setter Property="BorderBrush" Value="{DynamicResource headerColor}" />
+  </Style>
+  <Style Selector="Window.mfd-bar">
+    <Setter Property="Background" Value="#00000000" />
+  </Style>
+  <Style Selector="Window.mfd-start-menu">
+    <Setter Property="Background" Value="{DynamicResource panelBackground}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource headerColor}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Window.mfd-snap-preview">
+    <Setter Property="Background" Value="#00000000" />
+  </Style>
+  <Style Selector="Border.mfd-snap">
+    <Setter Property="Background" Value="#40FFFFFF" />
+    <Setter Property="BorderBrush" Value="{DynamicResource headerColor}" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Border.mfd-bar-panel">
+    <Setter Property="Background" Value="{DynamicResource panelBackground}" />
+  </Style>
+  <Style Selector="TextBlock.mfd-text">
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+    <Setter Property="FontFamily" Value="{DynamicResource textFont}" />
+    <Setter Property="FontSize" Value="0.7" />
+  </Style>
+  <Style Selector="TextBlock.mfd-clock">
+    <Setter Property="FontSize" Value="0.56" />
+  </Style>
+  <!-- The bar's thickness in MultiFunctionBarView.THICKNESS is a button's height plus this padding on both sides. -->
+  <Style Selector="Border.mfd-bar-panel">
+    <Setter Property="Padding" Value="5" />
+  </Style>
+  <Style Selector="StackPanel.mfd-bar-items">
+    <Setter Property="Spacing" Value="5" />
+  </Style>
+  <Style Selector="Image.mfd-icon">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+  </Style>
+  <Style Selector="StackPanel.mfd-item-content">
+    <Setter Property="Spacing" Value="6" />
+  </Style>
+  <Style Selector="Grid.mfd-task-content">
+    <Setter Property="Margin" Value="8 0" />
+  </Style>
+  <Style Selector="StackPanel.mfd-menu-content">
+    <Setter Property="Spacing" Value="8" />
+    <Setter Property="Margin" Value="6 0" />
+  </Style>
+  <Style Selector="TextBlock.mfd-task-label">
+    <Setter Property="MaxWidth" Value="120" />
+    <Setter Property="Margin" Value="6 0 0 0" />
+  </Style>
+  <Style Selector="Button.mfd-task">
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+  </Style>
+  <Style Selector="TextBox.mfd-value">
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Width" Value="56" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Foreground" Value="{DynamicResource fontColor}" />
+  </Style>
+  <Style Selector="TextBox.mfd-value:focus">
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.mfd-bar-button">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="MinWidth" Value="40" />
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="Button.mfd-bar-button:pointerover">
+    <Setter Property="Background" Value="#30FFFFFF" />
+  </Style>
+  <Style Selector="Button.mfd-start.open">
+    <Setter Property="Background" Value="#40FFFFFF" />
+  </Style>
+  <Style Selector="Button.mfd-task.active">
+    <Setter Property="Background" Value="#40FFFFFF" />
+  </Style>
+  <Style Selector="Button.mfd-task.minimized">
+    <Setter Property="Opacity" Value="0.6" />
+  </Style>
+  <Style Selector="Button.mfd-square">
+    <Setter Property="Width" Value="40" />
+  </Style>
+  <Style Selector="Button.mfd-menu-item">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="Button.mfd-menu-item:pointerover">
+    <Setter Property="Background" Value="#30FFFFFF" />
+  </Style>
+  <!-- Glyphs (arrows, settings) are masks: white, like the app icons drawn as images. -->
+  <Style Selector="Border.mfd-glyph">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+    <Setter Property="Background" Value="#FFFFFFFF" />
+  </Style>
+  <Style Selector="Button.mfd-distinct">
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Margin" Value="2 0" />
+  </Style>
+  <Style Selector="Button.mfd-start">
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Background" Value="{DynamicResource surfaceContainerHighColor}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Margin" Value="2 0" />
+  </Style>
+  <Style Selector="ComboBox.mfd-pages">
+    <Setter Property="Height" Value="40" />
+    <Setter Property="MinWidth" Value="40" />
+    <Setter Property="Margin" Value="2 0" />
+  </Style>
+  <Style Selector="Border.mfd-list">
+    <Setter Property="BorderBrush" Value="{DynamicResource borderVariantColor}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="2" />
+  </Style>
+  <Style Selector="Button.mfd-list-entry">
+    <Setter Property="Background" Value="#00000000" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+  </Style>
+  <Style Selector="Button.mfd-list-entry.selected">
+    <Setter Property="Background" Value="#40FFFFFF" />
+  </Style>
+  <Style Selector="Button.mfd-bar-button:disabled">
+    <Setter Property="Opacity" Value="0.35" />
+  </Style>
+  <Style Selector="ComboBox.mfd-pages:disabled">
+    <Setter Property="Opacity" Value="0.35" />
+  </Style>
+</Styles>

@@ -72,7 +72,6 @@ namespace LcdMod.Client.Apps.Thrust
         public float FontScale => _layoutScale;
         [PreviewWith("White")]
         public string FontFamily { get; private set; }
-        public BackgroundBrush LegendBackground { get; private set; }
 
         public void SetViewport(Vector2 size)
         {
@@ -81,13 +80,11 @@ namespace LcdMod.Client.Apps.Thrust
             RaisePropertyChanged<object>(string.Empty);
         }
 
-        public void RefreshLayout(float scale, float fontScale, string font, Color foreground,
-            Color legendBackground, string labelSuffix)
+        public void RefreshLayout(float scale, float fontScale, string font, Color foreground, string labelSuffix)
         {
             _scale = scale;
             _layoutScale = scale * fontScale;
             FontFamily = font;
-            LegendBackground = new SolidColorBrush(legendBackground);
             foreach (var legend in new[] { Forward, Backward, Left, Right, Up, Down })
                 legend.RefreshLayout(scale, _layoutScale, font, foreground, labelSuffix);
             foreach (var entry in new[] { Speed, StopDistance, StopTime, StopForce })

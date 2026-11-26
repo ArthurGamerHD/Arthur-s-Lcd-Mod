@@ -18,6 +18,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(22)]
+    [MultiFunction(SurfaceScripts.ThrustSurfaceScript.TITLE, "MyObjectBuilder_Thrust/LargeBlockLargeThrust")]
     // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class ThrustApp : App
     {
@@ -150,8 +151,7 @@ namespace LcdMod.Client.Apps
             string labelFormat = LocHelper.GetLoc(MOD_PREFIX + "Common_Label_WithColon");
             int nameIndex = labelFormat.IndexOf("{0}", StringComparison.Ordinal);
             string labelSuffix = nameIndex < 0 ? labelFormat : labelFormat.Substring(nameIndex + 3);
-            _viewModel.RefreshLayout(1f, FontScale, TextFont, ForegroundColor,
-                new Color(BackgroundColor.MulValue(0.8f), 0.5f), labelSuffix);
+            _viewModel.RefreshLayout(1f, FontScale, TextFont, ForegroundColor, labelSuffix);
             string gravityLabel = LocHelper.GetLoc(MOD_PREFIX + "Thrust_GravityLoad");
             _gravityWarning = string.Format(LocHelper.GetLoc(MOD_PREFIX + "Warning"), gravityLabel);
             _gravityCritical = string.Format(LocHelper.GetLoc(MOD_PREFIX + "Critical"), gravityLabel);

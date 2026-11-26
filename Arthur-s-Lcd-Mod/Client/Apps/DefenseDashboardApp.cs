@@ -19,6 +19,7 @@ using IMyUserControllableGun = Sandbox.ModAPI.IMyUserControllableGun;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(30)]
+    [MultiFunction(SurfaceScripts.DefenseDashboardSurfaceScript.TITLE, "ShieldIcon")]
     internal sealed partial class DefenseDashboardApp : App, DefenseDashboard.IDefenseDashboardHost
     {
         readonly Dictionary<string, WeaponAggregate> _weaponAggregates =

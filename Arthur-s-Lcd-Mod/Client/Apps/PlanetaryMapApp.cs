@@ -20,6 +20,7 @@ namespace LcdMod.Client.Apps
 {
     /// <summary>The nearest planet drawn by the cartography map renderer backported from the standalone Minimap.</summary>
     [LcdApp(29, Name = "PlanetaryMap")]
+    [MultiFunction(SurfaceScripts.PlanetaryMapSurfaceScript.TITLE, "Map2D")]
     [ConfigComponent(APP, typeof(PlanetaryMapConfigComponent), PropertyName = "PlanetaryMapComponent")]
     public sealed partial class PlanetaryMapApp : App, IApp, IPlanetaryMapHost
     {
@@ -124,7 +125,7 @@ namespace LcdMod.Client.Apps
 
         void Play(Sandbox.Game.Entities.MySoundPair sound)
         {
-            var interactive = Host as InteractiveSurfaceScript;
+            var interactive = InteractiveSurface;
             if (interactive != null)
                 interactive.PlaySounds(sound, true);
         }

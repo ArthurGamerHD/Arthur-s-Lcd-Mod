@@ -17,7 +17,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(0, 359);
+            SetSliderLimits(slider, 0, 359);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute("BlockPropertyTitle_ProjectionRotationY");
             TerminalControl = slider;

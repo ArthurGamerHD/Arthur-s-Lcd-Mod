@@ -22,6 +22,7 @@ namespace LcdMod.Client.Apps
     // there is one), the blocks hit in the last seconds flash, and missiles closing in are marked with where they go.
     // Building (what a projection still needs) stays with the Integrity Monitor.
     [LcdApp(32)]
+    [MultiFunction(TITLE, "Info")]
     [ConfigComponent(APP, typeof(DiagnosticConfigComponent), PropertyName = "DiagnosticComponent")]
     [ConfigComponent(PROJECTOR_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "ProjectorReferenceComponent")]
     internal sealed partial class SelfDiagnosticApp : GridInspectorApp

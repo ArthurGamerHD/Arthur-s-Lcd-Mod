@@ -40,6 +40,30 @@ namespace LcdMod.Client.Helpers
             ReadTemperature(position, planet, snapshot);
             ReadGridRoomEnvironment(block, gridLogic, previous, snapshot);
 
+            if (ReadClock(position, planet, previous, snapshot))
+                ReadTerrainSolarEvents(block.CubeGrid, planet, snapshot.SunRotationAxis, snapshot);
+            return snapshot;
+        }
+
+        /// <summary>
+        /// Only the time the In-Game Clock shows for the block (local solar time on a planet, ship time elsewhere),
+        /// without the weather, temperature and terrain reads.
+        /// </summary>
+        public ClockDashboardSnapshot ReadClockOnly(IMyCubeBlock block, ClockDashboardSnapshot previous)
+        {
+            var snapshot = CreateDefaultSnapshot();
+            if (block == null || block.MarkedForClose)
+                return snapshot;
+            snapshot.SessionGameDateTime = MyAPIGateway.Session.GameDateTime;
+            snapshot.SolarDayLengthSeconds = GetSunRotationDayLengthSeconds();
+            Vector3D position = block.GetPosition();
+            ReadClock(position, FindRelevantPlanet(position), previous, snapshot);
+            return snapshot;
+        }
+
+        // Returns whether the block has a local solar time.
+        bool ReadClock(Vector3D position, MyPlanet planet, ClockDashboardSnapshot previous, ClockDashboardSnapshot snapshot)
+        {
             if (planet == null)
             {
                 snapshot.ClockMode = DashboardClockMode.DeepSpace;
@@ -50,7 +74,7 @@ namespace LcdMod.Client.Helpers
                     snapshot.HasLocalSolarTime,
                     snapshot.LocalSolarHour,
                     snapshot.SolarDayLengthSeconds);
-                return snapshot;
+                return false;
             }
 
             Vector3D planetCenter = planet.WorldMatrix.Translation;
@@ -73,7 +97,7 @@ namespace LcdMod.Client.Helpers
                     snapshot.HasLocalSolarTime,
                     snapshot.LocalSolarHour,
                     snapshot.SolarDayLengthSeconds);
-                return snapshot;
+                return false;
             }
 
             double localHour;
@@ -97,8 +121,8 @@ namespace LcdMod.Client.Helpers
                     snapshot.HasLocalSolarTime,
                     snapshot.LocalSolarHour,
                     snapshot.SolarDayLengthSeconds);
-                ReadTerrainSolarEvents(block.CubeGrid, planet, rotationAxis, snapshot);
-                return snapshot;
+                snapshot.SunRotationAxis = rotationAxis;
+                return true;
             }
 
             snapshot.ClockMode = DashboardClockMode.Default;
@@ -109,7 +133,7 @@ namespace LcdMod.Client.Helpers
                 snapshot.HasLocalSolarTime,
                 snapshot.LocalSolarHour,
                 snapshot.SolarDayLengthSeconds);
-            return snapshot;
+            return false;
         }
 
         static ClockDashboardSnapshot CreateDefaultSnapshot()

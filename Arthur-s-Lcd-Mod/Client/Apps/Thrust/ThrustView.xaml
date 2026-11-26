@@ -5,6 +5,12 @@
              x:Class="LcdMod.Client.Apps.Thrust.ThrustView"
              x:DataType="local:ThrustViewModel"
              Design.DataContext="{x:Static local:ThrustViewModelPreview.Default}">
+  <UserControl.Styles>
+    <!-- Darkens whatever the theme draws beneath, instead of repainting it in the surface's own color. -->
+    <Style Selector="Border.thrust-legend">
+      <Setter Property="Background" Value="#80000000" />
+    </Style>
+  </UserControl.Styles>
   <Grid RowDefinitions="*,Auto">
     <local:ThrustAxesControl Margin="{Binding AxesMargin}" Scale="{Binding Scale}"
                             PositiveFill="{Binding PositiveFill}" NegativeFill="{Binding NegativeFill}"
@@ -21,7 +27,7 @@
       <Border Grid.Row="1" Height="{Binding PanelGap}" />
       <Border Grid.Row="2" Height="{Binding CellHeight}"><local:ThrustTelemetryControl x:Name="StopForceCell" /></Border>
     </Grid>
-    <Border Grid.Row="1" Height="{Binding LegendHeight}" Background="{Binding LegendBackground}">
+    <Border Grid.Row="1" Classes="thrust-legend" Height="{Binding LegendHeight}">
       <Grid ColumnDefinitions="*,*,*" RowDefinitions="*,*">
         <local:ThrustLegendCellControl x:Name="ForwardCell" Classes="forward" Label="{ext:loc Thrust_Forward}" />
         <local:ThrustLegendCellControl x:Name="LeftCell" Classes="left" Label="{ext:loc Thrust_Left}" Grid.Column="1" />

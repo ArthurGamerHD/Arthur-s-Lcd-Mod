@@ -19,6 +19,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(9)]
+    [MultiFunction(SurfaceScripts.FarmSurfaceScript.TITLE, "FarmPlot")]
     // ReSharper disable once PartialTypeWithSinglePart
     internal sealed partial class FarmApp : App, IApp, Farm.IFarmHost
     {

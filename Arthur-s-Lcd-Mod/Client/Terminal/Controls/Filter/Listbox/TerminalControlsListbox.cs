@@ -16,6 +16,22 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
         string _selectionScript;
         public List<MyTerminalControlListBoxItem> Selection { get; private set; }
 
+        /// <summary>Whether several items can be selected; the ModAPI control does not expose it.</summary>
+        public bool Multiselect { get; private set; }
+
+        /// <summary>The list's items and selection, as the terminal lists them.</summary>
+        public void ReadItems(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> items,
+            List<MyTerminalControlListBoxItem> selected)
+        {
+            Getter(block, items, selected);
+        }
+
+        /// <summary>Selects items as a click in the terminal list would.</summary>
+        public void Select(IMyTerminalBlock block, List<MyTerminalControlListBoxItem> selection)
+        {
+            Setter(block, selection);
+        }
+
         protected void CreateListbox(string id, string title)
         {
             CreateListbox(id, title, true);
@@ -29,6 +45,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
             listbox.Visible = Visible;
             listbox.VisibleRowsCount = 8;
             listbox.Multiselect = multiselect;
+            Multiselect = multiselect;
             listbox.Title = MyStringId.GetOrCompute(title);
             _terminalControl = listbox;
         }
@@ -92,15 +109,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Listbox
 
         string GetSelectedSurfaceScript(IMyTerminalBlock block)
         {
-            var provider = block as IMyTextSurfaceProvider;
-            if (provider == null || provider.SurfaceCount <= 0)
-                return null;
-
-            int index = GetThisSurfaceIndex(block);
-            if (index < 0 || index >= provider.SurfaceCount)
-                return null;
-
-            return provider.GetSurface(index)?.Script;
+            return Config.ConfigManager.GetTerminalScript(block, GetThisSurfaceIndex(block));
         }
 
         static bool TryFindSelectionItem(

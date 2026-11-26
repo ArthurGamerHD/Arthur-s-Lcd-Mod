@@ -31,6 +31,7 @@ using LcdMod.Common.Config.Generation;
 namespace LcdMod.Client.Apps
 {
     [LcdApp(23, Name = "ButtonPanel")]
+    [MultiFunction(SurfaceScripts.ButtonPad.TITLE, "MyObjectBuilder_ButtonPanel/ButtonPanelLarge")]
     [ConfigComponent(Constants.APP, typeof(ButtonPanelConfigComponent), PropertyName = "ButtonPanelComponent")]
     public sealed partial class ButtonPadApp : App, IApp, ButtonPad.IButtonPadHost
     {

@@ -25,7 +25,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(MIN_SCALE, MAX_SCALE);
+            SetSliderLimits(slider, MIN_SCALE, MAX_SCALE);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute(MOD_PREFIX + "Magnification");
 

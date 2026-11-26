@@ -20,7 +20,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(
+            SetSliderLimits(slider, 
                 DoomInputSettings.MinKeyboardTurnSensitivity,
                 DoomInputSettings.MaxKeyboardTurnSensitivity);
             slider.Writer = Writer;

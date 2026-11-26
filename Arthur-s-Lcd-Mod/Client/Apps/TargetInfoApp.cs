@@ -19,6 +19,7 @@ namespace LcdMod.Client.Apps
     // completes is what the target should be, so what was shot off shows as missing. Once the lock is lost, the target as last
     // seen stays on the screen from memory for a few seconds, then is forgotten. Both snapshots are kept on the screen's block.
     [LcdApp(31)]
+    [MultiFunction(TITLE, "WeaponsIcon")]
     [ConfigComponent(APP, typeof(DiagnosticConfigComponent), PropertyName = "DiagnosticComponent")]
     internal sealed partial class TargetInfoApp : GridInspectorApp
     {

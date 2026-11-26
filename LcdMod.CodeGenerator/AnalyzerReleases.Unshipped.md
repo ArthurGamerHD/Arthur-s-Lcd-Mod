@@ -21,6 +21,9 @@ LCDCFG017 | LcdModCodeGenerator | Error | Semantic block references require expl
 LCDCFG020 | LcdModCodeGenerator | Error | Surface metadata targets must be supported partial surface classes
 LCDCFG021 | LcdModCodeGenerator | Error | Surfaces must reference a concrete registered app
 LCDCFG022 | LcdModCodeGenerator | Error | Surface construction must agree with its declared app
+LCDCFG030 | LcdModCodeGenerator | Error | Multi-function apps must be registered apps
+LCDCFG031 | LcdModCodeGenerator | Error | Multi-function apps need an IAppHost constructor
+LCDCFG032 | LcdModCodeGenerator | Error | Multi-function metadata needs a name and an icon
 LCDTERM101 | LcdModCodeGenerator | Error | Terminal setting attributes must target writable ConfigComponent properties
 LCDTERM102 | LcdModCodeGenerator | Error | Terminal registration IDs must be positive
 LCDTERM103 | LcdModCodeGenerator | Error | Generated terminal registration IDs must be unique

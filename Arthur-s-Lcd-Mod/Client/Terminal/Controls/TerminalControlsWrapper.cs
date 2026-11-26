@@ -21,6 +21,28 @@ namespace LcdMod.Client.Terminal.Controls
 
         protected virtual bool RequiresAdvancedTweakables => false;
 
+        /// <summary>The slider's limits as set through <see cref="SetSliderLimits"/>; the ModAPI cannot read them back.</summary>
+        public float SliderMinimum { get; private set; }
+        public float SliderMaximum { get; private set; } = 1f;
+
+        protected void SetSliderLimits(IMyTerminalControlSlider slider, float minimum, float maximum)
+        {
+            SliderMinimum = minimum;
+            SliderMaximum = maximum;
+            slider.SetLimits(minimum, maximum);
+        }
+
+        /// <summary>
+        /// Whether the control applies to an app of the given script running inside another surface (a multi-function
+        /// display page or window). Call it inside <see cref="ConfigManager.RunNested"/> for that app's config.
+        /// </summary>
+        public bool IsVisibleForHostedApp(IMyTerminalBlock block, string script)
+        {
+            if (RequiresAdvancedTweakables && !LocalConfigManager.AdvancedTweakables)
+                return false;
+            return VisibleForScript(script) && IsAvailableForCurrentConfig(block);
+        }
+
         /// <summary>
         ///     Gets the current selected surface index from <see cref="block" />'s terminal
         /// </summary>

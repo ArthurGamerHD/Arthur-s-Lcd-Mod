@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What a multi-function display shows behind its pages and windows: the LCD background only. -->
+<UserControl
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mfd="using:LcdMod.Client.Apps.MultiFunction"
+    x:Class="LcdMod.Client.Apps.MultiFunction.MultiFunctionDesktopView"
+    x:DataType="mfd:MultiFunctionViewModel"
+    Design.DataContext="{x:Static mfd:MultiFunctionViewModelPreview.Default}">
+  <Grid />
+</UserControl>

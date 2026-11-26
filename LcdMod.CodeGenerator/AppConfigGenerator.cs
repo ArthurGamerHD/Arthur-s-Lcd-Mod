@@ -16,6 +16,9 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
     const string APP_ATTRIBUTE_NAME = "LcdMod.Common.Config.Generation.LcdAppAttribute";
     const string COMPONENT_ATTRIBUTE_NAME = "LcdMod.Common.Config.Generation.ConfigComponentAttribute";
     const string SURFACE_ATTRIBUTE_NAME = "LcdMod.Common.Config.Generation.LcdSurfaceAttribute";
+    const string MULTI_FUNCTION_ATTRIBUTE_NAME = "LcdMod.Common.Config.Generation.MultiFunctionAttribute";
+    const string APP_HOST_NAME = "LcdMod.Client.Apps.Abstract.IAppHost";
+    const string TEXT_SURFACE_SCRIPT_ATTRIBUTE_NAME = "Sandbox.Game.GameSystems.TextSurfaceScripts.MyTextSurfaceScriptAttribute";
     const string APP_BASE_NAME = "LcdMod.Client.Apps.Abstract.App";
     const string SURFACE_BASE_NAME = "LcdMod.Client.SurfaceScripts.Abstract.SurfaceScriptBase";
     const string CONFIG_COMPONENT_BASE_NAME = "LcdMod.Common.Config.Components.ConfigComponent";
@@ -36,6 +39,9 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
     static readonly DiagnosticDescriptor InvalidSemanticReference = Error("LCDCFG017", "Invalid semantic reference declaration", "Block reference component on '{0}' must use an explicit PropertyName and a semantic reference.* slot");
     static readonly DiagnosticDescriptor InvalidSurface = Error("LCDCFG020", "Invalid surface declaration", "Surface '{0}' must be a top-level, non-generic partial class derived from SurfaceScriptBase");
     static readonly DiagnosticDescriptor UnknownSurfaceApp = Error("LCDCFG021", "Unknown surface app", "Surface '{0}' references '{1}', which is not a concrete [LcdApp] class");
+    static readonly DiagnosticDescriptor MultiFunctionWithoutApp = Error("LCDCFG030", "Multi-function app is not an app", "'{0}' is marked [MultiFunction] but is not a concrete [LcdApp] class");
+    static readonly DiagnosticDescriptor MultiFunctionConstructor = Error("LCDCFG031", "Multi-function app cannot be created", "[MultiFunction] app '{0}' needs a non-private constructor taking only an IAppHost");
+    static readonly DiagnosticDescriptor MultiFunctionMetadata = Error("LCDCFG032", "Invalid multi-function metadata", "[MultiFunction] on '{0}' needs a non-empty name and icon");
     static readonly DiagnosticDescriptor SurfaceAppMismatch = Error("LCDCFG022", "Surface constructs a different app", "Surface '{0}' maps to '{1}' but constructs registered app '{2}'");
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
@@ -61,20 +67,29 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
             .Where(static value => value != null)
             .Collect();
 
+        var multiFunction = context.SyntaxProvider.ForAttributeWithMetadataName(
+                MULTI_FUNCTION_ATTRIBUTE_NAME,
+                static (node, _) => node is ClassDeclarationSyntax,
+                static (ctx, _) => ReadMultiFunction(ctx))
+            .Where(static value => value != null)
+            .Collect();
+
         var skip = context.AnalyzerConfigOptionsProvider.Select(static (options, _) =>
             GetOption(options, "build_property.LcdModCodeGeneratorSkipAppConfig") == "true");
 
-        var input = apps.Combine(componentTargets).Combine(surfaces).Combine(context.CompilationProvider).Combine(skip);
+        var input = apps.Combine(componentTargets).Combine(surfaces).Combine(multiFunction)
+            .Combine(context.CompilationProvider).Combine(skip);
         context.RegisterSourceOutput(input, static (spc, value) =>
         {
             if (value.Right)
                 return;
 
             var compilation = value.Left.Right;
-            var surfacesInput = value.Left.Left.Right;
-            var componentsInput = value.Left.Left.Left.Right;
-            var appsInput = value.Left.Left.Left.Left;
-            Generate(spc, compilation, appsInput, componentsInput, surfacesInput);
+            var multiFunctionInput = value.Left.Left.Right;
+            var surfacesInput = value.Left.Left.Left.Right;
+            var componentsInput = value.Left.Left.Left.Left.Right;
+            var appsInput = value.Left.Left.Left.Left.Left;
+            Generate(spc, compilation, appsInput, componentsInput, surfacesInput, multiFunctionInput);
         });
     }
 
@@ -103,6 +118,17 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
                 name = pair.Value.Value as string;
 
         return new AppInput(type, id, name, AttributeLocation(attribute, type));
+    }
+
+    static MultiFunctionInput ReadMultiFunction(GeneratorAttributeSyntaxContext context)
+    {
+        var type = context.TargetSymbol as INamedTypeSymbol;
+        var attribute = context.Attributes.FirstOrDefault();
+        if (type == null || attribute == null)
+            return null;
+        var name = attribute.ConstructorArguments.Length > 0 ? attribute.ConstructorArguments[0].Value as string : null;
+        var icon = attribute.ConstructorArguments.Length > 1 ? attribute.ConstructorArguments[1].Value as string : null;
+        return new MultiFunctionInput(type, name, icon, AttributeLocation(attribute, type));
     }
 
     static ComponentTargetInput ReadComponents(GeneratorAttributeSyntaxContext context)
@@ -152,7 +178,8 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
         Compilation compilation,
         ImmutableArray<AppInput> rawApps,
         ImmutableArray<ComponentTargetInput> rawComponentTargets,
-        ImmutableArray<SurfaceInput> rawSurfaces)
+        ImmutableArray<SurfaceInput> rawSurfaces,
+        ImmutableArray<MultiFunctionInput> rawMultiFunction)
     {
         var appBase = compilation.GetTypeByMetadataName(APP_BASE_NAME);
         var surfaceBase = compilation.GetTypeByMetadataName(SURFACE_BASE_NAME);
@@ -273,6 +300,48 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
             ValidateSurfaceConstruction(spc, compilation, input, app, appLookup);
             surfaces.Add(new SurfaceModel(input.Type, app));
         }
+
+        var appHost = compilation.GetTypeByMetadataName(APP_HOST_NAME);
+        var multiFunctionApps = new List<MultiFunctionModel>();
+        foreach (var input in rawMultiFunction)
+        {
+            if (input == null)
+                continue;
+            AppModel app;
+            if (!appLookup.TryGetValue(input.Type, out app))
+            {
+                spc.ReportDiagnostic(Diagnostic.Create(MultiFunctionWithoutApp, input.Location, input.Type.ToDisplayString()));
+                continue;
+            }
+            if (string.IsNullOrWhiteSpace(input.Name) || string.IsNullOrWhiteSpace(input.Icon))
+            {
+                spc.ReportDiagnostic(Diagnostic.Create(MultiFunctionMetadata, input.Location, input.Type.ToDisplayString()));
+                continue;
+            }
+            bool creatable = input.Type.InstanceConstructors.Any(ctor => ctor.Parameters.Length == 1
+                && SymbolEqualityComparer.Default.Equals(ctor.Parameters[0].Type, appHost)
+                && ctor.DeclaredAccessibility != Accessibility.Private
+                && ctor.DeclaredAccessibility != Accessibility.Protected
+                && ctor.DeclaredAccessibility != Accessibility.ProtectedAndInternal);
+            if (!creatable)
+            {
+                spc.ReportDiagnostic(Diagnostic.Create(MultiFunctionConstructor, input.Location, input.Type.ToDisplayString()));
+                continue;
+            }
+            multiFunctionApps.Add(new MultiFunctionModel(app, input.Name.Trim(), input.Icon.Trim()));
+        }
+        multiFunctionApps = multiFunctionApps.OrderBy(item => item.App.Id).ToList();
+        var scriptIds = new Dictionary<INamedTypeSymbol, string>(SymbolEqualityComparer.Default);
+        foreach (var surface in surfaces)
+        {
+            var script = surface.Type.GetAttributes().FirstOrDefault(attribute =>
+                attribute.AttributeClass != null &&
+                attribute.AttributeClass.ToDisplayString() == TEXT_SURFACE_SCRIPT_ATTRIBUTE_NAME);
+            var id = script == null || script.ConstructorArguments.Length == 0 ? null : script.ConstructorArguments[0].Value as string;
+            if (!string.IsNullOrEmpty(id) && !scriptIds.ContainsKey(surface.App.Type))
+                scriptIds.Add(surface.App.Type, id);
+        }
+        spc.AddSource("MultiFunctionAppRegistry.g.cs", BuildMultiFunctionRegistry(multiFunctionApps, scriptIds));
 
         spc.AddSource("AppType.g.cs", BuildAppType(apps));
         spc.AddSource("AppSchemaRegistry.g.cs", BuildRegistry(apps));
@@ -461,6 +530,48 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
             ? componentTypeName.Substring(0, componentTypeName.Length - suffix.Length)
             : componentTypeName;
         return name + "Component";
+    }
+
+    static string BuildMultiFunctionRegistry(List<MultiFunctionModel> apps, Dictionary<INamedTypeSymbol, string> scriptIds)
+    {
+        var sb = Header();
+        sb.AppendLine("namespace Generated");
+        sb.AppendLine("{");
+        sb.AppendLine("    /// <summary>The apps a multi-function display can open: those marked [MultiFunction].</summary>");
+        sb.AppendLine("    public static class MultiFunctionAppRegistry");
+        sb.AppendLine("    {");
+        sb.AppendLine("        public static readonly global::LcdMod.Client.Apps.MultiFunction.MultiFunctionAppInfo[] Apps =");
+        sb.AppendLine("        {");
+        for (var i = 0; i < apps.Count; i++)
+        {
+            string scriptId;
+            scriptIds.TryGetValue(apps[i].App.Type, out scriptId);
+            sb.AppendLine("            new global::LcdMod.Client.Apps.MultiFunction.MultiFunctionAppInfo(AppType." + apps[i].App.Name + ", " +
+                          Literal(apps[i].Name) + ", " + Literal(apps[i].Icon) + ", " + Literal(scriptId) + ")" +
+                          (i + 1 == apps.Count ? string.Empty : ","));
+        }
+        sb.AppendLine("        };");
+        sb.AppendLine();
+        sb.AppendLine("        public static global::LcdMod.Client.Apps.MultiFunction.MultiFunctionAppInfo Find(AppType appType)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            for (var i = 0; i < Apps.Length; i++)");
+        sb.AppendLine("                if (Apps[i].AppType == appType)");
+        sb.AppendLine("                    return Apps[i];");
+        sb.AppendLine("            return null;");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        sb.AppendLine("        public static global::LcdMod.Client.Apps.Abstract.App Create(AppType appType, global::LcdMod.Client.Apps.Abstract.IAppHost host)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            switch (appType)");
+        sb.AppendLine("            {");
+        foreach (var app in apps)
+            sb.AppendLine("                case AppType." + app.App.Name + ": return new " + TypeName(app.App.Type) + "(host);");
+        sb.AppendLine("                default: return null;");
+        sb.AppendLine("            }");
+        sb.AppendLine("        }");
+        sb.AppendLine("    }");
+        sb.AppendLine("}");
+        return sb.ToString();
     }
 
     static string BuildAppType(List<AppModel> apps)
@@ -765,6 +876,23 @@ public sealed class AppConfigGenerator : IIncrementalGenerator
         public string Name { get; }
         public Location Location { get; }
         public List<ComponentInput> Schema { get; }
+    }
+
+    sealed class MultiFunctionInput
+    {
+        public MultiFunctionInput(INamedTypeSymbol type, string name, string icon, Location location) { Type = type; Name = name; Icon = icon; Location = location; }
+        public INamedTypeSymbol Type { get; }
+        public string Name { get; }
+        public string Icon { get; }
+        public Location Location { get; }
+    }
+
+    sealed class MultiFunctionModel
+    {
+        public MultiFunctionModel(AppModel app, string name, string icon) { App = app; Name = name; Icon = icon; }
+        public AppModel App { get; }
+        public string Name { get; }
+        public string Icon { get; }
     }
 
     sealed class SurfaceModel

@@ -34,6 +34,23 @@ namespace LcdMod.Common.Config.Generation
         public string PropertyName { get; set; }
     }
 
+    /// <summary>
+    /// Offers an [LcdApp] in the multi-function display's start menu. Name is a localization key, Icon a sprite name.
+    /// The app must have a constructor taking only an IAppHost and must not depend on its surface script.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    internal sealed class MultiFunctionAttribute : Attribute
+    {
+        public MultiFunctionAttribute(string name, string icon)
+        {
+            Name = name;
+            Icon = icon;
+        }
+
+        public string Name { get; private set; }
+        public string Icon { get; private set; }
+    }
+
     /// <summary>Maps a persisted surface host to its concrete app identity.</summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     internal sealed class LcdSurfaceAttribute : Attribute

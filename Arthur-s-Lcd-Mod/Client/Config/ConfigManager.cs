@@ -217,6 +217,60 @@ namespace LcdMod.Client.Config
             return settings == null ? null : settings.GetSurfaceConfig(GetThisSurfaceIndex(block));
         }
 
+        static IMyTerminalBlock _nestedBlock;
+        static IAppConfig _nestedConfig;
+        static string _nestedScript;
+
+        /// <summary>
+        /// Runs terminal control code against an app hosted inside the block's surface (a multi-function display page or
+        /// window) instead of the surface's own app: "current surface" lookups for that block resolve to the nested config.
+        /// </summary>
+        public static void RunNested(IMyTerminalBlock block, IAppConfig config, string script, Action action)
+        {
+            var previousBlock = _nestedBlock;
+            var previousConfig = _nestedConfig;
+            var previousScript = _nestedScript;
+            _nestedBlock = block;
+            _nestedConfig = config;
+            _nestedScript = script;
+            try
+            {
+                action();
+            }
+            finally
+            {
+                _nestedBlock = previousBlock;
+                _nestedConfig = previousConfig;
+                _nestedScript = previousScript;
+            }
+        }
+
+        static IAppConfig NestedConfig(IMyTerminalBlock block)
+        {
+            return _nestedConfig != null && ReferenceEquals(block, _nestedBlock) ? _nestedConfig : null;
+        }
+
+        /// <summary>
+        /// The script of the app terminal controls edit for the block's selected surface: the surface's own script, or
+        /// the hosted app's in <see cref="RunNested"/>.
+        /// </summary>
+        public static string GetTerminalScript(IMyTerminalBlock block, int index)
+        {
+            if (_nestedConfig != null && ReferenceEquals(block, _nestedBlock))
+                return _nestedScript;
+            var provider = block as Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
+            if (provider == null || index < 0 || index >= provider.SurfaceCount)
+                return null;
+            var surface = provider.GetSurface(index);
+            return surface == null ? null : surface.Script;
+        }
+
+        /// <summary>The config terminal controls edit for the block's selected surface, or the nested one in <see cref="RunNested"/>.</summary>
+        public static IAppConfig GetTerminalConfig(ScreenProviderConfig settings, IMyTerminalBlock block, int index)
+        {
+            return NestedConfig(block) ?? (settings == null ? null : settings.GetSurfaceConfig(index));
+        }
+
         public static T GetComponentForTerminalApp<T>(IMyTerminalBlock block) where T : ConfigComponent
         {
             return GetComponentForCurrentSurface<T>(block, Constants.APP);
@@ -224,6 +278,9 @@ namespace LcdMod.Client.Config
 
         public static T GetComponentForCurrentSurface<T>(IMyTerminalBlock block, string slot) where T : ConfigComponent
         {
+            var nested = NestedConfig(block);
+            if (nested != null)
+                return nested.TryGet<T>(slot);
             var surface = GetSurfaceConfigForCurrentScreen(block);
             return surface?.TryGet<T>(slot);
         }
@@ -244,7 +301,7 @@ namespace LcdMod.Client.Config
             if (settings == null || !settings.CanWrite)
                 return false;
 
-            var surface = settings.GetSurfaceConfig(GetThisSurfaceIndex(block));
+            var surface = GetTerminalConfig(settings, block, GetThisSurfaceIndex(block));
             if (!settings.CanWriteConfig(surface))
                 return false;
 

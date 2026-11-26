@@ -1,5 +1,6 @@
 using System;
 using VRage.Game;
+using VRageMath;
 
 namespace LcdMod.Client.ClockDashboard
 {
@@ -28,6 +29,7 @@ namespace LcdMod.Client.ClockDashboard
     {
         public DateTime SessionGameDateTime;
         public DashboardClockMode ClockMode;
+        public Vector3D SunRotationAxis;
         public bool HasLocalSolarTime;
         public double LocalSolarHour;
         public DateTime DisplayDateTime;

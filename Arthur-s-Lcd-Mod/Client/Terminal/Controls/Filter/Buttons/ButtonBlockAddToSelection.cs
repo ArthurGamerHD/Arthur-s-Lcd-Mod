@@ -24,7 +24,7 @@ namespace LcdMod.Client.Terminal.Controls.Filter.Buttons
 
             var index = GetThisSurfaceIndex(block);
             var settings = ConfigManager.GetConfigForBlock(block);
-            var surface = settings == null ? null : settings.GetSurfaceConfig(index);
+            var surface = settings == null ? null : ConfigManager.GetTerminalConfig(settings, block, index);
             if (settings == null || !settings.CanWriteConfig(surface))
                 return;
             var config = surface == null ? null : surface.TryGet<BlockSelectionConfigComponent>(Constants.BLOCKS);

@@ -53,7 +53,7 @@
         </ItemsControl>
       </Grid>
     </ScrollViewer>
-    <Border Grid.Row="1" Background="{Binding FooterBackground}" IsVisible="{Binding HasFooter}">
+    <Border Grid.Row="1" Classes="power-footer" IsVisible="{Binding HasFooter}">
       <ItemsControl ItemsSource="{Binding FooterRows}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="LcdMod.Client.Apps.PowerFilled.PowerFooterRow">

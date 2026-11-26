@@ -19,7 +19,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(byte.MinValue, byte.MaxValue);
+            SetSliderLimits(slider, byte.MinValue, byte.MaxValue);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute("Brightness");
 

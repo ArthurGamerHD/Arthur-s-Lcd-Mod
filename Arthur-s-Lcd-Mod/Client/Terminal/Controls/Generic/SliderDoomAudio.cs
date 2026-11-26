@@ -23,7 +23,7 @@ namespace LcdMod.Client.Terminal.Controls.Generic
             slider.Getter = Getter;
             slider.Setter = Setter;
             slider.Visible = Visible;
-            slider.SetLimits(0f, DoomAudioSettings.MaxVolume);
+            SetSliderLimits(slider, 0f, DoomAudioSettings.MaxVolume);
             slider.Writer = Writer;
             slider.Title = MyStringId.GetOrCompute(title);
             slider.Tooltip = MyStringId.GetOrCompute(tooltip);

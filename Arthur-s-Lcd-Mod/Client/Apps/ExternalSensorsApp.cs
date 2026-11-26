@@ -37,6 +37,7 @@ namespace LcdMod.Client.Apps
     /// selected camera (or the screen's reference without one), with the flight instruments of the Star Map's old HUD.
     /// </summary>
     [LcdApp(33)]
+    [MultiFunction(TITLE, "Camera")]
     [ConfigComponent(APP, typeof(StarMapConfigComponent), PropertyName = "StarMapComponent")]
     [ConfigComponent(CAMERA_REFERENCE, typeof(BlockReferenceConfigComponent), PropertyName = "CameraReferenceComponent")]
     public partial class ExternalSensorsApp : App, IApp, IExternalSensorsHost
@@ -585,7 +586,7 @@ namespace LcdMod.Client.Apps
 
         void Play(MySoundPair sound)
         {
-            var interactive = Host as InteractiveSurfaceScript;
+            var interactive = InteractiveSurface;
             if (interactive != null)
                 interactive.PlaySounds(sound, true);
         }

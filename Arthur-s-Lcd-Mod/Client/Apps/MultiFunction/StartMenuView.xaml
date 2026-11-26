@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The start menu: every app the display can open. -->
+<Window
+    xmlns="https://github.com/ArthurGamerHD/AcruxUI"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mfd="using:LcdMod.Client.Apps.MultiFunction"
+    x:Class="LcdMod.Client.Apps.MultiFunction.StartMenuView"
+    x:DataType="mfd:MultiFunctionViewModel"
+    Design.DataContext="{x:Static mfd:MultiFunctionViewModelPreview.Default}"
+    Classes="mfd-start-menu"
+    WindowDecorations="BorderOnly"
+    Topmost="True"
+    CanResize="False"
+    CanMinimize="False"
+    CanMaximize="False"
+    Padding="6">
+  <Window.Styles>
+    <StyleInclude Source="/Data/Gui/Styles/Fluent/Controls/MultiFunction.xaml" />
+  </Window.Styles>
+  <Grid RowDefinitions="Auto,*">
+    <TextBlock Classes="mfd-text mfd-menu-title" Text="{Binding StartMenuTitle}" Margin="6 2 6 6" />
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <ItemsControl ItemsSource="{Binding StartEntries}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="mfd:StartMenuEntry">
+            <Button Classes="mfd-menu-item" Command="{Binding OpenCommand}" HorizontalAlignment="Stretch">
+              <StackPanel Classes="mfd-item-content mfd-menu-content" Orientation="Horizontal">
+                <Image Classes="mfd-icon" Source="{Binding Icon}" VerticalAlignment="Center" />
+                <TextBlock Classes="mfd-text" Text="{Binding Name}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </Grid>
+</Window>

@@ -88,10 +88,20 @@ namespace LcdMod.Client.Apps.Abstract
 
         protected IAppHost Host { get; private set; }
 
+        /// <summary>The interactive surface the app is shown on, also when it runs inside a multi-function display; null otherwise.</summary>
+        internal SurfaceScripts.Abstract.InteractiveSurfaceScript InteractiveSurface
+        {
+            get
+            {
+                var hosted = Host as MultiFunction.HostedAppHost;
+                return (hosted != null ? hosted.Script : Host) as SurfaceScripts.Abstract.InteractiveSurfaceScript;
+            }
+        }
+
         // Plays a sound on the surface's block, when the surface can play sounds.
         internal void PlaySound(Sandbox.Game.Entities.MySoundPair sound)
         {
-            var interactive = Host as SurfaceScripts.Abstract.InteractiveSurfaceScript;
+            var interactive = InteractiveSurface;
             if (interactive != null)
                 interactive.PlaySounds(sound);
         }
@@ -358,9 +368,12 @@ namespace LcdMod.Client.Apps.Abstract
         internal bool ShowDialog(Acrux.Controls.Window dialog)
         {
             var script = Host as SurfaceScripts.Abstract.SurfaceScriptBase;
-            var root = script == null || script.RetainedAppGuiHost == null
-                ? null
-                : script.RetainedAppGuiHost.Root as Acrux.Controls.Window;
+            var hosted = Host as MultiFunction.HostedAppHost;
+            var root = hosted != null
+                ? hosted.DialogOwner
+                : script == null || script.RetainedAppGuiHost == null
+                    ? null
+                    : script.RetainedAppGuiHost.Root as Acrux.Controls.Window;
             if (root == null || !root.IsOpen)
             {
                 dialog.Dispose();

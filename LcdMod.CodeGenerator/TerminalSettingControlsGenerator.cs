@@ -654,7 +654,7 @@ public sealed class TerminalSettingControlsGenerator : IIncrementalGenerator
         sb.AppendLine("            control.Getter = Getter;");
         sb.AppendLine("            control.Setter = Setter;");
         sb.AppendLine("            control.Visible = Visible;");
-        sb.AppendLine("            control.SetLimits(" + FloatLiteral(input.Minimum) + ", " + FloatLiteral(input.Maximum) + ");");
+        sb.AppendLine("            SetSliderLimits(control, " + FloatLiteral(input.Minimum) + ", " + FloatLiteral(input.Maximum) + ");");
         sb.AppendLine("            control.Writer = Writer;");
         sb.AppendLine("            control.Title = global::VRage.Utils.MyStringId.GetOrCompute(" + Literal(input.Title ?? string.Empty) + ");");
         if (!string.IsNullOrEmpty(input.Tooltip))
